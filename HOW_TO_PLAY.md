@@ -101,7 +101,8 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 | **C** | Character | Your name, level, stats, records |
 | **K** | Skills | Skill tree (spend skill points) |
 | **J** | Quest Log | Your active quests (and co-op quests) |
-| **M** | World Map | The full map (hidden areas are foggy until you explore). **Scroll wheel** moves up/down, **Ctrl + arrow keys** pan all 4 directions. |
+| **M** | World Map | The full map (hidden areas are foggy until you explore). **Scroll wheel** zooms in/out, **Ctrl + arrow keys** pan all 4 directions. |
+| **⚙️ (top-right)** | Settings | Adjust sound effect, music, ambient and master volume with sliders. |
 | **B** | Crafting | Recipes you can craft |
 | **F** | Relationships | Villagers who know you + your reputation |
 | **L** | Codex | The forest's secret history (lore) |

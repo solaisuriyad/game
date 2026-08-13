@@ -58,3 +58,8 @@ h3 { color: #e8c46a; margin: 12px 0 6px; font-size: 13px; text-transform: upperc
 kbd { background: #2a2118; border: 1px solid #6a4a2a; border-radius: 3px; padding: 1px 5px; font-size: 10px; }
 
 #toasts-dom { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; }
+
+.settings-btn { position: fixed; top: 10px; right: 10px; z-index: 30; width: 40px; height: 40px; font-size: 20px; line-height: 1; cursor: pointer; background: rgba(30,25,20,.75); border: 1px solid #6a4a2a; border-radius: 8px; color: #f0e6d0; }
+.settings-btn:hover { background: rgba(60,48,32,.9); }
+
+input.vol { width: 100%; margin: 4px 0 8px; cursor: pointer; accent-color: #c8a040; }

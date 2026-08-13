@@ -16,12 +16,25 @@ export class MenuManager {
       const el = e.target.closest('[data-act]');
       if (el) this.handleAction(el.dataset.act, el.dataset.arg);
     });
-    // map panning: mouse wheel (up/down) + Ctrl+arrow keys (all 4 directions)
+    // map: scroll wheel = zoom in/out (toward cursor), Ctrl+arrow keys = pan all 4 directions
     window.addEventListener('wheel', (e) => {
       if (!this._mapOpen) return;
       e.preventDefault();
-      const step = 48;
-      if (e.deltaY > 0) this._mapPan.y += step; else this._mapPan.y -= step;
+      const cv = document.getElementById('mapcanvas');
+      if (!cv) return;
+      const rect = cv.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const zoom = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+      const oldScale = this._mapScale;
+      const newScale = Math.max(3, Math.min(16, oldScale * zoom));
+      if (newScale === oldScale) return;
+      // zoom toward the cursor so it feels anchored
+      const wx = (mx + this._mapPan.x) / oldScale;
+      const wy = (my + this._mapPan.y) / oldScale;
+      this._mapScale = newScale;
+      this._mapPan.x = wx * newScale - mx;
+      this._mapPan.y = wy * newScale - my;
       this._drawMapCanvas();
     }, { passive: false });
     window.addEventListener('keydown', (e) => {
@@ -37,6 +50,15 @@ export class MenuManager {
     });
     this.open = false;
     this.currentNPC = null;
+    // settings gear button (top-right corner) — guarded for headless/test contexts
+    if (typeof document !== 'undefined' && document.body) {
+      this._gear = document.createElement('button');
+      this._gear.className = 'settings-btn';
+      this._gear.innerHTML = '⚙️';
+      this._gear.title = 'Settings';
+      this._gear.addEventListener('click', (e) => { e.stopPropagation(); this._renderSettings(); });
+      document.body.appendChild(this._gear);
+    }
   }
 
   setOpen(v) { this.open = v; this.game.paused = v; }
@@ -78,6 +100,7 @@ export class MenuManager {
       case 'talk': this._chat(); break;
       case 'gift': this._showGiftPanel(); break;
       case 'giftgive': this._giveGift(arg); break;
+      case 'testsfx': g.audio.sfx('pickup'); break;
       case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
       case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
@@ -388,7 +411,7 @@ export class MenuManager {
     this._mapScale = 4;           // px per tile (zoomed in so there's room to pan)
     this._mapView = 720;          // viewport size in px
     if (!this._mapPan) this._mapPan = { x: 0, y: 0 };
-    this.show('World Map — scroll wheel (up/down) · Ctrl + arrow keys (all directions)', '<canvas id="mapcanvas" class="map-canvas" width="720" height="720"></canvas>');
+    this.show('World Map — scroll wheel to zoom · Ctrl + arrow keys to pan', '<canvas id="mapcanvas" class="map-canvas" width="720" height="720"></canvas>');
     this._drawMapCanvas();
   }
 
@@ -450,6 +473,23 @@ export class MenuManager {
       </div>`;
     }
     this.show('Codex — History of the Forest', html);
+  }
+
+  _renderSettings() {
+    const a = this.game.audio;
+    const pct = (v) => Math.round(v * 100);
+    this.show('Settings', `
+      <div class="muted">Adjust game audio. Changes save automatically.</div>
+      <h3>Master Volume — <span id="vol-master">${pct(a.master)}%</span></h3>
+      <input type="range" class="vol" min="0" max="100" value="${pct(a.master)}" oninput="window.game.audio.setMasterVolume(this.value/100);document.getElementById('vol-master').textContent=this.value+'%';">
+      <h3>Sound Effects — <span id="vol-sfx">${pct(a.sfxVolume)}%</span></h3>
+      <input type="range" class="vol" min="0" max="100" value="${pct(a.sfxVolume)}" oninput="window.game.audio.setSfxVolume(this.value/100);document.getElementById('vol-sfx').textContent=this.value+'%';">
+      <h3>Music — <span id="vol-music">${pct(a.musicVolume)}%</span></h3>
+      <input type="range" class="vol" min="0" max="100" value="${pct(a.musicVolume)}" oninput="window.game.audio.setMusicVolume(this.value/100);document.getElementById('vol-music').textContent=this.value+'%';">
+      <h3>Ambient (wind &amp; birds) — <span id="vol-ambient">${pct(a.ambientVolume)}%</span></h3>
+      <input type="range" class="vol" min="0" max="100" value="${pct(a.ambientVolume)}" oninput="window.game.audio.setAmbientVolume(this.value/100);document.getElementById('vol-ambient').textContent=this.value+'%';">
+      <div class="muted" style="margin-top:10px">Test sound: <button class="btn" data-act="testsfx">Play sound</button></div>
+    `);
   }
 
   _renderHelp() {

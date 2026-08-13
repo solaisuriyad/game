@@ -15,25 +15,66 @@ export class AudioManager {
     this.ctx = null;
     this.ambient = null;
     this._t = 0;
-    this.master = 0.5;
+    this.master = 0.8;
+    this.sfxVolume = 0.8;
+    this.musicVolume = 0.8;
+    this.ambientVolume = 0.8;
     this.ambientGain = null;
     this.musicGain = null;
+    this.sfxGain = null;
+    this.masterGain = null;
     this.birdTimer = 0;
     // music scheduler state
     this._musicMood = 'forest';
     this._musicNextTime = 0;
     this._musicStep = 0;
+    this._loadSettings();
   }
+  // ---- volume settings (persisted across sessions) ----
+  _loadSettings() {
+    try {
+      const raw = localStorage.getItem('verdant-hollow:settings');
+      if (raw) {
+        const s = JSON.parse(raw);
+        this.master = s.master ?? 0.8;
+        this.sfxVolume = s.sfx ?? 0.8;
+        this.musicVolume = s.music ?? 0.8;
+        this.ambientVolume = s.ambient ?? 0.8;
+      }
+    } catch (e) {}
+  }
+  _saveSettings() {
+    try {
+      localStorage.setItem('verdant-hollow:settings', JSON.stringify({
+        master: this.master, sfx: this.sfxVolume, music: this.musicVolume, ambient: this.ambientVolume
+      }));
+    } catch (e) {}
+  }
+  setMasterVolume(v) { this.master = v; if (this.masterGain) this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); this._saveSettings(); }
+  setSfxVolume(v) { this.sfxVolume = v; if (this.sfxGain) this.sfxGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); this._saveSettings(); }
+  setMusicVolume(v) { this.musicVolume = v; this._saveSettings(); }
+  setAmbientVolume(v) { this.ambientVolume = v; this._saveSettings(); }
+
   resume() {
     if (!this.ctx) {
       try {
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // master -> destination
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.master;
+        this.masterGain.connect(this.ctx.destination);
+        // ambient (wind/birds)
         this.ambientGain = this.ctx.createGain();
-        this.ambientGain.gain.value = 0.25;
-        this.ambientGain.connect(this.ctx.destination);
+        this.ambientGain.gain.value = 0.25 * this.ambientVolume;
+        this.ambientGain.connect(this.masterGain);
+        // generative music
         this.musicGain = this.ctx.createGain();
         this.musicGain.gain.value = 0.0;
-        this.musicGain.connect(this.ctx.destination);
+        this.musicGain.connect(this.masterGain);
+        // sound effects
+        this.sfxGain = this.ctx.createGain();
+        this.sfxGain.gain.value = this.sfxVolume;
+        this.sfxGain.connect(this.masterGain);
         this._startWind();
         this._startBirds();
         this._musicNextTime = this.ctx.currentTime + 0.1;
@@ -45,7 +86,7 @@ export class AudioManager {
     // mood: 'village' | 'forest' | 'combat' | 'night' — adjusts ambient tone
     if (!this.ambientGain) return;
     const g = { village: 0.18, forest: 0.3, night: 0.2, combat: 0.35 }[mood] ?? 0.25;
-    this.ambientGain.gain.setTargetAtTime(g, this.ctx.currentTime, 1.5);
+    this.ambientGain.gain.setTargetAtTime(g * this.ambientVolume, this.ctx.currentTime, 1.5);
   }
   _noiseBuffer() {
     const c = this.ctx;
@@ -93,8 +134,8 @@ export class AudioManager {
   _scheduleMusic(mood) {
     if (!this.ctx || !this.musicGain) return;
     const cfg = MUSIC_MOODS[mood] || MUSIC_MOODS.forest;
-    // fade the music channel toward the mood's target volume
-    const target = mood === 'boss' || mood === 'combat' ? cfg.vol : cfg.vol;
+    // fade the music channel toward the mood's target volume (scaled by setting)
+    const target = cfg.vol * this.musicVolume;
     this.musicGain.gain.setTargetAtTime(target, this.ctx.currentTime, 1.2);
     // schedule notes ahead (lookahead scheduler)
     const lookahead = this.ctx.currentTime + 0.18;
@@ -165,7 +206,7 @@ export class AudioManager {
     g.gain.setValueAtTime(0.0001, c.currentTime);
     g.gain.exponentialRampToValueAtTime(0.06, c.currentTime + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.12);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(this.sfxGain || c.destination);
     o.start(); o.stop(c.currentTime + 0.15);
   }
   sfx(name) {
@@ -183,7 +224,7 @@ export class AudioManager {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(this.sfxGain || c.destination);
     o.start(t); o.stop(t + dur + 0.05);
   }
   _sfx_swing() { this._tone('sawtooth', 500, 120, 0.08, 0.06); }

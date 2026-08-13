@@ -74,26 +74,26 @@ export class HUD {
       ctx.fillText('⚡ Recovering…', 12, 94);
     }
 
-    // ---- top-right: clock / weather / gold / rank ----
+    // ---- top-right: clock / weather / gold / rank (shifted down for the settings gear) ----
     ctx.textAlign = 'right';
     ctx.fillStyle = '#f5f0e0';
     ctx.font = 'bold 15px sans-serif';
-    ctx.fillText(`${g.time.clock} · Day ${g.time.day}`, W - 12, 12);
+    ctx.fillText(`${g.time.clock} · Day ${g.time.day}`, W - 12, 56);
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#c8e0c8';
     const zi = g.world.getZoneIndex(p.x, p.y);
     const zmin = ZONES[zi].minRank;
     const zoneStr = g.world.getZoneName(p.x, p.y) + (zmin > 0 ? ` (Rank ${RANKS[zmin]}+)` : '');
-    ctx.fillText(`${g.weather.state[0].toUpperCase() + g.weather.state.slice(1)} · ${zoneStr}`, W - 12, 30);
+    ctx.fillText(`${g.weather.state[0].toUpperCase() + g.weather.state.slice(1)} · ${zoneStr}`, W - 12, 74);
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(`${p.gold}g`, W - 12, 46);
+    ctx.fillText(`${p.gold}g`, W - 12, 90);
     ctx.fillStyle = '#a0c8ff';
-    ctx.fillText(`Rank ${g.guild.rank()} · ${p.guildPoints} GP`, W - 12, 62);
+    ctx.fillText(`Rank ${g.guild.rank()} · ${p.guildPoints} GP`, W - 12, 106);
     ctx.fillStyle = '#d0c0f0';
-    ctx.fillText(g.reputation.title(), W - 12, 78);
+    ctx.fillText(g.reputation.title(), W - 12, 122);
     if (g.multiplayer.connected) {
       ctx.fillStyle = '#7ae07a';
-      ctx.fillText(`Online · ${g.remotePlayers.length + 1} hunters`, W - 12, 94);
+      ctx.fillText(`Online · ${g.remotePlayers.length + 1} hunters`, W - 12, 138);
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
