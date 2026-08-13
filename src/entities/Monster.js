@@ -80,6 +80,17 @@ export class Monster extends Entity {
       }
     }
 
+    // DISTANCE CULLING: distant, unengaged monsters skip the full AI brain.
+    // With ~600 monsters this is a huge win — only monsters near the player do
+    // detection + line-of-sight raycasts each frame.
+    if (!this.target && !this.investigate && this.aggroTimer <= 0) {
+      const d = Math.hypot(this.x - game.player.x, this.y - game.player.y);
+      if (d > 1000) {
+        this.wanderTimer = (this.wanderTimer || 0) - dt; // cheap idle
+        return;
+      }
+    }
+
     game.ai.monster(this, dt, game);
   }
 

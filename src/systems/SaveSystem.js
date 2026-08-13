@@ -54,7 +54,6 @@ export class SaveSystem {
       quests: g.quests.serialize(),
       lore: g.lore.serialize(),
       events: g.events.recent,
-      discovered: this._encodeDiscovered(),
       npcs: g.npcs.filter((n) => n.relationship !== 0 || n.metPlayer).map((n) => ({
         id: n.id, relationship: n.relationship, met: n.metPlayer, memory: n.memory
       }))
@@ -107,8 +106,6 @@ export class SaveSystem {
     g.quests.deserialize(d.quests);
     if (d.lore) g.lore.deserialize(d.lore);
     g.events.recent = d.events || [];
-    this._decodeDiscovered(d.discovered);
-
     const relMap = {};
     for (const n of d.npcs || []) relMap[n.id] = n;
     for (const npc of g.npcs) {
@@ -126,16 +123,6 @@ export class SaveSystem {
 
   hasSlot(slot) { return !!this._ls.getItem(PREFIX + slot); }
 
-  _encodeDiscovered() {
-    const d = this.game.world.discovered;
-    let s = '';
-    for (let i = 0; i < d.length; i++) s += String.fromCharCode(d[i]);
-    return btoa(s);
-  }
-  _decodeDiscovered(b64) {
-    if (!b64) return;
-    const s = atob(b64);
-    const d = this.game.world.discovered;
-    for (let i = 0; i < d.length && i < s.length; i++) d[i] = s.charCodeAt(i);
-  }
+  // (fog of war now lives on the 700px minimap and isn't persisted — the old
+  //  9-million-entry discovered array is gone, so save/load is instant)
 }

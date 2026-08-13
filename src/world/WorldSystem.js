@@ -41,7 +41,7 @@ export class WorldSystem {
     this.depletedTrees = []; // chopped trees awaiting respawn (small list)
     this.nodes = [];       // resource nodes (herb, mushroom, berry, ore, tree, rock)
     this._cell = Math.floor(256 / TILE); // grid cell = 8 tiles = 256px
-    this.discovered = new Uint8Array(WORLD_W * WORLD_H); // fog of war (0/1)
+    this.discovered = new Uint8Array(0); // (fog moved to the 700px minimap; keep a stub)
     this.generate();
   }
 

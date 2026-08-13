@@ -314,7 +314,9 @@ class Game {
 
     this.camera.follow(this.player.x, this.player.y);
     this.hud.updateDiscovery();
-    this.audio.tick(dt, this.time.timeOfDay, this._audioMood());
+    // audio must never be able to freeze the game (it only runs in real browsers)
+    try { this.audio.tick(dt, this.time.timeOfDay, this._audioMood()); }
+    catch (e) { this.audio.ctx = null; this.audio.musicGain = null; this.audio.ambientGain = null; }
   }
 
   onCrash(e) {
@@ -338,6 +340,16 @@ class Game {
   }
 
   render(ctx) {
+    // lightweight FPS tracking (real frames, not simulation ticks)
+    const now = performance.now();
+    if (!this._fpsLast) this._fpsLast = now;
+    this._fpsAcc = (this._fpsAcc || 0) + (now - this._fpsLast);
+    this._fpsN = (this._fpsN || 0) + 1;
+    this._fpsLast = now;
+    if (this._fpsAcc >= 500) {
+      this._fps = Math.round(1000 * this._fpsN / this._fpsAcc);
+      this._fpsAcc = 0; this._fpsN = 0;
+    }
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.state === 'playing' && this.player) {
