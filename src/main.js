@@ -208,7 +208,7 @@ class Game {
       if (this.ui.open) this.ui.close(); else this.ui._renderMainMenu();
       return;
     }
-    const menus = { i: 'inventory', c: 'character', k: 'skills', j: 'quests', m: 'map', b: 'crafting', r: 'relationships', l: 'lore', h: 'help' };
+    const menus = { i: 'inventory', c: 'character', k: 'skills', j: 'quests', m: 'map', b: 'crafting', f: 'relationships', l: 'lore', h: 'help' };
     for (const [k, menu] of Object.entries(menus)) {
       if (input.pressed(k)) { this.ui.openMenu(menu); return; }
     }

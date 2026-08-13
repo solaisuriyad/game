@@ -19,6 +19,7 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 | Input | Action |
 |---|---|
 | WASD / arrows | Move |
+| R (hold) + move | **Run** (faster, drains stamina) |
 | Mouse | Aim |
 | Click (release) | Light attack (hold & release for **heavy**) |
 | Right-click (hold) | Block |
@@ -27,7 +28,8 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 | Tab | Toggle **tracking** (footprint direction + blood trails) |
 | T · Y · G | Place snare · place bear trap · bait (raw meat/berries) |
 | E | Interact (gather / harvest / talk / buildings) |
-| I · C · K · J · M · B · R · L | Inventory · Character · Skills · Quests · Map · Craft · Relationships · Codex |
+| I · C · K · J · M · B · F | Inventory · Character · Skills · Quests · Map · Craft · Relationships |
+| L | Codex (forest history) |
 | Esc | Menu (save / load / help / quit) |
 
 ## What's implemented (MVP vertical slice)

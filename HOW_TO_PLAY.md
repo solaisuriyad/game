@@ -1,0 +1,275 @@
+# 🌲 VERDANT HOLLOW — The Complete Guide
+*Every button, every screen, every mechanic — nothing left out.*
+
+---
+
+## PART 1 — HOW TO START THE GAME (on your computer)
+
+You already downloaded the ZIP and extracted it. To start it every time:
+
+1. Open your **Terminal** (Mac/Linux) or **Command Prompt / PowerShell** (Windows).
+2. Type `cd ` (with a space), then drag-and-drop the extracted game folder into the terminal and press **Enter**. (This "moves you into" the folder.)
+3. Type one of these and press **Enter**:
+
+```
+npm start
+```
+or (if that fails, this always works — no install needed):
+```
+node server.js
+```
+
+4. You'll see a message like: `Verdant Hollow serving on http://0.0.0.0:3000`.
+5. Open your web browser and type this in the address bar:
+```
+http://localhost:3000
+```
+6. The game loads. **Leave the terminal window open** — closing it stops the game.
+
+> To stop the game later: click the terminal and press **Ctrl + C**.
+
+---
+
+## PART 2 — THE TITLE SCREEN
+
+When the game opens you'll see **VERDANT HOLLOW** with these things:
+
+1. **Name box** — click it and type your character's name.
+2. **Body** — pick `male`, `female`, or `neutral`.
+3. **Skin** — click a colored circle to choose skin tone.
+4. **Hair color** — click a circle.
+5. **Clothing** — click a circle.
+6. Buttons:
+   - **Begin Adventure** (gold) — start a NEW game.
+   - **Play Online (co-op)** — start a new game and join the shared online world (needs friends on the same server).
+   - **Continue** — load your most recent save.
+
+---
+
+## PART 3 — THE COMPLETE BUTTON / KEY LIST
+
+### 🚶 Moving & looking
+| Key | What it does |
+|---|---|
+| **W / ↑** | Walk up |
+| **A / ←** | Walk left |
+| **S / ↓** | Walk down |
+| **D / →** | Walk right |
+| **R (hold) + W/A/S/D** | **RUN** — move much faster (but it drains your stamina) |
+| **Mouse** | Aim / look in a direction |
+
+### ⚔️ Fighting
+| Key / Mouse | What it does |
+|---|---|
+| **Left-click** | Light attack (swing weapon / shoot bow) |
+| **Hold left-click, then release** | Heavy attack (stronger, slower, more stamina) |
+| **Right-click (hold)** | Block (reduces damage to 25%, but drains stamina) |
+| **Space** | Dodge (you briefly can't be hit, costs ~20 stamina) |
+
+### 🥷 Stealth & tracking
+| Key | What it does |
+|---|---|
+| **Shift (hold)** | Sneak — quieter, harder to detect, but slower |
+| **Tab** | Toggle tracking ON/OFF (shows footprints + blood trails) |
+
+### 🪤 Traps & bait
+| Key | What it does |
+|---|---|
+| **T** | Place a **Snare** (catches small animals: rabbit/fox/bird) |
+| **Y** | Place a **Bear Trap** (wounds + holds big animals and monsters) |
+| **G** | Place **bait** (raw meat or berries) — lures animals to it |
+
+### 👋 Interacting
+| Key | What it does |
+|---|---|
+| **E** | Interact with whatever is nearest (talk to villager, gather plant, harvest a dead animal, open a building, use a shrine) |
+
+### 📖 Menus (each opens a full screen)
+| Key | Menu | What it shows |
+|---|---|---|
+| **I** | Inventory | Your backpack items, weight, gold |
+| **C** | Character | Your name, level, stats, records |
+| **K** | Skills | Skill tree (spend skill points) |
+| **J** | Quest Log | Your active quests (and co-op quests) |
+| **M** | World Map | The full map (hidden areas are foggy until you explore) |
+| **B** | Crafting | Recipes you can craft |
+| **F** | Relationships | Villagers who know you + your reputation |
+| **L** | Codex | The forest's secret history (lore) |
+| **H** | How to Play | In-game help |
+| **Esc** | Main Menu | Resume / Save / Load / Quit |
+
+---
+
+## PART 4 — THE SCREEN (HUD) EXPLAINED
+
+### Top-left — your body's bars
+- **Red bar** = Health. At 0 you "die" and wake up in the village (you keep your levels). It **slowly heals on its own** when you're calm and well-fed.
+- **Green bar** = Stamina. Used by **running, attacking, dodging, blocking, and working**. It **refills fast when you stand still**.
+- **Orange bar** = Hunger. Drains **very slowly**. Eating refills it. At 0 you slowly lose health.
+- **Blue bar** = Temperature. Drops at night and in rain. Too cold = you lose health.
+
+> **The rule:** your bars drop **slowly** and mostly while you're *doing things* (fighting, running, gathering). When you rest, they climb back up on their own.
+
+### Top-right — world info
+- The **time** (e.g. `7:59 AM · Day 1`).
+- The **weather** (Sunny / Rain / Fog / Storm) and **which zone** you're in.
+- Your **gold** (money).
+- Your **Guild Rank** and **Guild Points** (F → SSS).
+- Your **reputation title** (Unknown → Newcomer → … → Village Legend).
+- If online: how many hunters are in the world.
+
+### Top-center
+- Shows **"🏃 Running"** when you hold R, **"🕵️ Sneaking"** when you hold Shift, and **"👣 Tracking"** when you press Tab.
+
+### Bottom-left — quest tracker
+- Your current quests and their progress (e.g. `2/3`).
+
+### Bottom-center
+- Your **equipped weapon** and **backpack weight** (e.g. `Short Bow · 8.2/20 kg`).
+
+### Bottom-right — minimap
+- A small map with you as the **white dot**.
+
+---
+
+## PART 5 — HOW TO PLAY (the full journey)
+
+### 1. Your first quest
+- Press **J** to read it: *"Hunt 3 rabbits and bring their meat to the Guild."*
+- Walk **out of the village** down the path into the forest.
+
+### 2. Hunt animals
+- Find an animal (rabbit 🐇, deer 🦌, fox 🦊, boar 🐗, goat 🐐, bear 🐻, bird 🐦).
+- Approach, **aim with the mouse**, **click** to attack (or shoot with a bow).
+- When it falls, press **E** to **harvest** it — you get meat, hide, bones, etc.
+
+### 3. Track animals (advanced)
+- Press **Tab** to turn on **Tracking Mode**.
+- You'll see **footprints** (little dots with direction lines) animals leave behind.
+- Wounded animals leave **red blood trails** — follow them to finish the hunt.
+- Hold **Shift** to sneak so animals don't run away.
+
+### 4. Set traps
+- Press **T** to place a snare, **Y** for a bear trap.
+- Press **G** to bait it (you need raw meat or berries in your bag).
+- Wait — the trap catches animals for you!
+
+### 5. Gather resources
+- Press **E** on glowing things in the forest:
+  - 🌿 **Herbs** (green) → healing herbs
+  - 🍄 **Mushrooms** → food / stew
+  - 🫐 **Berries** → food
+  - 🌸 **Flowers** → gift for villagers
+  - 🪨 **Rocks/Ore** → stone, copper, iron, silver, gold
+  - 🌳 **Trees** → wood (press E on a tree)
+
+### 6. Fight monsters
+- Deeper in the forest you'll meet **slimes, goblins, wolves, giant spiders, treants, skeletons, swamp beasts, demon beasts, ancient beasts** — and bosses.
+- Light attack (click), heavy attack (hold + release), block (right-click), dodge (Space).
+- Different monsters have different moves — wolves pounce, spiders shoot webs, treants slam roots, bosses have multiple phases!
+
+### 7. Return to the village & turn in
+- Walk back, find the **Adventure Guild** (labeled building), press **E**.
+- **Submit materials** — each material gives Guild Points + gold.
+- **Turn in quests** for big rewards.
+
+### 8. Get stronger
+- **Level up** (get XP from hunting/gathering/fighting) → earn **Skill Points**.
+- Press **K** to learn skills (Hunting, Survival, Combat, Gathering, Crafting).
+- **Buy weapons/armor** at the Weapon Shop and Armor Shop.
+- **Craft** at the Blacksmith/Tailor/Carpenter/Crafting Area (press B).
+- Higher **Guild Rank** unlocks deeper forest areas and better quests.
+
+---
+
+## PART 6 — THE VILLAGE BUILDINGS (what each one does)
+
+| Building | What it does |
+|---|---|
+| 🏛️ **Adventure Guild** | Submit materials, accept & turn in quests (the main hub) |
+| 🏹 **Hunter's Lodge** | Buy arrows, traps, knives, bandages |
+| ⚒️ **Blacksmith** | Craft & repair weapons |
+| 🗡️ **Weapon Shop** | Buy swords, bows, spears, axes, hammers, daggers |
+| 🛡️ **Armor Shop** | Buy armor (head, body, legs, feet) |
+| 🏪 **General Store** | Buy & sell general goods |
+| 🍞 **Food Shop** | Buy food |
+| 🛏️ **Inn** | Rest (full heal, wake at dawn) |
+| 🍺 **Tavern** | Hear rumors, order a drink |
+| 🧺 **Farmer's Market** | Sell produce |
+| 📦 **Storage** | (reserved for item storage) |
+| 🏠 **Chief's House** | The village leader's home |
+| 🌿 **Healer** | Buy potions & medicine |
+| 🪵 **Carpenter** | Craft wooden gear |
+| 🧵 **Tailor** | Craft armor & backpack upgrades |
+| 🐴 **Stable** | (future use) |
+| 🎯 **Training Ground** | Practice combat |
+| 🚰 **Well** | Drink water (+hunger) |
+| 🎪 **Community Hall** | Social hub |
+| ⛩️ **Shrine** | Study it to learn the forest's lore |
+| 🛡️ **Guard Post** | Village guards |
+| 🔥 **Crafting Area** | Campfire — cook food, craft basic items |
+| 🏡 **Player Residence** | Sleep to fully recover |
+
+---
+
+## PART 7 — SURVIVAL (don't die!)
+
+- **Health** — **slowly heals on its own** when you're calm and well-fed. Drops from monster hits, and very slowly from starvation/cold. Potions and sleeping restore it instantly.
+- **Hunger** — drains **very slowly** (it lasts a long time). Eat food (press **I**, click **Use**). It drains a bit faster while running, fighting, or working.
+- **Stamina** — drains while **running** (hold R), attacking, dodging, blocking, and gathering. **Refills quickly when you stand still**.
+- **Temperature** — drops at night and in rain/storms. Too cold = health loss. Stay warm or get indoors.
+- **Weight** — your backpack has a limit (20 kg → up to 100 kg with upgrades). If you're over, you can't pick up more. Drop things (**I** → **Drop**) or sell them.
+
+### Death
+If you reach 0 health: you **wake up back in the village**. You lose some gold and some carried materials (and a little equipment durability), but you **keep your level, skills, guild rank, and progress**. It's a setback, not the end.
+
+---
+
+## PART 8 — WEATHER & DAY/NIGHT
+
+- **Day** — safer, villagers are out, normal animals.
+- **Night** — shops close, dangerous monsters appear, rare creatures spawn, vision is limited.
+- **Rain/Fog** — reduces visibility and makes tracking harder.
+- **Storms** — can bring out rare monsters.
+
+---
+
+## PART 9 — TALKING TO VILLAGERS & GIFTS
+
+- Walk up to a villager and press **E**.
+- Options: **Chat** (they gossip about events), **Give gift** (they like certain items — hunters like meat, healers like herbs, children like apples/berries), **Goodbye**.
+- Giving gifts raises your **relationship** with them (Stranger → Acquaintance → Friend → Trusted).
+- Higher reputation (from helping people and slaying monsters near the village) gives better shop prices.
+
+---
+
+## PART 10 — THE ENDGAME (the secret history)
+
+- Press **L** to open the **Codex** — it tracks the forest's hidden story (12 entries).
+- Discover lore by: exploring new forest zones, finding **hidden ruins & a watchtower**, studying the **Shrine**, and **defeating bosses**.
+- Find them all to uncover the complete history of the forest — the game's true ultimate goal.
+
+---
+
+## PART 11 — PLAYING WITH FRIENDS (co-op, optional)
+
+- From the title screen press **"Play Online (co-op)"**.
+- Friends on the same server do the same.
+- You'll see each other in the same world, fight together, share quests, and face tougher bosses (bosses scale with party size).
+- *(If it can't connect on your setup, that's a hosting thing — single-player always works.)*
+
+---
+
+## PART 12 — TROUBLESHOOTING
+
+| Problem | Fix |
+|---|---|
+| Page won't load | Make sure the terminal shows `serving on http://0.0.0.0:3000`, then go to `http://localhost:3000` |
+| Black screen | Refresh the page (F5). |
+| No sound | Click anywhere on the page once (browsers require a click before sound). |
+| Game froze | Press F5 to reload, then **Continue** (your save is kept). |
+| Can't move | Click once on the game canvas first. |
+
+---
+
+**Good luck, hunter — the forest is waiting!** 🌲🏹

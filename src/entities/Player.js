@@ -60,8 +60,10 @@ export class Player extends Entity {
 
     // stealth / movement state
     this.crouching = false;
+    this.sprinting = false;
     this.tracking = false;
     this.moving = false;
+    this.working = 0;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
@@ -93,9 +95,11 @@ export class Player extends Entity {
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
     this.crouching = game.input.held('shift');
+    // Sprint: hold R while moving (and not crouching/blocking, with stamina left)
+    this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking && this.stamina > 1;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
-    let spd = this.speed;
+    let spd = this.sprinting ? 230 : this.speed;
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;

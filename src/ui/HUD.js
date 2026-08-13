@@ -125,6 +125,7 @@ export class HUD {
 
     // ---- stealth / tracking status (top-center-left) ----
     let status = [];
+    if (p.sprinting) status.push('🏃 Running');
     if (p.crouching) status.push('🕵️ Sneaking');
     if (p.tracking) status.push('👣 Tracking');
     if (status.length) {

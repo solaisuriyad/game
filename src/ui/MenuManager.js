@@ -404,13 +404,14 @@ export class MenuManager {
   _renderHelp() {
     this.show('How to Play', `<div class="help">
       <b>Move</b> — WASD / arrows<br>
+      <b>Run</b> — hold R while moving (drains stamina)<br>
       <b>Aim</b> — mouse · <b>Attack</b> — click (hold & release for heavy)<br>
       <b>Block</b> — hold right mouse · <b>Dodge</b> — Space<br>
       <b>Sneak</b> — hold Shift (quieter, harder to detect, use cover & approach from behind)<br>
       <b>Track</b> — Tab toggles tracking (footprint direction + blood trails)<br>
       <b>Traps</b> — T place snare · Y place bear trap · G bait (raw meat/berries)<br>
       <b>Interact</b> — E (gather, harvest, talk, buildings)<br>
-      <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · R relationships · L codex · Esc menu<br><br>
+      <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · F relationships · L codex · Esc menu<br><br>
       Hunt animals, gather materials, then <b>submit them at the Adventure Guild</b> to earn Guild Points, gold and rank.
       Buy food to keep your hunger up, rest at the inn, and push deeper into the forest for better loot — but watch your weight and stamina!
     </div>`);

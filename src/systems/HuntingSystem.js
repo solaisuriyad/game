@@ -5,6 +5,7 @@ export class HuntingSystem {
   harvestCorpse(corpse) {
     const g = this.game;
     const p = g.player;
+    p.working = 2; // skinning/harvesting is work
     const drops = g.combat.rollLoot(corpse.def.drops);
     const msgs = [];
     for (const d of drops) {

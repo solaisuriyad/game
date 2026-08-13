@@ -23,6 +23,7 @@ export class GatheringSystem {
       default: itemId = 'herb'; qty = 1;
     }
     if (Math.random() < yieldBonus) qty++;
+    p.working = 3; // gathering is work — drains stamina/hunger
     const res = g.inventory.addItem(itemId, qty);
     if (!res.ok) return res;
     p.gatheredCount++;
@@ -41,6 +42,7 @@ export class GatheringSystem {
     if (tree.dark && Math.random() < 0.3) itemId = 'rare_wood';
     let qty = 1 + (Math.random() < 0.4 ? 1 : 0);
     if (Math.random() < yieldBonus) qty++;
+    g.player.working = 3; // chopping wood is work
     const res = g.inventory.addItem(itemId, qty);
     if (!res.ok) return res;
     g.quests.onGather(itemId, qty);

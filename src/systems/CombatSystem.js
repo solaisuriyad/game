@@ -33,6 +33,7 @@ export class CombatSystem {
       }
     }
     this._recentDamage = Math.max(0, (this._recentDamage || 0) - dt);
+    this._recentCombat = Math.max(0, (this._recentCombat || 0) - dt);
   }
 
   dodgeCost() { return Math.round(20 * (1 + (this.game.skills.getEffect('dodgeCost') || 0))); }
@@ -41,6 +42,7 @@ export class CombatSystem {
     const p = this.game.player;
     const w = p.weapon;
     if (p.attackCd > 0) return;
+    this._recentCombat = 4; // fighting drains vitals
 
     if (w && w.type === 'bow') {
       // fire arrow
@@ -145,6 +147,7 @@ export class CombatSystem {
     dmg *= 1 - (this.game.skills.getEffect('damageResist') || 0);
     dmg = Math.max(1, Math.round(dmg));
     this._recentDamage = 3;
+    this._recentCombat = 4;
     p.health -= dmg;
     if (source) p.lastDamageDir = Math.atan2(p.y - source.y, p.x - source.x);
     this.game.addFloatText(p.x, p.y - 24, '-' + dmg, '#ff6060');
