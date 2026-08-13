@@ -125,18 +125,29 @@ MonsterBrain : idle | wander | patrol | investigate | detect | chase | attack |
 Both brains read an `aiProfile` (aggression, courage, territorial, pack, nocturnal,
 ambush, adaptive flags) so behavior differs per species without per-species code.
 
-## 6. Co-op architecture (Phase 5+ — foundation implemented)
+## 6. Co-op architecture (Phases 5–7 implemented)
 
-- Authoritative Node server (WebSocket on `/ws`, `server/ws.js` + `server/game-server.js`):
-  currently owns player positions (integrates client inputs, world-collision-clamped) and
-  replicates state snapshots at 20 Hz. Enemy/NPC/world-event/combat/loot/quest authority
-  attach here in Phases 6–8 — the protocol and tick loop are structured for it.
-- Replication with **interest management**: each client only receives players within its
-  interest radius; far entities are simply not synchronized.
-- Client (`src/net/`): client-side prediction for own movement, server snapshots for remote
-  players with interpolation smoothing.
+- Authoritative Node server (WebSocket on `/ws`, `server/ws.js` + `server/game-server.js` +
+  `server/monster-sim.js`):
+  - **Players** — owns positions (integrates client inputs, world-collision-clamped),
+    replicates state snapshots at 20 Hz with interest management.
+  - **Monsters** (Phase 7) — owns monster positions, AI (nearest-player targeting, chase,
+    full ability set incl. dash/projectile/AoE/summon), health, boss phases, deaths, and
+    loot. Clients send attack intents; the server validates range/facing and resolves
+    damage, deaths, and individual loot (assigned to the killer).
+  - **Boss scaling** (§61) — bosses scale by party size: +50% HP and +25% damage per extra
+    player, and ability cooldowns tighten (more mechanics pressure), not just bigger numbers.
+- Client (`src/net/` + `entities/RemoteMonster.js`): client-side prediction for own movement,
+  interpolated remote players/monsters; in co-op the client stops simulating local monsters
+  and renders server-authoritative ones instead.
 - Individual progression (client/account) vs. shared world progression (server).
-- Boss scaling: difficulty table keyed by party size adding mechanics, not just HP (designed).
+
+### Known limitation (documented)
+Monster→player damage is **server-authored** (amount + status), but mitigation (block/dodge/
+defense) is applied client-side in this iteration; full server-side mitigation validation is
+a later refinement. Damage *values* from player attacks run client-side (character
+progression is client-owned, per §54) but are server-validated for range/facing and applied
+authoritatively.
 
 ## 7. Extensibility
 

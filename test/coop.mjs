@@ -82,7 +82,59 @@ b.close();
 const aLeave = await waitFor(a, (m) => m.type === 'leave' && m.id === bWelcome.id);
 console.log('A saw Bob leave:', aLeave.id === bWelcome.id);
 
-a.close();
+// ================= Phase 7: combat authority + boss scaling =================
+// (Bob left above, so only Alice is connected — party of 1)
+
+const guardian = gs.sim.monsters.find((m) => m.defId === 'forest_guardian');
+const baseGuardianHp = guardian.baseHp;
+console.log('guardian base hp=', baseGuardianHp, 'party of 1 ->', guardian.maxHp);
+
+// connect a 2nd player -> boss scales to 1.5x
+const c = await connect(url);
+c.send(JSON.stringify({ type: 'join', name: 'Carol', colors: {} }));
+const cWelcome = await waitFor(c, (m) => m.type === 'welcome');
+console.log('guardian hp with 2 players =', guardian.maxHp, '(expected', Math.round(baseGuardianHp * 1.5), ')');
+if (guardian.maxHp !== Math.round(baseGuardianHp * 1.5)) throw new Error('boss HP not scaled for 2 players: ' + guardian.maxHp);
+
+// a 3rd player -> 2.0x
+const d = await connect(url);
+d.send(JSON.stringify({ type: 'join', name: 'Dan', colors: {} }));
+const dWelcome = await waitFor(d, (m) => m.type === 'welcome');
+console.log('guardian hp with 3 players =', guardian.maxHp, '(expected', Math.round(baseGuardianHp * 2.0), ')');
+if (guardian.maxHp !== Math.round(baseGuardianHp * 2.0)) throw new Error('boss HP not scaled for 3 players: ' + guardian.maxHp);
+
+// --- attack -> monsterHit -> death -> loot (server-authoritative) ---
+const aliceId = aWelcome.id;
+const alicePlayer = gs.players.get(aliceId);
+// find a nearby monster and place Alice beside it
+let victim = gs.sim.monsters.find((m) => !m.dead && !m.boss);
+alicePlayer.x = victim.x; alicePlayer.y = victim.y;
+gs.sim.applyPlayerAttack(aliceId, 9999, 0, 'melee', gs.players);
+console.log('victim dead:', victim.dead, 'loot rolled on server');
+// Alice should receive a loot message (killing blow)
+const lootMsg = await waitFor(a, (m) => m.type === 'loot');
+console.log('Alice received loot:', JSON.stringify(lootMsg.items), 'from', lootMsg.name);
+if (!Array.isArray(lootMsg.items) || lootMsg.items.length === 0) throw new Error('no loot delivered to killer');
+
+// --- playerDamage event: a monster near Alice attacks, she takes damage ---
+const wolf = gs.sim.monsters.find((m) => m.defId === 'wolf' && !m.dead);
+if (wolf) {
+  wolf.x = alicePlayer.x - 30; wolf.y = alicePlayer.y;
+  wolf.targetId = aliceId; wolf.aggroTimer = 60;
+  wolf.attackCd = 0;
+  // force a melee basic strike on the next tick
+  gs.sim.tick(1 / 20, gs.players);
+  const dmgMsg = await waitFor(a, (m) => m.type === 'playerDamage', 3000);
+  console.log('Alice received playerDamage:', dmgMsg.amount, 'status=', dmgMsg.status);
+  if (dmgMsg.amount <= 0) throw new Error('player damage not delivered');
+}
+
+// --- monster state replication to a client ---
+const stateMsg = await waitFor(c, (m) => m.type === 'monsterState' && m.monsters.length > 0);
+console.log('Carol received monster state with', stateMsg.monsters.length, 'monsters; boss present:', stateMsg.monsters.some((m) => m.boss));
+if (!stateMsg.monsters.some((m) => m.boss)) throw new Error('boss not in replicated monster state');
+
+a.close(); b.close(); c.close(); d.close();
 gs.stop();
 srv.close();
 console.log('CO-OP TESTS PASSED');

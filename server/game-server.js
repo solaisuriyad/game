@@ -1,21 +1,22 @@
-// Authoritative multiplayer game server (Phase 5 foundation).
+// Authoritative multiplayer game server.
 //
-// The server is authoritative for player positions (it integrates movement from
-// client inputs) and broadcasts a replicated state snapshot to each client.
-// Interest management: each client only receives players within its radius.
-//
-// This is the seam where combat/NPC/monster authority (Phases 6–8) attach later —
-// the message protocol and tick loop are already structured for it.
+// Phase 5: authoritative player positions + replication + interest management.
+// Phase 7: authoritative monsters — the server owns monster state, AI, combat
+//          resolution, deaths, and loot, and scales bosses by party size.
 import { WorldSystem, PX_W, PX_H } from '../src/world/WorldSystem.js';
+import { MonsterSim } from './monster-sim.js';
 
-const SPEED = 140;          // matches single-player walk speed
-const TICK_RATE = 20;       // server simulation & broadcast rate (Hz)
-const INTEREST_RADIUS = 1600; // px — only sync players within this distance
+const SPEED = 140;
+const TICK_RATE = 20;
+const INTEREST_RADIUS = 1600;  // players synced within this distance
+const MONSTER_INTEREST = 2000; // monsters synced within this distance (bosses always)
 
 export class GameServer {
   constructor(seed = 12345) {
     this.world = new WorldSystem(seed);
-    this.players = new Map(); // id -> player record
+    this.players = new Map();
+    this.sim = new MonsterSim(this.world);
+    this.sim.emit = (type, data) => this._routeEvent(type, data);
     this.nextId = 1;
     this._timer = setInterval(() => this.tick(), 1000 / TICK_RATE);
     this._timer.unref?.();
@@ -25,8 +26,7 @@ export class GameServer {
 
   handle(ws) {
     ws.onmessage = (ev) => {
-      let msg;
-      try { msg = JSON.parse(ev.data); } catch { return; }
+      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
       this._onMessage(ws, msg);
     };
     ws.onclose = () => {
@@ -34,6 +34,7 @@ export class GameServer {
       if (p) {
         this.players.delete(ws.playerId);
         this._broadcast({ type: 'leave', id: p.id });
+        this.sim.rescale(this.players.size);
       }
     };
   }
@@ -46,15 +47,12 @@ export class GameServer {
         const player = {
           id, name: (msg.name || 'Hunter').slice(0, 20),
           x: spawn.x, y: spawn.y, facing: 0,
-          dir: { x: 0, y: 0 },
-          colors: msg.colors || {},
-          ws
+          dir: { x: 0, y: 0 }, colors: msg.colors || {}, ws
         };
         ws.playerId = id;
         this.players.set(id, player);
-        const others = [...this.players.values()]
-          .filter((p) => p.id !== id)
-          .map((p) => this._serialize(p));
+        this.sim.rescale(this.players.size);
+        const others = [...this.players.values()].filter((p) => p.id !== id).map((p) => this._serialize(p));
         ws.send(JSON.stringify({ type: 'welcome', id, spawn: { x: spawn.x, y: spawn.y }, players: others }));
         this._broadcast({ type: 'join', player: this._serialize(player) }, id);
         break;
@@ -62,13 +60,21 @@ export class GameServer {
       case 'input': {
         const p = this.players.get(ws.playerId);
         if (p) {
-          // clamp + normalize direction vector (server-side validation)
           let x = Number(msg.dir?.x) || 0, y = Number(msg.dir?.y) || 0;
           const mag = Math.hypot(x, y);
           if (mag > 1.01) { x /= mag; y /= mag; }
           p.dir = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) };
           p.facing = Number(msg.facing) || 0;
         }
+        break;
+      }
+      case 'attack': {
+        const p = this.players.get(ws.playerId);
+        if (!p) break;
+        const damage = Math.max(1, Math.round(Number(msg.damage) || 0));
+        const facing = Number(msg.facing) || p.facing;
+        const weaponType = msg.weaponType === 'bow' ? 'bow' : 'melee';
+        this.sim.applyPlayerAttack(p.id, damage, facing, weaponType, this.players);
         break;
       }
     }
@@ -85,10 +91,33 @@ export class GameServer {
       try { p.ws.send(data); } catch (e) {}
     }
   }
+  _sendTo(playerId, obj) {
+    const p = this.players.get(playerId);
+    if (p) try { p.ws.send(JSON.stringify(obj)); } catch (e) {}
+  }
+
+  // route authoritative events to clients (interest-aware where appropriate)
+  _routeEvent(type, data) {
+    switch (type) {
+      case 'playerDamage':
+        this._sendTo(data.to, { type: 'playerDamage', amount: data.amount, status: data.status, from: data.from });
+        break;
+      case 'monsterHit':
+      case 'monsterPhase':
+        this._broadcast({ type, ...data });
+        break;
+      case 'monsterDeath':
+        this._broadcast({ type, id: data.id, to: data.to });
+        break;
+      case 'loot':
+        this._sendTo(data.to, { type: 'loot', items: data.items, name: data.name });
+        break;
+    }
+  }
 
   tick() {
     const dt = 1 / TICK_RATE;
-    // integrate authoritative movement (with world collision)
+    // integrate authoritative player movement
     for (const p of this.players.values()) {
       if (p.dir.x === 0 && p.dir.y === 0) continue;
       const dx = p.dir.x * SPEED * dt, dy = p.dir.y * SPEED * dt;
@@ -97,7 +126,10 @@ export class GameServer {
       p.y = Math.max(24, Math.min(PX_H - 24, p.y));
       if (this.world.circleBlocked(p.x, p.y, 12)) { p.x -= dx; p.y -= dy; }
     }
-    // replicate to interested clients
+    // authoritative monster simulation (AI + combat + phases)
+    this.sim.tick(dt, this.players);
+
+    // replicate players (interest management)
     for (const p of this.players.values()) {
       const visible = [];
       for (const o of this.players.values()) {
@@ -107,6 +139,16 @@ export class GameServer {
         }
       }
       try { p.ws.send(JSON.stringify({ type: 'state', players: visible })); } catch (e) {}
+      // replicate monsters (interest management; bosses always visible)
+      const monsters = [];
+      for (const m of this.sim.monsters) {
+        if (m.dead) continue;
+        const d = Math.hypot(m.x - p.x, m.y - p.y);
+        if (d <= MONSTER_INTEREST || m.boss) monsters.push(this.sim.serialize(m));
+      }
+      try { p.ws.send(JSON.stringify({ type: 'monsterState', monsters })); } catch (e) {}
     }
+    // purge dead monsters (death events already emitted)
+    this.sim.monsters = this.sim.monsters.filter((m) => !m.dead);
   }
 }

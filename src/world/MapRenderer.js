@@ -242,7 +242,11 @@ export class MapRenderer {
     const cam = game.camera;
     const list = [];
     for (const a of game.animals) if (!a.dead) list.push(a);
-    for (const m of game.monsters) if (!m.dead) list.push(m);
+    if (game.multiplayer.connected) {
+      for (const m of game.remoteMonsters) if (!m.dead) list.push(m);
+    } else {
+      for (const m of game.monsters) if (!m.dead) list.push(m);
+    }
     for (const n of game.npcs) list.push(n);
     for (const r of game.remotePlayers) list.push(r);
     list.push(game.player);

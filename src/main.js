@@ -62,6 +62,7 @@ class Game {
     this.corpses = []; this.drops = []; this.projectiles = [];
     this.traps = []; this.baitPiles = []; this.floatTexts = []; this.toasts = [];
     this.remotePlayers = [];
+    this.remoteMonsters = [];
 
     // entity classes exposed for systems that spawn
     this.AAnimal = Animal; this.AMonster = Monster; this.DDrop = Drop; this.PProjectile = Projectile;
@@ -233,7 +234,10 @@ class Game {
     if (this.economy.caravanTimer) this.economy.caravanTimer = Math.max(0, this.economy.caravanTimer - dt);
 
     for (const a of this.animals) a.update(dt, this);
-    for (const m of this.monsters) m.update(dt, this);
+    // monsters are server-authoritative in co-op; clients don't simulate them
+    if (!this.multiplayer.connected) {
+      for (const m of this.monsters) m.update(dt, this);
+    }
     for (const n of this.npcs) n.update(dt, this);
     for (const d of this.drops) d.update(dt, this);
     for (const pr of this.projectiles) pr.update(dt, this);

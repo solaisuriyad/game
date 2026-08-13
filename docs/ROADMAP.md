@@ -9,9 +9,9 @@
 | 3 | NPC relationship + memory + reputation | ✅ relationships (−100..+100), memory, gifts, reputation, village-defense favor |
 | 4 | Village social simulation | ✅ families, NPC↔NPC links, socializing, gossip about the player |
 | 5 | Co-op networking foundation | ✅ WebSocket server, join/leave, replication, interest management |
-| 6 | Co-op player sync | ✅ positional sync + interpolation (foundation) |
-| 7 | Co-op combat + monster scaling | ⬜ designed |
-| 8 | Co-op quests, loot, world events | ⬜ designed |
+| 6 | Co-op player sync | ✅ positional sync + interpolation |
+| 7 | Co-op combat + monster scaling | ✅ server-authoritative monsters, combat, loot, boss scaling by party size |
+| 8 | Co-op quests, loot, world events | ⬜ partial (individual loot done; shared quests/events designed) |
 | 9 | 1000-NPC optimization | ⬜ designed (sim tiers already implemented) |
 | 10 | Multiplayer stress test | ⬜ |
 
@@ -47,7 +47,6 @@
 
 ## Next steps (recommended order)
 
-1. Co-op combat + monster/boss authority & scaling (Phase 7).
-2. Co-op quests, shared loot, world events (Phase 8).
-3. 1000-NPC scale test + audio/music polish.
-4. Handcrafted quests & village story beats (the forest's history).
+1. Co-op quests, shared world events, NPC sync (Phase 8).
+2. 1000-NPC scale test + audio/music polish.
+3. Handcrafted quests & village story beats (the forest's history).

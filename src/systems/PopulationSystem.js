@@ -214,6 +214,18 @@ export class PopulationSystem {
     this._spawnPopulation();
   }
 
+  // respawn only the local monsters (used when leaving co-op, where monsters
+  // are server-authoritative)
+  respawnMonsters() {
+    const g = this.game;
+    for (const [defId, count] of Object.entries(this.targets)) {
+      const monster = MONSTERS.find((m) => m.id === defId);
+      if (!monster) continue;
+      const live = g.monsters.filter((m) => !m.dead && m.def.id === defId).length;
+      for (let i = live; i < count; i++) this._spawnMonster(monster, g.world, 0);
+    }
+  }
+
   update(dt) {
     this.respawnTimer -= dt;
     if (this.respawnTimer > 0) return;
@@ -223,6 +235,8 @@ export class PopulationSystem {
     for (const [defId, target] of Object.entries(this.targets)) {
       const animal = ANIMALS.find((a) => a.id === defId);
       const monster = MONSTERS.find((m) => m.id === defId);
+      // monsters are server-authoritative during co-op — don't respawn locally
+      if (monster && this.game.multiplayer.connected) continue;
       const live = animal
         ? g.animals.filter((a) => !a.dead && a.def.id === defId).length
         : g.monsters.filter((m) => !m.dead && m.def.id === defId).length;

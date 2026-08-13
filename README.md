@@ -47,7 +47,7 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 - **Random events** — caravan, rare sighting, monster attack, injured hunter (NPCs gossip about them).
 - **Death system** — respawn with gold/material/durability penalties, progression kept.
 - **Save/load** — 3 slots, localStorage, versioned schema.
-- **Co-op (Phase 5 foundation)** — authoritative WebSocket server (`server/`), client-side prediction, server-integrated movement, player replication with interpolation, and interest management (only nearby players sync). Single-player remains fully offline.
+- **Co-op (Phases 5–7)** — authoritative WebSocket server (`server/`): server-owned player movement + replication, **server-authoritative monsters** (AI, combat, deaths, individual loot), and **boss scaling by party size** (+HP/+damage/tighter ability cooldowns). Interest management syncs only nearby entities. Single-player remains fully offline.
 - **UI** — HUD (bars, clock, minimap, compass, quest tracker), full-screen menus, dialogue, world map with fog-of-war.
 
 ## Tests
@@ -87,5 +87,5 @@ src/
 
 ## Roadmap (designed, not yet built)
 
-Full co-op combat/loot/boss-scaling (Phases 6–8), ~1000-NPC scale, handcrafted story
+Shared co-op quests/world-events/NPC sync (Phase 8), ~1000-NPC scale, handcrafted story
 beats. See `docs/ROADMAP.md`.
