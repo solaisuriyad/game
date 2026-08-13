@@ -180,6 +180,27 @@ game.inventory.useItem('holy_stamina');
 if (game.player.buffs.staminaHold !== 240) throw new Error('charm buff not applied');
 console.log('resources: 200% capacity + orbs + charms OK');
 
+// ---- resources: 200% capacity + orbs + charms OK ----
+
+// ---- regression: attack must not permanently block recovery ----
+// (attackWindup previously never decayed, which left the player stuck
+//  "attacking" forever and blocked all stamina/MP/health regen)
+const p2 = game.player;
+// isolate the player from combat: move to the safe village + clear monsters
+p2.x = 140 * 32; p2.y = 140 * 32;
+game.monsters = [];
+game.combat._recentCombat = 0;
+// reset to a clean idle state so earlier test steps don't interfere
+p2.attackWindup = 0.6; p2.charging = false; p2.blocking = false; p2.dodgeTimer = 0;
+p2.working = 0; p2.sprinting = false; p2.moving = false; p2.castingSkill = 0;
+for (let i = 0; i < 120; i++) game.update(1 / 60); // 2 seconds (attackWindup decays)
+if (p2.attackWindup > 0) throw new Error('attackWindup did not decay (recovery permanently blocked)');
+p2.stamina = 30; p2.mp = 198;
+for (let i = 0; i < 600; i++) game.update(1 / 60); // 10 seconds idle
+if (!p2.recovering) throw new Error('recovery did not engage after attacking + idling');
+if (p2.stamina <= 30) throw new Error('stamina not recovering after attack');
+console.log('regression: attack-then-recover OK (stamina ' + p2.stamina.toFixed(0) + ', mp ' + p2.mp.toFixed(0) + ')');
+
 // ---- lore / forest history ----
 game.player.x = 99 * 32 + 16; game.player.y = 96 * 32 + 16; // back in village
 game.lore.discover('lore_shrine');

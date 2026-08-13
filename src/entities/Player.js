@@ -119,6 +119,9 @@ export class Player extends Entity {
 
     this.attackCd = Math.max(0, this.attackCd - dt);
     this.attackAnim = Math.max(0, this.attackAnim - dt);
+    // CRITICAL FIX: attackWindup must decay or the player is stuck "attacking"
+    // forever, permanently blocking stamina/MP/health recovery.
+    this.attackWindup = Math.max(0, this.attackWindup - dt);
     this.dodgeCd = Math.max(0, this.dodgeCd - dt);
     if (this.dodgeTimer > 0) this.dodgeTimer -= dt;
   }
