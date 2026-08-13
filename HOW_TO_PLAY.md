@@ -227,6 +227,22 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 
 ---
 
+## PART 7 — MONSTER RANKS & DRAGONS
+
+Monsters have a **rank** shown above their head: **F → E → D → C → B → A → S → A+**.
+
+- **F-rank** = weak normal monsters (slimes, goblins).
+- **E–B rank** = stronger beasts as you go deeper.
+- **S-rank** = the elemental **Dragons** (Fire, Ice, Earth Dragon).
+- **A+ rank** = the **Dragonoids** — dragon/human hybrids, extremely powerful (the final challenge).
+
+### The hunt-and-upgrade loop
+Every monster drops **meat** + a **rank Essence** + weapon-crafting materials (bones, fangs, dragon scales, dragon cores…).
+
+- Holding the **previous rank's Essence** gives you **+35% damage** against the next rank — so hunting F-rank monsters makes E-rank easier, and so on.
+- You *can* beat a monster without its counter-essence, but it takes more time and effort.
+- High-rank materials forge powerful weapons at the **Blacksmith**: Fang Blade → Dragon Sword → Draconic Sword → the legendary **Dragonoid Blade**.
+
 ## PART 7 — SURVIVAL (don't die!)
 
 - **Health** — **slowly heals on its own** when you're calm and well-fed. Drops from monster hits, and very slowly from starvation/cold. Potions and sleeping restore it instantly.

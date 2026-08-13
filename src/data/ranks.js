@@ -1,0 +1,35 @@
+// Monster rank tiers. Lower rank -> higher rank (F = weakest normal monsters,
+// A+ = dragonoids, the most powerful). Each rank's monsters drop an "essence"
+// that grants a damage bonus against the NEXT rank, creating a hunt-and-upgrade
+// progression chain.
+export const RANKS_ORDER = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'A+'];
+
+export function rankIndex(rank) {
+  const i = RANKS_ORDER.indexOf(rank);
+  return i < 0 ? 0 : i;
+}
+export function nextRank(rank) {
+  const i = rankIndex(rank);
+  return i < RANKS_ORDER.length - 1 ? RANKS_ORDER[i + 1] : null;
+}
+export function prevRank(rank) {
+  const i = rankIndex(rank);
+  return i > 0 ? RANKS_ORDER[i - 1] : null;
+}
+// map a monster level to a rank tier (used when a def doesn't set rank explicitly)
+export function rankForLevel(level) {
+  if (level <= 4) return 'F';
+  if (level <= 8) return 'E';
+  if (level <= 12) return 'D';
+  if (level <= 16) return 'C';
+  if (level <= 20) return 'B';
+  if (level <= 26) return 'A';
+  if (level <= 34) return 'S';
+  return 'A+';
+}
+// the essence item a monster of this rank drops (helps defeat the next rank)
+export function essenceId(rank) {
+  return 'essence_' + rank.toLowerCase().replace('+', 'plus');
+}
+// bonus damage multiplier applied when the player holds the previous rank's essence
+export const RANK_BONUS = 0.35;

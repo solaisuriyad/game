@@ -52,6 +52,23 @@ export const ITEMS = [
   { id: 'gold_ore', name: 'Gold Ore', category: 'material', rarity: 'epic', weight: 3.0, value: 200, guildValue: 90, desc: 'Raw gold ore.', tags: ['material'] },
   { id: 'crystal', name: 'Crystal', category: 'material', rarity: 'rare', weight: 1.0, value: 120, guildValue: 55, desc: 'A sparkling crystal.', tags: ['material'] },
 
+  // ---- weapon-crafting materials from monsters ----
+  { id: 'monster_fang', name: 'Monster Fang', category: 'material', rarity: 'uncommon', weight: 0.4, value: 60, guildValue: 25, desc: 'A razor fang. Used to forge blades.', tags: ['material'] },
+  { id: 'dragon_scale', name: 'Dragon Scale', category: 'material', rarity: 'rare', weight: 1.0, value: 200, guildValue: 90, desc: 'A shimmering scale. Used for dragon gear.', tags: ['material'] },
+  { id: 'dragon_bone', name: 'Dragon Bone', category: 'material', rarity: 'rare', weight: 2.0, value: 240, guildValue: 110, desc: 'A dense dragon bone. Forge-worthy.', tags: ['material'] },
+  { id: 'dragon_core', name: 'Dragon Core', category: 'material', rarity: 'epic', weight: 1.0, value: 500, guildValue: 240, desc: 'A dragon\'s power condensed. Forges legendary weapons.', tags: ['material'] },
+  { id: 'dragonoid_core', name: 'Dragonoid Core', category: 'material', rarity: 'legendary', weight: 1.0, value: 1200, guildValue: 600, desc: 'The heart of a dragon-human hybrid. Immense power.', tags: ['material'] },
+
+  // ---- rank essences (hunt trophies that boost damage vs the next rank) ----
+  { id: 'essence_f', name: 'F-Rank Essence', category: 'material', rarity: 'common', weight: 0.1, value: 10, guildValue: 5, desc: 'A trophy from a weak monster. Boosts damage vs E-rank.', tags: ['essence'] },
+  { id: 'essence_e', name: 'E-Rank Essence', category: 'material', rarity: 'common', weight: 0.1, value: 20, guildValue: 10, desc: 'A trophy from an E-rank monster. Boosts damage vs D-rank.', tags: ['essence'] },
+  { id: 'essence_d', name: 'D-Rank Essence', category: 'material', rarity: 'uncommon', weight: 0.1, value: 35, guildValue: 16, desc: 'A trophy from a D-rank monster. Boosts damage vs C-rank.', tags: ['essence'] },
+  { id: 'essence_c', name: 'C-Rank Essence', category: 'material', rarity: 'uncommon', weight: 0.1, value: 55, guildValue: 26, desc: 'A trophy from a C-rank monster. Boosts damage vs B-rank.', tags: ['essence'] },
+  { id: 'essence_b', name: 'B-Rank Essence', category: 'material', rarity: 'rare', weight: 0.1, value: 85, guildValue: 40, desc: 'A trophy from a B-rank monster. Boosts damage vs A-rank.', tags: ['essence'] },
+  { id: 'essence_a', name: 'A-Rank Essence', category: 'material', rarity: 'rare', weight: 0.1, value: 130, guildValue: 62, desc: 'A trophy from an A-rank monster. Boosts damage vs S-rank.', tags: ['essence'] },
+  { id: 'essence_s', name: 'S-Rank Essence', category: 'material', rarity: 'epic', weight: 0.1, value: 220, guildValue: 105, desc: 'A trophy from an S-rank dragon. Boosts damage vs A+ rank.', tags: ['essence'] },
+  { id: 'essence_aplus', name: 'A+-Rank Essence', category: 'material', rarity: 'legendary', weight: 0.1, value: 400, guildValue: 200, desc: 'The essence of a dragonoid. The ultimate trophy.', tags: ['essence'] },
+
   // ---- Consumables ----
   { id: 'potion_small', name: 'Healing Potion', category: 'consumable', rarity: 'common', weight: 0.4, value: 40, guildValue: 8, desc: 'Restores 40 health.', heal: 40, hunger: 0, tags: ['potion'] },
   { id: 'potion_big', name: 'Greater Potion', category: 'consumable', rarity: 'uncommon', weight: 0.5, value: 120, guildValue: 20, desc: 'Restores 100 health.', heal: 100, hunger: 0, tags: ['potion'] },

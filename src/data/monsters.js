@@ -266,6 +266,108 @@ export const MONSTERS = [
     ]
   },
   {
+    id: 'fire_dragon', name: 'Fire Dragon', family: 'dragon', zones: [4], level: 28, hp: 1200, damage: 40, defense: 6,
+    speed: 110, size: 30, xp: 1200, color: '#ff5a30', rank: 'S',
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
+      { id: 'fire_breath', params: { damage: 1.4, cooldown: 5.0, range: 280, speed: 320 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } },
+      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 170 } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
+      { item: 'dragon_scale', chance: 0.9, min: 1, max: 2 },
+      { item: 'dragon_bone', chance: 0.8, min: 1, max: 2 },
+      { item: 'dragon_core', chance: 0.5, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'ice_dragon', name: 'Ice Dragon', family: 'dragon', zones: [4], level: 29, hp: 1250, damage: 38, defense: 7,
+    speed: 100, size: 30, xp: 1250, color: '#8ac8ff', rank: 'S',
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
+      { id: 'ice_breath', params: { damage: 1.3, cooldown: 5.0, range: 280, speed: 320 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } },
+      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 170 } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
+      { item: 'dragon_scale', chance: 0.9, min: 1, max: 2 },
+      { item: 'dragon_bone', chance: 0.8, min: 1, max: 2 },
+      { item: 'dragon_core', chance: 0.5, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'earth_dragon', name: 'Earth Dragon', family: 'dragon', zones: [4], level: 30, hp: 1400, damage: 42, defense: 8,
+    speed: 90, size: 32, xp: 1350, color: '#9a8a5a', rank: 'S',
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.1, range: 64, knockback: 140 } },
+      { id: 'ground_slam', params: { damage: 1.5, cooldown: 6.0, range: 130, radius: 130 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 120, radius: 120 } },
+      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 180 } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
+      { item: 'dragon_scale', chance: 0.9, min: 1, max: 2 },
+      { item: 'dragon_bone', chance: 0.9, min: 1, max: 2 },
+      { item: 'dragon_core', chance: 0.55, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'dragonoid_fire', name: 'Fire Dragonoid', family: 'dragonoid', zones: [5], level: 36, hp: 2600, damage: 55, defense: 10,
+    speed: 140, size: 34, xp: 3000, color: '#ff3020', rank: 'A+', boss: true,
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
+      { id: 'fire_breath', params: { damage: 1.5, cooldown: 4.0, range: 300, speed: 340 } },
+      { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
+      { id: 'summon', params: { summonId: 'fire_dragon', count: 1, cooldown: 16.0, range: 0 } },
+      { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 4, max: 6 },
+      { item: 'dragon_core', chance: 1.0, min: 1, max: 2 },
+      { item: 'dragonoid_core', chance: 1.0, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'dragonoid_ice', name: 'Ice Dragonoid', family: 'dragonoid', zones: [5], level: 38, hp: 2800, damage: 53, defense: 11,
+    speed: 135, size: 34, xp: 3200, color: '#4080ff', rank: 'A+', boss: true,
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
+      { id: 'ice_breath', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 340 } },
+      { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
+      { id: 'summon', params: { summonId: 'ice_dragon', count: 1, cooldown: 16.0, range: 0 } },
+      { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 4, max: 6 },
+      { item: 'dragon_core', chance: 1.0, min: 1, max: 2 },
+      { item: 'dragonoid_core', chance: 1.0, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'dragonoid_earth', name: 'Earth Dragonoid', family: 'dragonoid', zones: [5], level: 40, hp: 3200, damage: 60, defense: 12,
+    speed: 120, size: 36, xp: 3600, color: '#c8a060', rank: 'A+', boss: true,
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 66, knockback: 160 } },
+      { id: 'ground_slam', params: { damage: 1.7, cooldown: 5.0, range: 140, radius: 150 } },
+      { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 480 } },
+      { id: 'summon', params: { summonId: 'earth_dragon', count: 1, cooldown: 16.0, range: 0 } },
+      { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }
+    ],
+    loot: [
+      { item: 'meat_raw', chance: 1.0, min: 4, max: 6 },
+      { item: 'dragon_core', chance: 1.0, min: 1, max: 2 },
+      { item: 'dragonoid_core', chance: 1.0, min: 1, max: 1 }
+    ]
+  },
+  {
     id: 'ancient_bear', name: 'Ancient Bear', family: 'boss', zones: [3], level: 15, hp: 800, damage: 30, defense: 5,
     speed: 85, size: 30, xp: 700, color: '#4a3a2a', boss: true,
     aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },

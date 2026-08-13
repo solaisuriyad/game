@@ -1,6 +1,6 @@
 import { getItem, itemWeight } from '../data/index.js';
 
-const CAPACITIES = [20, 30, 45, 60, 80, 100]; // kg by backpack level
+const CAPACITIES = [200, 300, 450, 600, 800, 1000]; // kg by backpack level (10x bigger)
 
 export class InventorySystem {
   constructor(game) {

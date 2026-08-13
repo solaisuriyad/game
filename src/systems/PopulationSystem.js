@@ -195,7 +195,9 @@ export class PopulationSystem {
       { def: 'dire_wolf', count: 5 }, { def: 'goblin_shaman', count: 4 }, { def: 'goblin_brute', count: 4 },
       { def: 'thorn_beast', count: 4 }, { def: 'shadow_stalker', count: 4 }, { def: 'cave_troll', count: 3 },
       { def: 'venom_wyrm', count: 4 }, { def: 'hell_hound', count: 4 }, { def: 'yggdrasil_spriggan', count: 3 },
-      { def: 'ancient_bear', count: 1 }, { def: 'forest_guardian', count: 1 }, { def: 'ancient_dragon', count: 1 }
+      { def: 'ancient_bear', count: 1 }, { def: 'forest_guardian', count: 1 }, { def: 'ancient_dragon', count: 1 },
+      { def: 'fire_dragon', count: 1 }, { def: 'ice_dragon', count: 1 }, { def: 'earth_dragon', count: 1 },
+      { def: 'dragonoid_fire', count: 1 }, { def: 'dragonoid_ice', count: 1 }, { def: 'dragonoid_earth', count: 1 }
     ];
     for (const s of spawns) {
       const animal = ANIMALS.find((a) => a.id === s.def);

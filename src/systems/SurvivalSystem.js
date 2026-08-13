@@ -45,11 +45,11 @@ export class SurvivalSystem {
     p.recovering = (p.idleTime || 0) >= 5; // exposed to the HUD for a visible indicator
 
     // ---- STAMINA: drains very slowly on activity; after 5s idle it refills to
-    //      FULL within 1 minute ----
+    //      FULL within 1 minute (drains slightly reduced) ----
     let sDrain = 0;
-    if (p.sprinting) sDrain += 0.13;
-    if (working) sDrain += 0.09;
-    if (active) sDrain += 0.05;
+    if (p.sprinting) sDrain += 0.10;
+    if (working) sDrain += 0.07;
+    if (active) sDrain += 0.04;
     let sRegen = 0;
     if ((p.idleTime || 0) >= 5) {
       sRegen = p.maxStamina / 60;            // full within ~1 minute
@@ -65,7 +65,7 @@ export class SurvivalSystem {
 
     // ---- MP: drains very slowly; after 5s idle (and no skill use) it refills
     //      to FULL within 1.5 minutes ----
-    let mDrain = busy ? 0.03 : 0;
+    let mDrain = busy ? 0.02 : 0;
     if (p.castingSkill > 0) mDrain = 0.03 / 95; // 95x slower while casting
     let mRegen = 0;
     if ((p.idleTime || 0) >= 5 && p.castingSkill <= 0) {

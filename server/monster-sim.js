@@ -7,6 +7,7 @@
 // Boss scaling (§61): bosses scale by party size — health and damage increase,
 // and ability cooldowns tighten (more mechanics pressure) as more players join.
 import { MONSTERS } from '../src/data/monsters.js';
+import { rankForLevel, essenceId } from '../src/data/ranks.js';
 
 const ZONE_RINGS = { 1: [30, 50], 2: [52, 76], 3: [78, 99], 4: [101, 122], 5: [124, 138] };
 
@@ -19,7 +20,9 @@ const SPAWN_PLAN = [
   { id: 'thorn_beast', count: 3 }, { id: 'shadow_stalker', count: 3 }, { id: 'cave_troll', count: 2 },
   { id: 'venom_wyrm', count: 3 }, { id: 'hell_hound', count: 3 }, { id: 'yggdrasil_spriggan', count: 2 },
   { id: 'alpha_wolf', count: 1 }, { id: 'ancient_bear', count: 1 },
-  { id: 'forest_guardian', count: 1 }, { id: 'ancient_dragon', count: 1 }
+  { id: 'forest_guardian', count: 1 }, { id: 'ancient_dragon', count: 1 },
+  { id: 'fire_dragon', count: 1 }, { id: 'ice_dragon', count: 1 }, { id: 'earth_dragon', count: 1 },
+  { id: 'dragonoid_fire', count: 1 }, { id: 'dragonoid_ice', count: 1 }, { id: 'dragonoid_earth', count: 1 }
 ];
 
 const SELF_ABILITIES = new Set(['regenerate', 'rage', 'howl', 'summon', 'roar']);
@@ -67,6 +70,7 @@ export class MonsterSim {
     return {
       id: this.nextId++,
       defId: def.id, name: def.name, family: def.family,
+      rank: def.rank || rankForLevel(def.level),
       x, y, radius: def.size, facing: Math.random() * Math.PI * 2,
       baseHp: def.hp, maxHp: def.hp, hp: def.hp,
       damage: def.damage, defense: def.defense, speed: def.speed,
@@ -302,6 +306,11 @@ export class MonsterSim {
       target.dead = true;
       this.emit('monsterDeath', { id: target.id, to: playerId, defId: target.defId });
       const items = this._rollLoot(target);
+      // every monster drops meat + its rank essence + weapon materials
+      items.push({ item: 'meat_raw', qty: 1 + Math.floor(Math.random() * 3) });
+      if (target.rank) items.push({ item: essenceId(target.rank), qty: 1 });
+      const mat = this._rankMaterial(target);
+      if (mat) items.push({ item: mat, qty: 1 + (Math.random() < 0.5 ? 1 : 0) });
       // restorative orbs sometimes drop
       if (Math.random() < 0.4) {
         items.push({ item: ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)], qty: 1 });
@@ -341,6 +350,17 @@ export class MonsterSim {
       }
     }
     return out;
+  }
+
+  // weapon-crafting material dropped by a monster, based on its rank
+  _rankMaterial(m) {
+    const r = m.rank;
+    if (r === 'F' || r === 'E') return 'monster_bone';
+    if (r === 'D' || r === 'C') return 'monster_fang';
+    if (r === 'B' || r === 'A') return Math.random() < 0.5 ? 'dragon_scale' : 'dragon_bone';
+    if (r === 'S') return Math.random() < 0.5 ? 'dragon_bone' : 'dragon_core';
+    if (r === 'A+') return 'dragonoid_core';
+    return null;
   }
 
   serialize(m) {

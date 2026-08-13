@@ -1,4 +1,5 @@
 import { TILE, VILLAGE_CX, VILLAGE_CY } from '../world/WorldSystem.js';
+import { essenceId, prevRank, RANK_BONUS } from '../data/ranks.js';
 
 export class CombatSystem {
   constructor(game) { this.game = game; }
@@ -126,6 +127,11 @@ export class CombatSystem {
     if (opts.crit) dmg = Math.round(dmg * 1.6);
     // defense reduction (monsters)
     if (e.defense) dmg = Math.max(1, Math.round(dmg * (1 - e.defense * 0.03)));
+    // rank essence bonus: holding the previous rank's essence boosts damage
+    // against this monster's rank (makes the hunt-and-upgrade loop matter)
+    if (e.rank && this.game.inventory.countItem(essenceId(prevRank(e.rank))) > 0) {
+      dmg = Math.round(dmg * (1 + RANK_BONUS));
+    }
     e.hp -= dmg;
     e.flash = 0.12;
     e.aggroTimer = 10; e.target = this.game.player;
@@ -197,13 +203,26 @@ export class CombatSystem {
     } else {
       // monster -> auto loot + xp
       const drops = this.rollLoot(e.loot);
+      const scatter = () => (Math.random() - 0.5) * 20;
       for (const d of drops) {
-        g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() - 0.5) * 20, d.item, d.qty));
+        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), d.item, d.qty));
+      }
+      // every monster drops some meat
+      const meatQty = 1 + Math.floor(Math.random() * 3);
+      g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), 'meat_raw', meatQty));
+      // every monster drops its rank essence (helps defeat the NEXT rank)
+      if (e.rank) {
+        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), essenceId(e.rank), 1));
+      }
+      // weapon-crafting materials scale with rank
+      const weaponMat = this._rankMaterial(e);
+      if (weaponMat) {
+        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), weaponMat, 1 + (Math.random() < 0.5 ? 1 : 0)));
       }
       // restorative orbs sometimes drop when a monster is defeated
       if (Math.random() < 0.4) {
         const orb = ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)];
-        g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 24, e.y + (Math.random() - 0.5) * 24, orb, 1));
+        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), orb, 1));
       }
       g.addXP(e.xp);
       g.player.kills++;
@@ -227,6 +246,17 @@ export class CombatSystem {
       }
     }
     g.audio.sfx('death');
+  }
+
+  // weapon-crafting material dropped by a monster, based on its rank
+  _rankMaterial(e) {
+    const r = e.rank;
+    if (r === 'F' || r === 'E') return 'monster_bone';
+    if (r === 'D' || r === 'C') return 'monster_fang';
+    if (r === 'B' || r === 'A') return Math.random() < 0.5 ? 'dragon_scale' : 'dragon_bone';
+    if (r === 'S') return Math.random() < 0.5 ? 'dragon_bone' : 'dragon_core';
+    if (r === 'A+') return 'dragonoid_core';
+    return null;
   }
 
   rollLoot(loot) {

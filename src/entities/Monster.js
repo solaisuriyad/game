@@ -1,4 +1,5 @@
 import { Entity } from './Entity.js';
+import { rankForLevel } from '../data/ranks.js';
 
 export class Monster extends Entity {
   constructor(game, def, x, y) {
@@ -7,6 +8,7 @@ export class Monster extends Entity {
     this.name = def.name;
     this.family = def.family;
     this.level = def.level;
+    this.rank = def.rank || rankForLevel(def.level);
     this.maxHp = def.hp; this.hp = def.hp;
     this.damage = def.damage;
     this.defense = def.defense;
@@ -102,6 +104,22 @@ export class Monster extends Entity {
       for (let i = 0; i < 3; i++) {
         ctx.beginPath(); ctx.arc(-s * 0.2 + i * s * 0.25, -s * 0.45, 1.6, 0, Math.PI * 2); ctx.fill();
       }
+    } else if (this.family === 'dragon' || this.family === 'dragonoid') {
+      // dragon / dragonoid: winged serpent body + horns
+      const humanoid = this.family === 'dragonoid';
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(0, 0, s * 1.3, s * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s * 0.8, -s * 0.4, s * 0.5, 0, Math.PI * 2); ctx.fill();
+      // horns
+      ctx.fillStyle = humanoid ? '#fff' : '#e8d8a0';
+      ctx.beginPath(); ctx.moveTo(s * 0.6, -s * 0.8); ctx.lineTo(s * 0.5, -s * 1.3); ctx.lineTo(s * 0.85, -s * 0.85); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(s * 0.95, -s * 0.8); ctx.lineTo(s * 1.05, -s * 1.3); ctx.lineTo(s * 1.15, -s * 0.7); ctx.fill();
+      // wings
+      ctx.fillStyle = humanoid ? '#e8e0d8' : 'rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.moveTo(-s * 0.4, -s * 0.5); ctx.lineTo(-s * 1.4, -s * 1.0); ctx.lineTo(-s * 0.4, -s * 0.1); ctx.closePath(); ctx.fill();
+      // eye
+      ctx.fillStyle = '#ffd76a';
+      ctx.beginPath(); ctx.arc(s * 0.95, -s * 0.45, 2, 0, Math.PI * 2); ctx.fill();
     } else if (this.family === 'treant') {
       ctx.fillStyle = c;
       ctx.beginPath(); ctx.arc(0, 0, s * 1.1, 0, Math.PI * 2); ctx.fill();
@@ -138,6 +156,15 @@ export class Monster extends Entity {
       ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(0, 0, s * 1.3, 0, Math.PI * 2); ctx.stroke();
     }
+    // rank label (F/E/D/C/B/A/S/A+) above the monster
+    const rankColor = { 'F': '#c8c8c8', 'E': '#7ac87a', 'D': '#7ac8e0', 'C': '#5a9ae0', 'B': '#a05ae0', 'A': '#e07a5a', 'S': '#ffd76a', 'A+': '#ff5ae0' }[this.rank] || '#fff';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(-8, -s * 1.6 - 12, 16, 12);
+    ctx.fillStyle = rankColor;
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.rank, 0, -s * 1.55 - 4);
+    ctx.textAlign = 'left';
     ctx.restore();
   }
 }

@@ -23,5 +23,10 @@ export const RECIPES = [
   { id: 'leather_legs', name: 'Leather Leggings', station: 'tailor', inputs: [{ id: 'hide_boar', qty: 2 }], outputs: [{ id: 'leather_legs', qty: 1 }], desc: 'Sturdy leather leggings.' },
   { id: 'reinforced_vest', name: 'Reinforced Vest', station: 'tailor', inputs: [{ id: 'hide_bear', qty: 2 }, { id: 'bone', qty: 2 }], outputs: [{ id: 'reinforced_vest', qty: 1 }], desc: 'A reinforced hide vest.' },
   // Backpack
-  { id: 'backpack', name: 'Backpack Upgrade', station: 'tailor', inputs: [{ id: 'hide_deer', qty: 3 }, { id: 'hide_boar', qty: 1 }], outputs: [{ id: 'backpack', qty: 1 }], desc: 'Expands carry capacity.' }
+  { id: 'backpack', name: 'Backpack Upgrade', station: 'tailor', inputs: [{ id: 'hide_deer', qty: 3 }, { id: 'hide_boar', qty: 1 }], outputs: [{ id: 'backpack', qty: 1 }], desc: 'Expands carry capacity.' },
+  // Monster/dragon-forged weapons (from monster drops)
+  { id: 'fang_blade', name: 'Fang Blade', station: 'blacksmith', inputs: [{ id: 'monster_fang', qty: 4 }, { id: 'iron_ore', qty: 2 }], outputs: [{ id: 'fang_blade', qty: 1 }], desc: 'A blade forged from monster fangs.' },
+  { id: 'dragon_sword', name: 'Dragon Sword', station: 'blacksmith', inputs: [{ id: 'dragon_scale', qty: 2 }, { id: 'dragon_bone', qty: 2 }], outputs: [{ id: 'dragon_sword', qty: 1 }], desc: 'A sword of dragon scale and bone.' },
+  { id: 'draconic_sword', name: 'Draconic Sword', station: 'blacksmith', inputs: [{ id: 'dragon_core', qty: 1 }, { id: 'dragon_bone', qty: 2 }], outputs: [{ id: 'draconic_sword', qty: 1 }], desc: 'Forged around a dragon core.' },
+  { id: 'dragonoid_blade', name: 'Dragonoid Blade', station: 'blacksmith', inputs: [{ id: 'dragonoid_core', qty: 1 }, { id: 'dragon_core', qty: 2 }], outputs: [{ id: 'dragonoid_blade', qty: 1 }], desc: 'The ultimate weapon, born of a dragonoid\'s heart.' }
 ];
