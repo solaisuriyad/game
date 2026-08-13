@@ -48,7 +48,7 @@ export class GatheringSystem {
     g.quests.onGather(itemId, qty);
     g.player.gatheredCount++;
     tree.depleted = true;
-    tree.respawn = 90;
+    tree.respawn = 300; // chopped tree stays passable for 5 minutes, then regrows
     // chopping trees sometimes reveals a restorative orb
     if (Math.random() < 0.15) {
       const orb = Math.random() < 0.5 ? 'stamina_orb' : (Math.random() < 0.5 ? 'health_orb' : 'mana_orb');

@@ -101,12 +101,20 @@ export class MapRenderer {
   }
 
   _drawTree(ctx, x, y, dark, depleted) {
+    if (depleted) {
+      // a chopped stump — passable, will regrow
+      ctx.fillStyle = '#8a6a3a';
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#6a4e2a';
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
     ctx.fillStyle = '#4a3a26';
     ctx.fillRect(x - 2, y + 2, 4, 10);
-    const col = depleted ? (dark ? '#3a3a30' : '#5a6a4a') : (dark ? '#2a4a2a' : '#3f6b35');
+    const col = dark ? '#2a4a2a' : '#3f6b35';
     ctx.fillStyle = col;
     ctx.beginPath(); ctx.arc(x, y - 4, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = depleted ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.12)';
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.beginPath(); ctx.arc(x - 3, y - 7, 5, 0, Math.PI * 2); ctx.fill();
   }
 

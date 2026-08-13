@@ -207,6 +207,7 @@ export class WorldSystem {
     }
     for (const c of this.collidersNear(px, py, 40)) {
       if (c === ignore) continue;
+      if (c.type === 'tree' && c.depleted) continue; // chopped trees are passable
       if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) return true;
     }
     return false;
@@ -239,6 +240,7 @@ export class WorldSystem {
     }
     for (const c of this.collidersNear(x, y, 40)) {
       if (c === ignore) continue;
+      if (c.type === 'tree' && c.depleted) continue; // chopped trees are passable
       const cx = Math.max(c.x, Math.min(x, c.x + c.w));
       const cy = Math.max(c.y, Math.min(y, c.y + c.h));
       const dx = x - cx, dy = y - cy;
@@ -290,6 +292,7 @@ export class WorldSystem {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return true;
     }
     for (const c of this.collidersNear(x, y, 40)) {
+      if (c.type === 'tree' && c.depleted) continue; // chopped trees are open
       if (x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) return true;
     }
     return false;

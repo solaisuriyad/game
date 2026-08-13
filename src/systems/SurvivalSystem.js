@@ -37,23 +37,41 @@ export class SurvivalSystem {
     hungerRate *= (1 + (g.skills.getEffect('hungerRate') || 0));
     p.hunger = Math.max(0, p.hunger - hungerRate * dt);
 
-    // ---- STAMINA (drain ~80x slower on attack, ~90x slower on run/gather) ----
-    let sDrain = 0;
-    if (p.sprinting) sDrain += 0.13; // running (90x slower than original 12/sec)
-    if (working) sDrain += 0.09;     // chopping/gathering (90x slower than 8/sec)
-    if (active) sDrain += 0.05;      // attacking/blocking/dodging (80x slower than 4/sec)
-    this._resource(p, 'stamina', 'maxStamina', sDrain, 20, dt, { idle, busy });
+    // ---- idle timer (5 seconds of rest triggers full regeneration) ----
+    if (idle) p.idleTime = (p.idleTime || 0) + dt; else p.idleTime = 0;
 
-    // ---- MP (skill resource): drains very slowly, ~95x slower while casting;
-    //      recovers 50% faster once it reaches 75% ----
+    // ---- STAMINA: drains very slowly on activity; after 5s idle it refills to
+    //      FULL within 1 minute ----
+    let sDrain = 0;
+    if (p.sprinting) sDrain += 0.13;
+    if (working) sDrain += 0.09;
+    if (active) sDrain += 0.05;
+    let sRegen = 0;
+    if ((p.idleTime || 0) >= 5) {
+      sRegen = p.maxStamina / 60;            // full within ~1 minute
+    } else {
+      const sf = p.stamina / p.maxStamina;
+      if (sf <= 0.25) sRegen = 20 * 0.95;    // safety net (very low)
+      else if (sf <= 0.5) sRegen = 20 * 0.25;
+      else if (idle) sRegen = 8;             // gentle trickle before the 5s mark
+    }
+    const sNet = sRegen - sDrain;
+    if (sNet > 0) p.stamina = Math.min(p.maxStamina, p.stamina + sNet * dt);
+    else p.stamina = Math.max(0, p.stamina + sNet * dt);
+
+    // ---- MP: drains very slowly; after 5s idle (and no skill use) it refills
+    //      to FULL within 1.5 minutes ----
     let mDrain = busy ? 0.03 : 0;
-    if (p.castingSkill > 0) mDrain = 0.03 / 95; // 95x slower while using skills
-    const mfrac = p.mp / p.maxMp;
+    if (p.castingSkill > 0) mDrain = 0.03 / 95; // 95x slower while casting
     let mRegen = 0;
-    if (mfrac <= 0.25) mRegen = 10 * 0.95;
-    else if (mfrac <= 0.5) mRegen = 10 * 0.25;
-    else if (!busy) mRegen = 10;
-    if (mfrac >= 0.75) mRegen *= 1.5; // 50% faster regain at high MP
+    if ((p.idleTime || 0) >= 5 && p.castingSkill <= 0) {
+      mRegen = p.maxMp / 90;                 // full within ~1.5 minutes
+    } else {
+      const mf = p.mp / p.maxMp;
+      if (mf <= 0.25) mRegen = 10 * 0.95;    // safety net
+      else if (mf <= 0.5) mRegen = 10 * 0.25;
+      else if (idle) mRegen = 4;
+    }
     const mNet = mRegen - mDrain;
     if (mNet > 0) p.mp = Math.min(p.maxMp, p.mp + mNet * dt);
     else p.mp = Math.max(0, p.mp + mNet * dt);

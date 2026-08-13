@@ -68,6 +68,7 @@ export class Player extends Entity {
     this.tracking = false;
     this.moving = false;
     this.working = 0;
+    this.idleTime = 0;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
@@ -100,8 +101,9 @@ export class Player extends Entity {
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
     this.crouching = game.input.held('shift');
-    // Sprint: hold R while moving (and not crouching/blocking, with stamina left)
-    this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking && this.stamina > 1;
+    // Sprint: hold R while moving (never blocked by low stamina — movement is
+    // independent of stamina so the player never gets slowed down by it)
+    this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
     let spd = this.sprinting ? 230 : this.speed;

@@ -124,7 +124,7 @@ Every skill is usable anytime — each has its own unique key (1–8). Skills co
 - **Orange bar** = Hunger. Drains **very slowly**. Eating refills it.
 - **Blue bar** = Temperature. Drops at night and in rain.
 
-> **The safety net:** if Stamina, MP or Health drops below **50%**, it starts recovering at 25% speed even while you're busy. Below **25%**, it recovers at 95% speed no matter what you're doing. So your bars stay high.
+> **Full regeneration:** stand still and do nothing for **5 seconds** and your **Stamina** refills to full within **1 minute**, and your **MP** refills to full within **1.5 minutes** (as long as you don't use skills). Low stamina never slows your movement — you can always run.
 
 > **Drops & charms:** defeating monsters and chopping trees can drop **Orbs** (restore health/stamina/MP). Bosses drop rare **Charms** that keep a resource FULL for a few minutes (Health 2 min · MP 3 min · Stamina 4 min).
 
@@ -179,7 +179,7 @@ Every skill is usable anytime — each has its own unique key (1–8). Skills co
   - 🫐 **Berries** → food
   - 🌸 **Flowers** → gift for villagers
   - 🪨 **Rocks/Ore** → stone, copper, iron, silver, gold
-  - 🌳 **Trees** → wood (press E on a tree)
+  - 🌳 **Trees** → wood (press E on a tree). After chopping, you can **walk through that spot for 5 minutes**; the tree then regrows.
 
 ### 6. Fight monsters
 - Deeper in the forest you'll meet **slimes, goblins, wolves, giant spiders, treants, skeletons, swamp beasts, demon beasts, ancient beasts** — and bosses.
