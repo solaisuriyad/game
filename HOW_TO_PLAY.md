@@ -35,7 +35,7 @@ http://localhost:3000
 When the game opens you'll see **VERDANT HOLLOW** with these things:
 
 1. **Name box** — click it and type your character's name.
-2. **Body** — pick `male`, `female`, or `neutral`.
+2. **Body** — pick `male`, `female`, or `neutral` (the button highlights green when selected, and your character's figure + hair changes to match).
 3. **Skin** — click a colored circle to choose skin tone.
 4. **Hair color** — click a circle.
 5. **Clothing** — click a circle.
@@ -101,7 +101,7 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 | **C** | Character | Your name, level, stats, records |
 | **K** | Skills | Skill tree (spend skill points) |
 | **J** | Quest Log | Your active quests (and co-op quests) |
-| **M** | World Map | The full map (hidden areas are foggy until you explore). **Scroll wheel** zooms in/out, **Ctrl + arrow keys** pan all 4 directions. |
+| **M** | World Map | A detailed map showing **trees, resources, monsters, animals, buildings, the Yggdrasil and every zone**. **Scroll wheel** zooms in/out, **Ctrl + arrow keys** pan all 4 directions. |
 | **⚙️ (top-right)** | Settings | Adjust sound effect, music, ambient and master volume with sliders. |
 | **B** | Crafting | Recipes you can craft |
 | **F** | Relationships | Villagers who know you + your reputation |

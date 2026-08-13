@@ -51,6 +51,8 @@ h3 { color: #e8c46a; margin: 12px 0 6px; font-size: 13px; text-transform: upperc
 .opt-row { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
 .swatch.sel { border-color: #fff; }
+.btn.sel { background: #5a7a3a; border-color: #8ac86a; box-shadow: 0 0 0 2px rgba(138,200,106,.4); }
+.gender-btn { text-transform: capitalize; }
 
 .map-canvas { width: 100%; border: 1px solid #6a4a2a; border-radius: 6px; image-rendering: pixelated; }
 

@@ -101,6 +101,7 @@ export class MenuManager {
       case 'gift': this._showGiftPanel(); break;
       case 'giftgive': this._giveGift(arg); break;
       case 'testsfx': g.audio.sfx('pickup'); break;
+      case 'setgender': this._cust.gender = arg; this._highlightGender(); break;
       case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
       case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
@@ -445,20 +446,58 @@ export class MenuManager {
     for (const z of ZONES) {
       ctx.fillText(z.name, (VILLAGE_CX + z.to - 6) * s, (VILLAGE_CY + 2) * s);
     }
+    // trees (green dots — only those within the visible viewport)
+    const vx0 = px / TILE, vy0 = py / TILE, vx1 = (px + this._mapView) / TILE, vy1 = (py + this._mapView) / TILE;
+    ctx.fillStyle = '#2f6b2a';
+    for (const cell of g.world.staticGrid.values()) {
+      for (const c of cell) {
+        if (c.type !== 'tree') continue;
+        const tx = (c.x + 13) / TILE, ty = (c.y + 13) / TILE;
+        if (tx < vx0 || tx > vx1 || ty < vy0 || ty > vy1) continue;
+        ctx.fillRect(tx * s - 1, ty * s - 1, 3, 3);
+      }
+    }
+    // resource nodes (colored dots)
+    for (const n of g.world.nodes) {
+      const tx = n.x / TILE, ty = n.y / TILE;
+      if (tx < vx0 || tx > vx1 || ty < vy0 || ty > vy1) continue;
+      ctx.fillStyle = { herb: '#5fbf5f', mushroom: '#c8c8c8', berry: '#d04040', flower: '#e8a0d0', ore: '#9a9a98' }[n.kind] || '#fff';
+      ctx.fillRect(tx * s - 1, ty * s - 1, 3, 3);
+    }
     // buildings
     ctx.fillStyle = '#ffd76a';
     for (const b of g.world.buildings) {
       ctx.fillRect(b.x / TILE * s - 1, b.y / TILE * s - 1, b.w / TILE * s + 2, b.h / TILE * s + 2);
     }
-    // the Yggdrasil (if placed)
+    // monsters (colored dots, live)
+    const monsters = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
+    for (const m of monsters) {
+      if (m.dead) continue;
+      const mx = m.x / TILE, my = m.y / TILE;
+      ctx.fillStyle = m.color || '#c05050';
+      ctx.beginPath(); ctx.arc(mx * s, my * s, m.boss ? 4 : 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // animals (small brown dots)
+    for (const a of g.animals) {
+      if (a.dead) continue;
+      const ax = a.x / TILE, ay = a.y / TILE;
+      ctx.fillStyle = a.color || '#b08a5a';
+      ctx.fillRect(ax * s - 1, ay * s - 1, 2, 2);
+    }
+    // the Yggdrasil (big 9-color marker)
     if (g.world.yggdrasil) {
+      const yx = g.world.yggdrasil.x / TILE, yy = g.world.yggdrasil.y / TILE;
       ctx.fillStyle = '#ff7ae0';
-      ctx.beginPath(); ctx.arc(g.world.yggdrasil.x / TILE * s, g.world.yggdrasil.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(yx * s, yy * s, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.beginPath(); ctx.arc(yx * s, yy * s, 8, 0, Math.PI * 2); ctx.stroke();
     }
     // player
     const p = g.player;
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
 
@@ -600,7 +639,7 @@ export class MenuManager {
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
           <span class="muted">Body:</span>
-          ${['male', 'female', 'neutral'].map((g2, i) => `<button class="btn ${i === 0 ? '' : ''}" data-act="setgender" data-arg="${g2}">${g2}</button>`).join('')}
+          ${['male', 'female', 'neutral'].map((g2) => `<button class="btn gender-btn" data-act="setgender" data-arg="${g2}">${g2}</button>`).join('')}
         </div>
         <div class="opt-row"><span class="muted">Skin:</span><span id="skintones"></span></div>
         <div class="opt-row"><span class="muted">Hair color:</span><span id="haircolors"></span></div>
@@ -629,9 +668,13 @@ export class MenuManager {
     renderSwatches('skintones', SKIN_TONES, 'skin');
     renderSwatches('haircolors', HAIR_COLORS, 'hair');
     renderSwatches('clothcolors', CLOTH_COLORS, 'cloth');
-    // gender buttons
-    panel.querySelectorAll('[data-act="setgender"]').forEach((b) => {
-      b.addEventListener('click', () => { this._cust.gender = b.dataset.arg; });
+    this._highlightGender();
+  }
+
+  _highlightGender() {
+    if (!this._cust) return;
+    this.root.querySelectorAll('[data-act="setgender"]').forEach((b) => {
+      b.classList.toggle('sel', b.dataset.arg === this._cust.gender);
     });
   }
 

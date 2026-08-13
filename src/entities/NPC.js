@@ -59,18 +59,24 @@ export class NPC extends Entity {
     ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
 
     const bob = walking ? Math.sin(game.time.timeOfDay * 1000 + this.x) * 1.5 : 0;
-    // body
+    // body (gender-aware: male broader, female narrower)
+    const bodyW = this.gender === 'male' ? s * 0.68 : s * 0.56;
     ctx.fillStyle = this.clothColor;
-    ctx.beginPath(); ctx.ellipse(0, s * 0.15 + bob * 0.2, s * 0.62, s * 0.72, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, s * 0.15 + bob * 0.2, bodyW, s * 0.72, 0, 0, Math.PI * 2); ctx.fill();
     // head
     ctx.fillStyle = this.skinTone;
     ctx.beginPath(); ctx.arc(0, -s * 0.55 + bob * 0.2, s * 0.5, 0, Math.PI * 2); ctx.fill();
-    // hair
+    // hair (gender-aware: female long, male short; children short)
     ctx.fillStyle = this.hairColor;
-    ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob * 0.2, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
-    if (this.age < 14) {
-      ctx.fillStyle = this.hairColor;
-      ctx.beginPath(); ctx.arc(0, -s * 0.75 + bob * 0.2, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+    if (this.gender === 'female' && this.age >= 14) {
+      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob * 0.2, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.48, -s * 0.42 + bob * 0.2, s * 0.13, s * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.48, -s * 0.42 + bob * 0.2, s * 0.13, s * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob * 0.2, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
+      if (this.age < 14) {
+        ctx.beginPath(); ctx.arc(0, -s * 0.75 + bob * 0.2, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+      }
     }
     // eyes
     ctx.fillStyle = '#1a1a1a';

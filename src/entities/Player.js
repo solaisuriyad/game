@@ -147,15 +147,26 @@ export class Player extends Entity {
       ctx.restore();
     }
 
-    // body
+    // body (gender-aware: male broader, female narrower, neutral in-between)
+    const bodyW = this.gender === 'male' ? s * 0.68 : this.gender === 'female' ? s * 0.54 : s * 0.62;
     ctx.fillStyle = this.clothColor;
-    ctx.beginPath(); ctx.ellipse(0, s * 0.15 + bob, s * 0.62, s * 0.72, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, s * 0.15 + bob, bodyW, s * 0.72, 0, 0, Math.PI * 2); ctx.fill();
     // head
     ctx.fillStyle = this.skinTone;
     ctx.beginPath(); ctx.arc(0, -s * 0.55 + bob, s * 0.5, 0, Math.PI * 2); ctx.fill();
-    // hair
+    // hair (gender-aware: female long, neutral medium, male short)
     ctx.fillStyle = this.hairColor;
-    ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+    if (this.gender === 'female') {
+      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.5, -s * 0.42 + bob, s * 0.14, s * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.5, -s * 0.42 + bob, s * 0.14, s * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (this.gender === 'neutral') {
+      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.42, -s * 0.5 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.42, -s * 0.5 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+    }
     // eyes
     ctx.fillStyle = '#1a1a1a';
     ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.55 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
