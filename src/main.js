@@ -317,6 +317,15 @@ class Game {
     this.audio.tick(dt, this.time.timeOfDay, this._audioMood());
   }
 
+  onCrash(e) {
+    // surface any error visibly instead of freezing the screen
+    console.error('Game error:', e);
+    try {
+      const el = document.getElementById('ui-root');
+      if (el) el.innerHTML = `<div class="panel"><div class="panel-head"><span>⚠ Error</span></div><div class="panel-body" style="color:#ff8a8a;font-family:monospace">${String(e && e.message ? e.message : e)}</div></div>`;
+    } catch (_) {}
+  }
+
   _audioMood() {
     if (!this.player) return 'forest';
     const zone = this.world.getZoneIndex(this.player.x, this.player.y);

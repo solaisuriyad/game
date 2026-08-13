@@ -26,10 +26,21 @@ export class Engine {
     if (frame > 0.25) frame = 0.25; // clamp after tab switch
     this._acc += frame;
     while (this._acc >= this.dt) {
-      this.game.update(this.dt);
+      // guard the game loop: a single bad frame must never freeze the game.
+      // If something throws, surface it once and keep going.
+      try {
+        this.game.update(this.dt);
+      } catch (e) {
+        if (this.game.crash) this.game.crash(e);
+        else if (typeof this.game.onCrash === 'function') this.game.onCrash(e);
+      }
       this._acc -= this.dt;
     }
-    this.game.render(this.ctx);
+    try {
+      this.game.render(this.ctx);
+    } catch (e) {
+      if (typeof this.game.onCrash === 'function') this.game.onCrash(e);
+    }
     Input.endFrame();
     requestAnimationFrame(this._step);
   }

@@ -411,7 +411,10 @@ export class MenuManager {
     this._mapOpen = true;
     this._mapScale = 4;           // px per tile (zoomed in so there's room to pan)
     this._mapView = 720;          // viewport size in px
+    // center the map on the player so it never opens on empty black forest
     if (!this._mapPan) this._mapPan = { x: 0, y: 0 };
+    this._mapPan.x = (g.player.x / TILE) * this._mapScale - this._mapView / 2;
+    this._mapPan.y = (g.player.y / TILE) * this._mapScale - this._mapView / 2;
     this.show('World Map — scroll wheel to zoom · Ctrl + arrow keys to pan', '<canvas id="mapcanvas" class="map-canvas" width="720" height="720"></canvas>');
     this._drawMapCanvas();
   }
@@ -681,7 +684,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 3.2 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
+      <div class="muted" style="margin-bottom:10px">Version 3.3 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

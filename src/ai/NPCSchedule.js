@@ -22,12 +22,20 @@ export function npcBrain(npc, dt, game) {
     return;
   }
 
-  // socializing: near idle NPCs pair up to chat (throttled search for scalability)
+  // socializing: near idle NPCs pair up to chat (throttled + staggered so the
+  // 1000-NPC search never all fires on the same frame)
   if (!npc.targetPos && !npc.wanderTarget && !npc.chatting) {
     npc._socialSearch -= dt;
     if (npc._socialSearch <= 0) {
-      npc._socialSearch = 1.5;
-      const buddy = game.npcs.find((o) => o !== npc && !o.targetPos && !o.wanderTarget && !o.chatting && o.distTo(npc) < 34);
+      npc._socialSearch = 1.5 + Math.random() * 2; // stagger the searches
+      // only scan a slice of the NPC list (cheap) instead of the whole array
+      const all = game.npcs;
+      const start = (Math.random() * all.length) | 0;
+      let buddy = null;
+      for (let i = 0; i < 60; i++) {
+        const o = all[(start + i) % all.length];
+        if (o !== npc && !o.targetPos && !o.wanderTarget && !o.chatting && o.distTo(npc) < 34) { buddy = o; break; }
+      }
       if (buddy) {
         const t = game.world.rng.range(2.5, 5);
         npc.chatting = t; buddy.chatting = t;
