@@ -58,8 +58,6 @@ export class MenuManager {
       case 'talk': this._chat(); break;
       case 'gift': this._showGiftPanel(); break;
       case 'giftgive': this._giveGift(arg); break;
-      case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
-      case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
       case 'sleep': g.survival.rest(); this.close(); break;
       case 'drink': g.player.hunger = Math.min(100, g.player.hunger + 6); g.toast('You drink cool water from the well.'); this.close(); break;
@@ -416,7 +414,7 @@ export class MenuManager {
       <b>Track</b> — Tab toggles tracking (footprint direction + blood trails)<br>
       <b>Traps</b> — T place snare · Y place bear trap · G bait (raw meat/berries)<br>
       <b>Interact</b> — E (gather, harvest, talk, buildings)<br>
-      <b>Active skills</b> — 1 / 2 / 3 to cast (cost MP) · O to change your 3 skills<br>
+      <b>Active skills</b> — keys 1–8 to cast (cost MP) · O for the skill list<br>
       <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · F relationships · L codex · Esc menu<br><br>
       Hunt animals, gather materials, then <b>submit them at the Adventure Guild</b> to earn Guild Points, gold and rank.
       Buy food to keep your hunger up, rest at the inn, and push deeper into the forest for better loot — but watch your weight and stamina!
@@ -573,7 +571,7 @@ export class MenuManager {
     this.game.multiplayer.connect(url, c.name).then((r) => {
       if (!r.ok) this.game.toast('Connection failed: ' + (r.message || 'unreachable'));
     });
-    this.showSkillSelection();
+    this.close();
   }
 
   _disconnect() {
@@ -589,26 +587,22 @@ export class MenuManager {
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
       hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
     });
-    this.showSkillSelection();
+    this.close();
   }
 
-  // Choose up to 3 active skills (also reachable in-game with O)
-  showSkillSelection() {
+  // Reference screen: every skill has its own unique key (1-8), shown with O
+  showSkillReference() {
     const g = this.game;
-    const as = g.activeSkills;
-    let html = `<div class="muted">Choose up to <b>3 active skills</b> (use them with hotkeys <b>1 / 2 / 3</b>). You can change this anytime by pressing <b>O</b>.</div><div class="grid2">`;
-    for (const s of ACTIVE_SKILLS) {
-      const selected = as.selected.includes(s.id);
-      const full = as.selected.length >= 3 && !selected;
-      html += `<div class="item rarity-${selected ? 'uncommon' : 'common'}">
-        <div class="n" style="color:${s.color}">${s.name}</div>
+    let html = `<div class="muted">Every skill has its own hotkey. Press the key to cast it (costs MP).</div><div class="grid2">`;
+    for (let i = 0; i < ACTIVE_SKILLS.length; i++) {
+      const s = ACTIVE_SKILLS[i];
+      html += `<div class="item">
+        <div class="n"><kbd>${i + 1}</kbd> <span style="color:${s.color}">${s.name}</span></div>
         <div class="d">${s.desc}<br><span class="muted">MP ${s.mpCost} · cooldown ${s.cooldown}s</span></div>
-        <div class="btns"><button class="btn ${selected ? 'red' : 'green'}" data-act="${selected ? 'unskill' : 'skill'}" data-arg="${s.id}" ${full ? 'disabled' : ''}>${selected ? 'Remove' : 'Select'}</button></div>
       </div>`;
     }
-    html += `</div><div class="muted" style="margin-top:8px">Selected: ${as.selected.length}/3</div>`;
-    html += `<div class="row" style="margin-top:10px"><button class="btn gold big" data-act="starthunt">Enter the World</button></div>`;
-    this.show('Choose Your Skills', html);
+    html += `</div>`;
+    this.show('Your Skills (hotkeys)', html);
   }
 
   _renderMainMenu() {

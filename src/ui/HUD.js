@@ -186,34 +186,30 @@ export class HUD {
     const p = g.player;
     const as = g.activeSkills;
     const y = H - 152;
-    for (let i = 0; i < 3; i++) {
-      const x = 12 + i * 82;
+    const w = 60, gap = 4;
+    for (let i = 0; i < 8; i++) {
+      const x = 12 + i * (w + gap);
       const skill = as.skillAt(i);
+      if (!skill) continue;
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.fillRect(x, y, 76, 40);
+      ctx.fillRect(x, y, w, 40);
       ctx.fillStyle = '#f5f0e0';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(`${i + 1}`, x + 5, y + 4);
-      if (skill) {
-        const cd = as.cooldowns[skill.id] || 0;
-        const noMp = p.mp < skill.mpCost;
-        ctx.fillStyle = (cd > 0 || noMp) ? '#888' : skill.color;
-        ctx.fillText(skill.name.slice(0, 10), x + 16, y + 5);
-        ctx.font = '9px sans-serif';
-        ctx.fillStyle = noMp ? '#ff8a8a' : '#c8c0a8';
-        ctx.fillText(noMp ? 'no MP' : (cd > 0 ? cd.toFixed(1) + 's' : 'MP ' + skill.mpCost), x + 16, y + 20);
-        if (cd > 0) {
-          ctx.fillStyle = 'rgba(0,0,0,0.55)';
-          ctx.fillRect(x, y + 40 - (40 * cd / skill.cooldown), 76, 40 * cd / skill.cooldown);
-        }
-      } else {
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#888';
-        ctx.fillText('empty', x + 16, y + 18);
+      ctx.fillText(`${i + 1}`, x + 4, y + 4);
+      const cd = as.cooldowns[skill.id] || 0;
+      const noMp = p.mp < skill.mpCost;
+      ctx.fillStyle = (cd > 0 || noMp) ? '#888' : skill.color;
+      ctx.font = '10px sans-serif';
+      ctx.fillText(skill.name.slice(0, 8), x + 14, y + 5);
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = noMp ? '#ff8a8a' : '#c8c0a8';
+      ctx.fillText(noMp ? 'MP!' : (cd > 0 ? cd.toFixed(1) + 's' : ''), x + 14, y + 20);
+      if (cd > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(x, y + 40 - (40 * cd / skill.cooldown), w, 40 * cd / skill.cooldown);
       }
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-      ctx.strokeRect(x, y, 76, 40);
+      ctx.strokeRect(x, y, w, 40);
     }
   }
 

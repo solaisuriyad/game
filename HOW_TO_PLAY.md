@@ -64,7 +64,7 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 | **Left-click** | Light attack (swing weapon / shoot bow) |
 | **Hold left-click, then release** | Heavy attack (stronger, slower, more stamina) |
 | **Right-click (hold)** | Block (reduces damage to 25%, but drains stamina) |
-| **Space** | Dodge (you briefly can't be hit, costs ~20 stamina) |
+| **Space** | Dodge (you briefly can't be hit, costs **3% stamina**) |
 
 ### 🥷 Stealth & tracking
 | Key | What it does |
@@ -72,15 +72,20 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 | **Shift (hold)** | Sneak — quieter, harder to detect, but slower |
 | **Tab** | Toggle tracking ON/OFF (shows footprints + blood trails) |
 
-### ✨ Active skills (your 3 chosen powers)
+### ✨ Active skills (each has its own key)
 | Key | What it does |
 |---|---|
-| **1 / 2 / 3** | Cast the skill in that slot (costs **MP**) |
-| **O** | Open the skill screen to change your 3 skills |
+| **1** | Power Strike — massive melee hit |
+| **2** | Arrow Storm — 3 arrows in a fan |
+| **3** | Fire Blast — burning projectile |
+| **4** | Frost Nova — freeze + slow nearby enemies |
+| **5** | Healing Light — +80 health |
+| **6** | Second Wind — +120 stamina |
+| **7** | Stone Guard — +10 defense for 8s |
+| **8** | Swift Step — +60% speed for 6s |
+| **O** | Show the skill list (reference) |
 
-When you start a game you **choose up to 3 skills**. Skills cost **MP** (the purple bar) and have a cooldown. The 8 skills are:
-- **Power Strike** — massive melee hit · **Arrow Storm** — 3 arrows · **Fire Blast** — burning projectile · **Frost Nova** — freeze/slow nearby enemies
-- **Healing Light** — +80 health · **Second Wind** — +120 stamina · **Stone Guard** — +10 defense · **Swift Step** — +60% speed
+Every skill is usable anytime — each has its own unique key (1–8). Skills cost **MP** and have a cooldown.
 
 ### 🪤 Traps & bait
 | Key | What it does |

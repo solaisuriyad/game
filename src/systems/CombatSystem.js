@@ -36,7 +36,11 @@ export class CombatSystem {
     this._recentCombat = Math.max(0, (this._recentCombat || 0) - dt);
   }
 
-  dodgeCost() { return Math.round(20 * (1 + (this.game.skills.getEffect('dodgeCost') || 0))); }
+  dodgeCost() {
+    const p = this.game.player;
+    // dodge costs 3% of max stamina (with the Dodge Mastery skill discount)
+    return Math.round(p.maxStamina * 0.03 * (1 + (this.game.skills.getEffect('dodgeCost') || 0)));
+  }
 
   attack(heavy) {
     const p = this.game.player;

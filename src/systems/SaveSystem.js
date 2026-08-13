@@ -44,7 +44,6 @@ export class SaveSystem {
         hunger: p.hunger, temperature: p.temperature, energy: p.energy,
         gold: p.gold, guildPoints: p.guildPoints, reputation: p.reputation,
         backpackLevel: p.backpackLevel, kills: p.kills, animalsHunted: p.animalsHunted,
-        activeSkills: g.activeSkills.selected,
         weapon: p.weapon ? p.weapon.id : null,
         armor: Object.fromEntries(Object.entries(p.armor).map(([k, v]) => [k, v ? v.id : null])),
         inventory: p.inventory.map((it) => ({ id: it.id, qty: it.qty }))
@@ -80,7 +79,6 @@ export class SaveSystem {
       gold: pl.gold, guildPoints: pl.guildPoints, reputation: pl.reputation,
       backpackLevel: pl.backpackLevel || 0, kills: pl.kills, animalsHunted: pl.animalsHunted
     });
-    g.activeSkills.deserialize(pl.activeSkills);
     p.weapon = pl.weapon ? getItem(pl.weapon) : null;
     p.armor = {};
     for (const [k, v] of Object.entries(pl.armor)) p.armor[k] = v ? getItem(v) : null;

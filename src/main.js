@@ -227,10 +227,10 @@ class Game {
       const r = this.trapSystem.placeBait();
       this.toast(r.message);
     }
-    if (input.pressed('o') && !this.ui.open) this.ui.showSkillSelection();
-    if (input.pressed('1') && !this.ui.open) this.toast(this.activeSkills.use(0).message);
-    if (input.pressed('2') && !this.ui.open) this.toast(this.activeSkills.use(1).message);
-    if (input.pressed('3') && !this.ui.open) this.toast(this.activeSkills.use(2).message);
+    if (input.pressed('o') && !this.ui.open) this.ui.showSkillReference();
+    for (let i = 1; i <= 8; i++) {
+      if (input.pressed(String(i)) && !this.ui.open) this.toast(this.activeSkills.use(i - 1).message);
+    }
   }
 
   update(dt) {
