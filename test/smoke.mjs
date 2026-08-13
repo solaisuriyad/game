@@ -141,7 +141,14 @@ if (wolf) {
   // line of sight blocked by trees
   if (typeof game.world.hasLineOfSight !== 'function') throw new Error('no hasLineOfSight');
 }
-// traps: place snare + bear trap + bait
+// traps: place snare + bear trap + bait (use open forest ground — no buildings,
+// water or trees — where placement is always valid)
+let spot = null;
+for (let i = 0; i < 50 && !spot; i++) {
+  const c = game.world.randomPosition(35, 45);
+  if (!game.world.blockedAt(c.x, c.y)) spot = c;
+}
+game.player.x = spot.x; game.player.y = spot.y;
 game.inventory.addItem('trap', 2, { silent: true });
 game.inventory.addItem('bear_trap', 1, { silent: true });
 game.inventory.addItem('meat_raw', 3, { silent: true });

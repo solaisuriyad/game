@@ -48,14 +48,19 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 - **Death system** — respawn with gold/material/durability penalties, progression kept.
 - **Save/load** — 3 slots, localStorage, versioned schema.
 - **Co-op (Phases 5–8)** — authoritative WebSocket server (`server/`): server-owned player movement + replication, **server-authoritative monsters** (AI, combat, deaths, individual loot), **boss scaling by party size** (+HP/+damage/tighter ability cooldowns), **shared kill/boss quests** (whole party contributes & is rewarded), and **shared world events** (raids, migrations, rare sightings) that NPCs gossip about consistently. Interest management syncs only nearby entities. Single-player remains fully offline.
+- **1000-NPC optimization (Phase 9)** — background simulation tiers, spatial render culling, and bulk NPC spawning let the village run ~1000 NPCs comfortably (benchmarked at ~3ms/frame). Enable via `?npcs=1000`.
+- **Stress tested (Phase 10)** — the server holds 200 concurrent players at ~25ms/tick (budget 50ms).
 - **UI** — HUD (bars, clock, minimap, compass, quest tracker), full-screen menus, dialogue, world map with fog-of-war.
 
 ## Tests
 
 ```bash
-npm test                  # both
+npm test                  # all four
+npm run stress            # multiplayer stress test (STRESS_CLIENTS=200 for scale)
 node test/smoke.mjs       # headless single-player (world gen, systems, combat, stealth, traps, save/load)
-node test/coop.mjs        # end-to-end networking (join, replication, interest management)
+node test/coop.mjs        # end-to-end networking (join, replication, combat, quests, events)
+node test/npc-perf.mjs    # 1000-NPC generation + simulation/render benchmark
+node test/stress.mjs      # multiplayer stress test (60–200 concurrent clients)
 ```
 
 ## Co-op
@@ -87,5 +92,6 @@ src/
 
 ## Roadmap (designed, not yet built)
 
-Server-authoritative animals/resources (to bring hunt/gather quests into co-op), ~1000-NPC
-scale, handcrafted story beats. See `docs/ROADMAP.md`.
+Server-authoritative animals/resources (to bring hunt/gather quests into co-op),
+audio/music polish, handcrafted story beats, and the forest's "world history" endgame.
+See `docs/ROADMAP.md`.

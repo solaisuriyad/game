@@ -31,7 +31,7 @@ export function animalBrain(animal, dt, game) {
   const detected = game.stealth.canDetect(animal, 150);
   if (wasWounded) animal.threat = p;
   else if (detected) animal.threat = p;
-  else if (animal.threat && dPlayer > 260) animal.threat = null;
+  else if (animal.threat && dPlayer > 260) { animal.threat = null; animal.state = 'wander'; }
 
   // aggression check (boar/bear fight back)
   const aggressive = animal.aggression > 0.45;
@@ -39,6 +39,11 @@ export function animalBrain(animal, dt, game) {
     animal.state = 'attack';
   } else if (animal.threat) {
     animal.state = 'flee';
+  }
+
+  // guard: never enter flee/attack without a valid threat
+  if ((animal.state === 'flee' || animal.state === 'attack') && !animal.threat) {
+    animal.state = 'wander';
   }
 
   switch (animal.state) {

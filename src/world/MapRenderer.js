@@ -241,14 +241,18 @@ export class MapRenderer {
   _drawEntities(ctx, game) {
     const cam = game.camera;
     const list = [];
-    for (const a of game.animals) if (!a.dead) list.push(a);
+    const M = 60; // cull margin (px) — only collect entities near the view
+    const minX = cam.x - M, maxX = cam.x + cam.vw + M;
+    const minY = cam.y - M, maxY = cam.y + cam.vh + M;
+    const inView = (e) => e.x >= minX && e.x <= maxX && e.y >= minY && e.y <= maxY;
+    for (const a of game.animals) if (!a.dead && inView(a)) list.push(a);
     if (game.multiplayer.connected) {
-      for (const m of game.remoteMonsters) if (!m.dead) list.push(m);
+      for (const m of game.remoteMonsters) if (!m.dead && inView(m)) list.push(m);
     } else {
-      for (const m of game.monsters) if (!m.dead) list.push(m);
+      for (const m of game.monsters) if (!m.dead && inView(m)) list.push(m);
     }
-    for (const n of game.npcs) list.push(n);
-    for (const r of game.remotePlayers) list.push(r);
+    for (const n of game.npcs) if (inView(n)) list.push(n);
+    for (const r of game.remotePlayers) if (inView(r)) list.push(r);
     list.push(game.player);
     list.sort((a, b) => a.y - b.y);
     for (const e of list) e.draw(ctx, cam, game);

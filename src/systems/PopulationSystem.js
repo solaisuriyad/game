@@ -27,8 +27,9 @@ export class PopulationSystem {
     this.respawnTimer = 0;
   }
 
-  generate() {
+  generate(count) {
     const w = this.game.world;
+    const npcCount = count || this.game.npcCount || 65;
     this.publicSpots = {
       tavern: w.buildingCenterByFunc('tavern'),
       market: w.buildingCenterByFunc('market'),
@@ -40,7 +41,8 @@ export class PopulationSystem {
     this._pondCenter = { x: 124 * TILE, y: 125 * TILE };
     this._minePoint = { x: VILLAGE_CX * TILE, y: 55 * TILE };
 
-    this._generateNPCs(65);
+    // bulk-generate positions first (fast), then assign to NPCs
+    this._generateNPCs(npcCount);
     this._linkFamilies();
     this._spawnPopulation();
   }
@@ -55,6 +57,9 @@ export class PopulationSystem {
 
   _generateNPCs(count) {
     const w = this.game.world;
+    // precompute a pool of valid village positions once (fast bulk sampling)
+    const pool = this._villagePool();
+    let poolIdx = 0;
     for (let i = 0; i < count; i++) {
       const occId = this._weightedPick(OCC_WEIGHTS);
       const occ = OCCUPATIONS.find((o) => o.id === occId);
@@ -65,7 +70,9 @@ export class PopulationSystem {
       if (isChild) name = this.rng.pick(CHILD_NAMES);
       else name = this.rng.pick(FIRST_NAMES[gender]) + ' ' + this.rng.pick(SURNAMES);
 
-      const homePos = w.randomVillagePosition();
+      // sample a home from the pool (with slight jitter to avoid perfect overlap)
+      const p = pool[poolIdx++ % pool.length];
+      const homePos = { x: p.x + this.rng.range(-14, 14), y: p.y + this.rng.range(-14, 14) };
       const workPos = this._workPosFor(occ, homePos);
       let firstName = name, lastName = '';
       if (!isChild) { const sp = name.split(' '); firstName = sp[0]; lastName = sp[1] || ''; }
@@ -143,6 +150,28 @@ export class PopulationSystem {
       case 'house': return homePos;
       default: return w.buildingCenterByFunc(occ.work) || this.publicSpots.community;
     }
+  }
+
+  // cache of walkable village positions for bulk NPC placement
+  _villagePool() {
+    if (this._pool) return this._pool;
+    const w = this.game.world;
+    const pool = [];
+    for (let ty = 82; ty <= 112; ty++) {
+      for (let tx = 76; tx <= 124; tx++) {
+        if ((tx + ty) % 2) continue; // skip every other cell (denser sampling)
+        const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
+        if (w.circleBlocked(px, py, 12)) continue;
+        pool.push({ x: px, y: py });
+      }
+    }
+    // shuffle so nearby NPCs get spread out
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng.range(0, i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    this._pool = pool;
+    return pool;
   }
 
   _weightedPick(entries) {

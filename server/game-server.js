@@ -24,6 +24,7 @@ export class GameServer {
     this.worldEvents = new WorldEvents(this.world, this.sim);
     this.worldEvents.emit = (type, data) => this._routeEvent(type, data);
     this.nextId = 1;
+    this.lastTickMs = 0;
     this._timer = setInterval(() => this.tick(), 1000 / TICK_RATE);
     this._timer.unref?.();
   }
@@ -134,6 +135,7 @@ export class GameServer {
   }
 
   tick() {
+    const t0 = performance.now();
     const dt = 1 / TICK_RATE;
     // integrate authoritative player movement
     for (const p of this.players.values()) {
@@ -170,5 +172,6 @@ export class GameServer {
     }
     // purge dead monsters (death events already emitted)
     this.sim.monsters = this.sim.monsters.filter((m) => !m.dead);
+    this.lastTickMs = performance.now() - t0;
   }
 }

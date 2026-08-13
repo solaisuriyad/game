@@ -71,12 +71,21 @@ NPCs are *instantiated* from archetype tables + name/occupation generators.
 giant class hierarchies. This is the seam where co-op replication will attach later.
 
 ### NPC simulation tiers (perf, and co-op interest management)
-- **Near (in view / < radius):** full sim — pathfind, animate, schedule transitions.
-- **Mid:** update schedule state + position at low frequency (0.5–1 Hz), no pathfinding.
-- **Far/background:** abstract sim — only timestamps + schedule phase, no position.
+- **Near (in view / < 900px):** full sim — move, socialize, schedule transitions.
+- **Far/background:** cheap update — distance check only; positions snap at schedule
+  phase boundaries (no per-frame movement/pathfinding).
 
-This is what lets ~1000 NPCs coexist with a 60 fps game, and maps directly to
-server interest management in co-op.
+This is what lets ~1000 NPCs coexist with a 60 fps game (verified: 1000 NPCs
+generate in ~30ms and simulate at ~3ms/frame), and maps directly to server
+interest management in co-op. Supporting optimizations: **spatial render culling**
+(only entities in view are sorted/drawn) and **bulk position pooling** (a precomputed
+shuffled pool of walkable village tiles instead of per-NPC collision search).
+
+### Server scaling (Phase 10)
+The server tick is instrumented (`GameServer.lastTickMs`). At 200 concurrent clients
+it holds ~25ms/tick against a 50ms budget (~17k msg/s); the dominant cost is the
+O(n²) interest-management pass, which is the known scaling boundary to address if
+more than a few hundred concurrent players are ever needed.
 
 ### Ability system
 Monsters hold an array of `Ability` definitions (targeting rule, cooldown, cast window,

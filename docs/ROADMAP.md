@@ -12,8 +12,8 @@
 | 6 | Co-op player sync | ✅ positional sync + interpolation |
 | 7 | Co-op combat + monster scaling | ✅ server-authoritative monsters, combat, loot, boss scaling by party size |
 | 8 | Co-op quests, loot, world events | ✅ shared kill/boss quests, shared world events, NPC gossip sync |
-| 9 | 1000-NPC optimization | ⬜ designed (sim tiers already implemented) |
-| 10 | Multiplayer stress test | ⬜ |
+| 9 | 1000-NPC optimization | ✅ background sim tiers + spatial render culling + bulk spawn; 1000-NPC benchmark |
+| 10 | Multiplayer stress test | ✅ 200-client stress test: tick budget, throughput, mass disconnect |
 
 ## MVP milestone breakdown (what is built now)
 
@@ -47,6 +47,6 @@
 
 ## Next steps (recommended order)
 
-1. Server-authoritative animals/resources (to bring hunt/gather quests into co-op).
-2. 1000-NPC scale test + audio/music polish.
-3. Handcrafted quests & village story beats (the forest's history).
+1. Server-authoritative animals/resources (bring hunt/gather quests into co-op).
+2. Audio/music polish + handcrafted quests & village story beats (the forest's history).
+3. Player-facing "world history" of the forest (long-term progression's ultimate goal).

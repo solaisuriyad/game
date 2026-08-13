@@ -103,6 +103,13 @@ class Game {
     this.state = 'title';
     this.paused = false;
 
+    // optional NPC scale override: ?npcs=1000 (Phase 9 — 1000-NPC optimization)
+    this.npcCount = 65;
+    try {
+      const q = new URLSearchParams(window.location.search).get('npcs');
+      if (q) this.npcCount = Math.max(1, Math.min(2000, parseInt(q, 10) || 65));
+    } catch (e) {}
+
     this._resize();
     Input.attach(canvas);
     window.addEventListener('resize', () => this._resize());
