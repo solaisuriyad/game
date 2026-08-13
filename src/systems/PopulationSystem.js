@@ -16,7 +16,7 @@ const OCC_WEIGHTS = [
 ];
 
 // distance rings (in tiles) for each forest zone number used in data/zone defs
-const ZONE_RINGS = { 1: [30, 50], 2: [52, 76], 3: [78, 99], 4: [101, 122], 5: [124, 138] };
+const ZONE_RINGS = { 1: [30, 75], 2: [80, 135], 3: [140, 205], 4: [210, 295], 5: [300, 420] };
 
 export class PopulationSystem {
   constructor(game) {
@@ -37,8 +37,8 @@ export class PopulationSystem {
       community: w.buildingCenterByFunc('community'),
       shrine: w.buildingCenterByFunc('shrine')
     };
-    this._farmCenter = { x: 113 * TILE + 16, y: 151 * TILE + 16 };
-    this._pondCenter = { x: 164 * TILE, y: 166 * TILE };
+    this._farmCenter = { x: (VILLAGE_CX - 26) * TILE + 16, y: (VILLAGE_CY + 11) * TILE + 16 };
+    this._pondCenter = { x: (VILLAGE_CX + 24) * TILE, y: (VILLAGE_CY + 26) * TILE };
     this._minePoint = { x: VILLAGE_CX * TILE, y: (VILLAGE_CY - 45) * TILE };
 
     // bulk-generate positions first (fast), then assign to NPCs
@@ -157,8 +157,8 @@ export class PopulationSystem {
     if (this._pool) return this._pool;
     const w = this.game.world;
     const pool = [];
-    for (let ty = 116; ty <= 164; ty++) {
-      for (let tx = 116; tx <= 164; tx++) {
+    for (let ty = VILLAGE_CY - 24; ty <= VILLAGE_CY + 24; ty++) {
+      for (let tx = VILLAGE_CX - 24; tx <= VILLAGE_CX + 24; tx++) {
         if ((tx + ty) % 2) continue; // skip every other cell (denser sampling)
         const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
         if (w.circleBlocked(px, py, 12)) continue;
@@ -195,8 +195,8 @@ export class PopulationSystem {
       { def: 'dire_wolf', count: 5 }, { def: 'goblin_shaman', count: 4 }, { def: 'goblin_brute', count: 4 },
       { def: 'thorn_beast', count: 4 }, { def: 'shadow_stalker', count: 4 }, { def: 'cave_troll', count: 3 },
       { def: 'venom_wyrm', count: 4 }, { def: 'hell_hound', count: 4 }, { def: 'yggdrasil_spriggan', count: 3 },
-      { def: 'ancient_bear', count: 1 }, { def: 'forest_guardian', count: 1 }, { def: 'ancient_dragon', count: 1 },
-      { def: 'fire_dragon', count: 1 }, { def: 'ice_dragon', count: 1 }, { def: 'earth_dragon', count: 1 },
+      { def: 'ancient_bear', count: 2 }, { def: 'forest_guardian', count: 2 }, { def: 'ancient_dragon', count: 2 },
+      { def: 'fire_dragon', count: 3 }, { def: 'ice_dragon', count: 3 }, { def: 'earth_dragon', count: 3 },
       { def: 'dragonoid_fire', count: 1 }, { def: 'dragonoid_ice', count: 1 }, { def: 'dragonoid_earth', count: 1 }
     ];
     for (const s of spawns) {

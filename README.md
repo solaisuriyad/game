@@ -34,7 +34,7 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 
 ## What's implemented (MVP vertical slice)
 
-- **World** — procedural 280×280 tilemap (bigger world): a spread-out village (31 buildings with clear walkable gaps — no road is blocked), roads, farms, river, pond, forest with **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden), each visually distinct and gated by guild rank.
+- **World** — procedural **800×800 tilemap (25,600px — a massive open world)**: a spread-out village (31 buildings with clear walkable gaps — no road is blocked), roads, farms, river, pond, and **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden) each visually distinct and gated by guild rank.
 - **Living village** — ~65 procedurally generated NPCs with **families, spouses, friendships & rivalries**, day/night schedules, socializing, background simulation tiers, and gossip about your deeds.
 - **Hunting & wildlife** — 7 animal species with wander/eat/flee/predator AI, footprint & blood-trail tracking, corpse harvesting.
 - **Stealth, tracking & traps** — sneak (crouch), vision cones, line-of-sight through trees, noise-based detection & monster investigation, directional footprint/blood tracking mode, snare + bear traps with bait attraction.

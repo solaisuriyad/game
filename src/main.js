@@ -138,7 +138,7 @@ class Game {
     this.corpses.length = 0; this.drops.length = 0; this.projectiles.length = 0;
     this.traps.length = 0; this.baitPiles.length = 0; this.floatTexts.length = 0; this.toasts.length = 0;
 
-    const spawn = { x: 140 * TILE + 16, y: 140 * TILE + 16 }; // village center plaza
+    const spawn = { x: VILLAGE_CX * TILE + 16, y: VILLAGE_CY * TILE + 16 }; // village center plaza
     this.player = new Player(spawn.x, spawn.y, cust);
 
     // starting kit
@@ -188,7 +188,7 @@ class Game {
     if (p.weapon) p.weapon.durability = Math.max(1, p.weapon.durability - 20);
     for (const k in p.armor) if (p.armor[k]) p.armor[k].durability = Math.max(1, p.armor[k].durability - 15);
     // respawn on the village path
-    p.x = 140 * TILE + 16; p.y = 140 * TILE + 16;
+    p.x = VILLAGE_CX * TILE + 16; p.y = VILLAGE_CY * TILE + 16;
     p.health = p.maxHealth; p.stamina = p.maxStamina; p.hunger = Math.max(20, p.hunger);
     p.energy = 60;
     this.audio.sfx('death');

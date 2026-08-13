@@ -117,9 +117,9 @@ console.log('summon spawned', game.monsters.length - before, 'minions');
 const dt2 = 1 / 60;
 let sawSocializing = false;
 for (let i = 0; i < 3600; i++) {
-  if (i === 1500) { game.player.x = 45 * 32; game.player.y = 100 * 32; }  // Deep Forest
-  if (i === 2100) { game.player.x = 20 * 32; game.player.y = 100 * 32; }  // Dark Forest
-  if (i === 2700) { game.player.x = 12 * 32; game.player.y = 12 * 32; }   // Forbidden Forest (corner)
+  if (i === 1500) { game.player.x = 110 * 32; game.player.y = 400 * 32; }  // Deep Forest
+  if (i === 2100) { game.player.x = 175 * 32; game.player.y = 400 * 32; }  // Dark Forest
+  if (i === 2700) { game.player.x = 340 * 32; game.player.y = 400 * 32; }  // Forbidden Forest
   game.update(dt2);
   if (i < 1500 && game.npcs.some((n) => n.chatting > 0)) sawSocializing = true;
 }
@@ -187,7 +187,7 @@ console.log('resources: 200% capacity + orbs + charms OK');
 //  "attacking" forever and blocked all stamina/MP/health regen)
 const p2 = game.player;
 // isolate the player from combat: move to the safe village + clear monsters
-p2.x = 140 * 32; p2.y = 140 * 32;
+p2.x = 400 * 32; p2.y = 400 * 32;
 game.monsters = [];
 game.combat._recentCombat = 0;
 // reset to a clean idle state so earlier test steps don't interfere
@@ -202,7 +202,7 @@ if (p2.stamina <= 30) throw new Error('stamina not recovering after attack');
 console.log('regression: attack-then-recover OK (stamina ' + p2.stamina.toFixed(0) + ', mp ' + p2.mp.toFixed(0) + ')');
 
 // ---- lore / forest history ----
-game.player.x = 99 * 32 + 16; game.player.y = 96 * 32 + 16; // back in village
+game.player.x = 400 * 32 + 16; game.player.y = 400 * 32 + 16; // back in village
 game.lore.discover('lore_shrine');
 console.log('lore after shrine:', game.lore.count(), 'of', game.lore.total());
 if (!game.lore.has('lore_shrine')) throw new Error('shrine lore not discovered');

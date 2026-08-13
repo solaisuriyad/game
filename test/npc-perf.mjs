@@ -84,7 +84,7 @@ if (renderAvg > RENDER_BUDGET) throw new Error(`render too slow: ${renderAvg.toF
 const nearInVillage = game.npcs.filter((n) => n.distTo(game.player) <= 900).length;
 console.log(`near NPCs (in village): ${nearInVillage} / ${game.npcs.length}`);
 
-game.player.x = 20 * 32; game.player.y = 100 * 32; // deep forest
+game.player.x = 110 * 32; game.player.y = 400 * 32; // deep forest (far from village)
 const nearInForest = game.npcs.filter((n) => n.distTo(game.player) <= 900).length;
 console.log(`near NPCs (player in deep forest): ${nearInForest} / ${game.npcs.length}`);
 if (nearInForest > 50) throw new Error(`background tier did not engage: ${nearInForest} NPCs still near`);

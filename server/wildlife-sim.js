@@ -6,7 +6,7 @@
 // progress events. Replicated via a single wildlife-state channel (interest-managed).
 import { ANIMALS } from '../src/data/animals.js';
 
-const ZONE_RINGS = { 1: [30, 50], 2: [52, 76], 3: [78, 99], 4: [101, 122], 5: [124, 138] };
+const ZONE_RINGS = { 1: [30, 75], 2: [80, 135], 3: [140, 205], 4: [210, 295], 5: [300, 420] };
 
 const ANIMAL_PLAN = [
   { id: 'rabbit', count: 14 }, { id: 'deer', count: 10 }, { id: 'fox', count: 6 },

@@ -446,15 +446,22 @@ export class MenuManager {
     for (const z of ZONES) {
       ctx.fillText(z.name, (VILLAGE_CX + z.to - 6) * s, (VILLAGE_CY + 2) * s);
     }
-    // trees (green dots — only those within the visible viewport)
+    // trees (green dots — iterate only the grid cells near the viewport for speed)
     const vx0 = px / TILE, vy0 = py / TILE, vx1 = (px + this._mapView) / TILE, vy1 = (py + this._mapView) / TILE;
+    const cellSz = g.world._cell * TILE;
+    const cx0 = Math.floor(px / cellSz), cy0 = Math.floor(py / cellSz);
+    const cx1 = Math.floor((px + this._mapView) / cellSz), cy1 = Math.floor((py + this._mapView) / cellSz);
     ctx.fillStyle = '#2f6b2a';
-    for (const cell of g.world.staticGrid.values()) {
-      for (const c of cell) {
-        if (c.type !== 'tree') continue;
-        const tx = (c.x + 13) / TILE, ty = (c.y + 13) / TILE;
-        if (tx < vx0 || tx > vx1 || ty < vy0 || ty > vy1) continue;
-        ctx.fillRect(tx * s - 1, ty * s - 1, 3, 3);
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const cell = g.world.staticGrid.get(cx + ',' + cy);
+        if (!cell) continue;
+        for (const c of cell) {
+          if (c.type !== 'tree') continue;
+          const tx = (c.x + 13) / TILE, ty = (c.y + 13) / TILE;
+          if (tx < vx0 || tx > vx1 || ty < vy0 || ty > vy1) continue;
+          ctx.fillRect(tx * s - 1, ty * s - 1, 3, 3);
+        }
       }
     }
     // resource nodes (colored dots)

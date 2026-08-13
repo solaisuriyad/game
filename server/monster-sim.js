@@ -9,7 +9,7 @@
 import { MONSTERS } from '../src/data/monsters.js';
 import { rankForLevel, essenceId } from '../src/data/ranks.js';
 
-const ZONE_RINGS = { 1: [30, 50], 2: [52, 76], 3: [78, 99], 4: [101, 122], 5: [124, 138] };
+const ZONE_RINGS = { 1: [30, 75], 2: [80, 135], 3: [140, 205], 4: [210, 295], 5: [300, 420] };
 
 // spawn plan: how many of each monster the shared world keeps alive
 const SPAWN_PLAN = [

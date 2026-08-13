@@ -2,12 +2,12 @@ import { RNG } from '../core/RNG.js';
 import { BUILDINGS } from '../data/buildings.js';
 
 export const TILE = 32;
-export const WORLD_W = 280; // tiles (bigger world)
-export const WORLD_H = 280;
+export const WORLD_W = 800; // tiles — a massive explorable world
+export const WORLD_H = 800;
 export const PX_W = WORLD_W * TILE;
 export const PX_H = WORLD_H * TILE;
-export const VILLAGE_CX = 140; // tile center
-export const VILLAGE_CY = 140;
+export const VILLAGE_CX = 400; // tile center
+export const VILLAGE_CY = 400;
 
 // ground tile types
 export const T = {
@@ -16,11 +16,11 @@ export const T = {
 
 export const ZONES = [
   { name: 'Village', from: 0, to: 30, danger: 0, minRank: 0, color: '#5a8a4a' },
-  { name: 'Safe Forest', from: 30, to: 52, danger: 1, minRank: 0, color: '#4a7a3a' },
-  { name: 'Deep Forest', from: 52, to: 78, danger: 2, minRank: 1, color: '#3a6a30' },
-  { name: 'Dark Forest', from: 78, to: 101, danger: 3, minRank: 3, color: '#2a5a28' },
-  { name: 'Ancient Forest', from: 101, to: 124, danger: 4, minRank: 5, color: '#1f4a2a' },
-  { name: 'Forbidden Forest', from: 124, to: 999, danger: 5, minRank: 8, color: '#1a3428' }
+  { name: 'Safe Forest', from: 30, to: 80, danger: 1, minRank: 0, color: '#4a7a3a' },
+  { name: 'Deep Forest', from: 80, to: 140, danger: 2, minRank: 1, color: '#3a6a30' },
+  { name: 'Dark Forest', from: 140, to: 210, danger: 3, minRank: 3, color: '#2a5a28' },
+  { name: 'Ancient Forest', from: 210, to: 300, danger: 4, minRank: 5, color: '#1f4a2a' },
+  { name: 'Forbidden Forest', from: 300, to: 999, danger: 5, minRank: 8, color: '#1a3428' }
 ];
 
 export function zoneIndexAt(px, py) {
@@ -69,7 +69,7 @@ export class WorldSystem {
 
   _placeYggdrasil() {
     // in the dark forest (dense), east of the village
-    const tx = VILLAGE_CX + 85, ty = VILLAGE_CY;
+    const tx = VILLAGE_CX + 170, ty = VILLAGE_CY;
     const px = tx * TILE, py = ty * TILE;
     const size = 6 * TILE; // 192px collider (solid trunk footprint)
     const obj = { type: 'yggdrasil', x: px, y: py, w: size, h: size };
@@ -79,7 +79,7 @@ export class WorldSystem {
 
   _carveRiver() {
     for (let ty = 0; ty < WORLD_H; ty++) {
-      const x = 66 + Math.floor(Math.sin(ty * 0.08) * 5);
+      const x = (VILLAGE_CX - 74) + Math.floor(Math.sin(ty * 0.08) * 5);
       for (let dx = -1; dx <= 2; dx++) {
         const tx = x + dx;
         if (tx >= 0 && tx < WORLD_W) {
@@ -89,19 +89,19 @@ export class WorldSystem {
       }
     }
     // pond south-east of village
-    for (let ty = 162; ty < 170; ty++) {
-      for (let tx = 160; tx < 168; tx++) {
+    for (let ty = VILLAGE_CY + 22; ty < VILLAGE_CY + 30; ty++) {
+      for (let tx = VILLAGE_CX + 20; tx < VILLAGE_CX + 28; tx++) {
         this.tiles[this.idx(tx, ty)] = T.WATER;
       }
     }
-    for (let ty = 161; ty < 171; ty++) for (let tx = 159; tx < 169; tx++) {
+    for (let ty = VILLAGE_CY + 21; ty < VILLAGE_CY + 31; ty++) for (let tx = VILLAGE_CX + 19; tx < VILLAGE_CX + 29; tx++) {
       if (this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.SAND;
     }
   }
 
   _placeFarms() {
-    for (let ty = 146; ty < 156; ty++) {
-      for (let tx = 108; tx < 118; tx++) {
+    for (let ty = VILLAGE_CY + 6; ty < VILLAGE_CY + 16; ty++) {
+      for (let tx = VILLAGE_CX - 32; tx < VILLAGE_CX - 22; tx++) {
         if (this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.FARM;
       }
     }
@@ -110,15 +110,15 @@ export class WorldSystem {
   _placePaths() {
     const mark = (tx, ty) => { if (tx >= 0 && ty >= 0 && tx < WORLD_W && ty < WORLD_H && this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.PATH; };
     // main cross through village center
-    for (let tx = 116; tx <= 166; tx++) mark(tx, 140);
-    for (let ty = 116; ty <= 166; ty++) mark(140, ty);
+    for (let tx = VILLAGE_CX - 24; tx <= VILLAGE_CX + 26; tx++) mark(tx, VILLAGE_CY);
+    for (let ty = VILLAGE_CY - 24; ty <= VILLAGE_CY + 26; ty++) mark(VILLAGE_CX, ty);
     // lower road
-    for (let tx = 116; tx <= 166; tx++) mark(tx, 156);
+    for (let tx = VILLAGE_CX - 24; tx <= VILLAGE_CX + 26; tx++) mark(tx, VILLAGE_CY + 16);
     // east roads to the forest
-    for (let tx = 166; tx <= 184; tx++) mark(tx, 140);
-    for (let ty = 140; ty <= 156; ty++) mark(156, ty);
+    for (let tx = VILLAGE_CX + 26; tx <= VILLAGE_CX + 44; tx++) mark(tx, VILLAGE_CY);
+    for (let ty = VILLAGE_CY; ty <= VILLAGE_CY + 16; ty++) mark(VILLAGE_CX + 16, ty);
     // west farm road
-    for (let tx = 112; tx <= 116; tx++) mark(tx, 150);
+    for (let tx = VILLAGE_CX - 28; tx <= VILLAGE_CX - 24; tx++) mark(tx, VILLAGE_CY + 10);
   }
 
   _placeBuildings() {
@@ -148,20 +148,20 @@ export class WorldSystem {
           else if (rng.chance(0.03)) this.tiles[this.idx(tx, ty)] = T.FLOWER;
           continue;
         }
-        const density = Math.min(0.42, 0.12 + d * 0.004);
+        const density = Math.min(0.42, 0.10 + d * 0.0012);
         if (rng.chance(density)) {
-          this._addTree(tx, ty, d > 70);
+          this._addTree(tx, ty, d > 140);
         } else if (rng.chance(0.02)) {
           this.tiles[this.idx(tx, ty)] = T.FLOWER;
         }
       }
     }
-    // resource nodes
-    this._scatterNodes('herb', 60, 30, 100);
-    this._scatterNodes('mushroom', 40, 30, 100);
-    this._scatterNodes('berry', 36, 28, 90);
-    this._scatterNodes('ore', 40, 40, 110);
-    this._scatterNodes('flower', 30, 24, 90);
+    // resource nodes (scattered across the whole massive world)
+    this._scatterNodes('herb', 160, 30, 460);
+    this._scatterNodes('mushroom', 110, 30, 460);
+    this._scatterNodes('berry', 100, 28, 400);
+    this._scatterNodes('ore', 120, 40, 480);
+    this._scatterNodes('flower', 90, 24, 400);
   }
 
   _addTree(tx, ty, dark = false) {
@@ -277,7 +277,7 @@ export class WorldSystem {
 
   randomVillagePosition(tries = 60) {
     for (let i = 0; i < tries; i++) {
-      const tx = this.rng.int(116, 164), ty = this.rng.int(116, 164);
+      const tx = this.rng.int(VILLAGE_CX - 24, VILLAGE_CX + 24), ty = this.rng.int(VILLAGE_CY - 24, VILLAGE_CY + 24);
       const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
       if (!this.circleBlocked(px, py, 12)) return { x: px, y: py };
     }
