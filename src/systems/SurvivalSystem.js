@@ -18,7 +18,10 @@ export class SurvivalSystem {
     const inCombat = (combat._recentCombat || 0) > 0;
     const working = p.working > 0;
     const busy = active || working || inCombat || p.sprinting;
-    const idle = !p.moving && !busy;
+    // "resting" = not actively doing anything. Walking is treated as resting too
+    // (walking never drains stamina), so a stuck movement state can never block
+    // recovery. Only sprinting / working / fighting pause it.
+    const resting = !busy;
 
     // ---- hold-full buffs (hidden drops) keep a resource pinned at max ----
     if (p.buffs.healthHold > 0) { p.buffs.healthHold -= dt; p.health = p.maxHealth; }
@@ -38,7 +41,7 @@ export class SurvivalSystem {
     p.hunger = Math.max(0, p.hunger - hungerRate * dt);
 
     // ---- idle timer (5 seconds of rest triggers full regeneration) ----
-    if (idle) p.idleTime = (p.idleTime || 0) + dt; else p.idleTime = 0;
+    if (resting) p.idleTime = (p.idleTime || 0) + dt; else p.idleTime = 0;
     p.recovering = (p.idleTime || 0) >= 5; // exposed to the HUD for a visible indicator
 
     // ---- STAMINA: drains very slowly on activity; after 5s idle it refills to
@@ -54,7 +57,7 @@ export class SurvivalSystem {
       const sf = p.stamina / p.maxStamina;
       if (sf <= 0.25) sRegen = 20 * 0.95;    // safety net (very low)
       else if (sf <= 0.5) sRegen = 20 * 0.25;
-      else if (idle) sRegen = 8;             // gentle trickle before the 5s mark
+      else if (resting) sRegen = 8;          // gentle trickle before the 5s mark
     }
     const sNet = sRegen - sDrain;
     if (sNet > 0) p.stamina = Math.min(p.maxStamina, p.stamina + sNet * dt);
@@ -71,7 +74,7 @@ export class SurvivalSystem {
       const mf = p.mp / p.maxMp;
       if (mf <= 0.25) mRegen = 10 * 0.95;    // safety net
       else if (mf <= 0.5) mRegen = 10 * 0.25;
-      else if (idle) mRegen = 4;
+      else if (resting) mRegen = 4;
     }
     const mNet = mRegen - mDrain;
     if (mNet > 0) p.mp = Math.min(p.maxMp, p.mp + mNet * dt);
@@ -79,7 +82,7 @@ export class SurvivalSystem {
     p.castingSkill = Math.max(0, p.castingSkill - dt);
 
     // ---- HEALTH (only drops from damage/starvation/cold; regen when fed) ----
-    this._resource(p, 'health', 'maxHealth', 0, 2, dt, { idle, busy, idleRequiresFed: true });
+    this._resource(p, 'health', 'maxHealth', 0, 2, dt, { idle: resting, busy, idleRequiresFed: true });
 
     // starvation (slow) & cold (slow)
     if (p.hunger <= 0 && p.health > 1) p.health = Math.max(1, p.health - 0.5 * dt);

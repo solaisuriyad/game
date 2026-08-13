@@ -73,6 +73,12 @@ export class HUD {
       ctx.font = 'bold 11px sans-serif';
       ctx.fillText('⚡ Recovering…', 12, 94);
     }
+    // hint when no skills selected yet
+    if (g.activeSkills.selected.length === 0) {
+      ctx.fillStyle = '#ffd76a';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('Press O to choose your skills', 12, 110);
+    }
 
     // ---- top-right: clock / weather / gold / rank (shifted down for the settings gear) ----
     ctx.textAlign = 'right';
@@ -97,7 +103,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v2.1', W - 12, H - 8);
+    ctx.fillText('v2.2', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
