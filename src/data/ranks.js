@@ -29,7 +29,8 @@ export function rankForLevel(level) {
 }
 // the essence item a monster of this rank drops (helps defeat the next rank)
 export function essenceId(rank) {
-  return 'essence_' + rank.toLowerCase().replace('+', 'plus');
+  if (!rank) return null;
+  return 'essence_' + String(rank).toLowerCase().replace('+', 'plus');
 }
 // bonus damage multiplier applied when the player holds the previous rank's essence
 export const RANK_BONUS = 0.35;

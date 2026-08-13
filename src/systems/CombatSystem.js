@@ -128,8 +128,10 @@ export class CombatSystem {
     // defense reduction (monsters)
     if (e.defense) dmg = Math.max(1, Math.round(dmg * (1 - e.defense * 0.03)));
     // rank essence bonus: holding the previous rank's essence boosts damage
-    // against this monster's rank (makes the hunt-and-upgrade loop matter)
-    if (e.rank && this.game.inventory.countItem(essenceId(prevRank(e.rank))) > 0) {
+    // against this monster's rank (makes the hunt-and-upgrade loop matter).
+    // F-rank has no previous rank, so guard against a null essence id.
+    const prev = prevRank(e.rank);
+    if (prev && this.game.inventory.countItem(essenceId(prev)) > 0) {
       dmg = Math.round(dmg * (1 + RANK_BONUS));
     }
     e.hp -= dmg;

@@ -45,6 +45,13 @@ import("../src/main.js").then(()=>{
     console.log("D-rank monster took:", hp0 - dMonster.hp, "from a 100-damage hit (bonus applied)");
     if(hp0 - dMonster.hp <= 100) throw new Error("rank essence bonus not applied");
   }
+  // REGRESSION: attacking an F-rank monster must NOT crash (prevRank("F") is null)
+  const fMonster = g.monsters.find(m=>m.rank==="F" && !m.dead);
+  if(fMonster){
+    g.player.x = fMonster.x; g.player.y = fMonster.y;
+    g.combat.hitEntity(fMonster, 10, {}); // would previously throw TypeError
+    console.log("F-rank attack OK (no crash)");
+  }
   console.log("RANKS + DROPS + DRAGONS TESTS PASSED");
   process.exit(0);
 });
