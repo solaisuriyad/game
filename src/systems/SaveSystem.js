@@ -50,6 +50,7 @@ export class SaveSystem {
       time: g.time.serialize(),
       weather: g.weather.serialize(),
       quests: g.quests.serialize(),
+      lore: g.lore.serialize(),
       events: g.events.recent,
       discovered: this._encodeDiscovered(),
       npcs: g.npcs.filter((n) => n.relationship !== 0 || n.metPlayer).map((n) => ({
@@ -85,6 +86,7 @@ export class SaveSystem {
     g.time.deserialize(d.time);
     g.weather.deserialize(d.weather);
     g.quests.deserialize(d.quests);
+    if (d.lore) g.lore.deserialize(d.lore);
     g.events.recent = d.events || [];
     this._decodeDiscovered(d.discovered);
 

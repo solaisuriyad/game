@@ -112,7 +112,9 @@ export class MapRenderer {
 
   _drawNodes(ctx, game) {
     const cam = game.camera;
-    for (const n of game.world.nodes) {
+    // in co-op, resources are server-authoritative (remoteResources)
+    const nodes = game.multiplayer.connected ? game.remoteResources : game.world.nodes;
+    for (const n of nodes) {
       if (n.depleted) continue;
       const sx = n.x - cam.x, sy = n.y - cam.y;
       if (sx < -20 || sy < -20 || sx > cam.vw + 20 || sy > cam.vh + 20) continue;
@@ -245,7 +247,11 @@ export class MapRenderer {
     const minX = cam.x - M, maxX = cam.x + cam.vw + M;
     const minY = cam.y - M, maxY = cam.y + cam.vh + M;
     const inView = (e) => e.x >= minX && e.x <= maxX && e.y >= minY && e.y <= maxY;
-    for (const a of game.animals) if (!a.dead && inView(a)) list.push(a);
+    if (game.multiplayer.connected) {
+      for (const a of game.remoteAnimals) if (!a.dead && inView(a)) list.push(a);
+    } else {
+      for (const a of game.animals) if (!a.dead && inView(a)) list.push(a);
+    }
     if (game.multiplayer.connected) {
       for (const m of game.remoteMonsters) if (!m.dead && inView(m)) list.push(m);
     } else {

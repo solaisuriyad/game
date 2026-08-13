@@ -1,6 +1,8 @@
 import { NetworkClient } from './NetworkClient.js';
 import { MONSTERS } from '../data/monsters.js';
+import { ANIMALS } from '../data/animals.js';
 import { RemoteMonster } from '../entities/RemoteMonster.js';
+import { RemoteAnimal } from '../entities/RemoteAnimal.js';
 
 // Client-side multiplayer controller.
 //  Phase 5: positional sync + prediction + interpolation.
@@ -15,6 +17,8 @@ export class MultiplayerSystem {
     this.myId = null;
     this._targets = new Map();   // remote player id -> snapshot
     this._monsters = new Map();  // remote monster id -> RemoteMonster
+    this._animals = new Map();   // remote animal id -> RemoteAnimal
+    this._resources = new Map(); // remote resource id -> {id,kind,x,y,depleted}
     this._inputTimer = 0;
     this.sharedQuests = [];      // server-authoritative co-op quests
   }
@@ -47,6 +51,14 @@ export class MultiplayerSystem {
     if (!this.connected) return;
     this.client.send({ type: 'attack', damage, facing, weaponType });
   }
+  sendHuntHit({ damage, facing, weaponType }) {
+    if (!this.connected) return;
+    this.client.send({ type: 'huntHit', damage, facing, weaponType });
+  }
+  sendGather(resourceId) {
+    if (!this.connected) return;
+    this.client.send({ type: 'gather', resourceId });
+  }
 
   _onMessage(msg) {
     const g = this.game;
@@ -55,8 +67,9 @@ export class MultiplayerSystem {
         this.myId = msg.id;
         if (msg.spawn) { g.player.x = msg.spawn.x; g.player.y = msg.spawn.y; }
         for (const p of msg.players) this._targets.set(p.id, p);
-        // switch to server-authoritative monsters
+        // switch to server-authoritative monsters + wildlife
         g.monsters.length = 0;
+        g.animals.length = 0;
         break;
       case 'join':
         this._targets.set(msg.player.id, msg.player);
@@ -76,6 +89,29 @@ export class MultiplayerSystem {
       case 'monsterState':
         this._syncMonsters(msg.monsters);
         break;
+      case 'wildlifeState':
+        this._syncWildlife(msg.animals, msg.resources);
+        break;
+      case 'animalHit': {
+        const a = this._animals.get(msg.id);
+        if (a) {
+          a.hp = msg.hp;
+          a.flash = 0.12;
+          g.addFloatText(a.x, a.y - a.radius - 6, msg.damage, '#fff');
+        }
+        break;
+      }
+      case 'animalDeath': {
+        const a = this._animals.get(msg.id);
+        if (a) { a.dead = true; g.addFloatText(a.x, a.y - a.radius - 6, 'Hunted!', '#ffd76a'); }
+        this._animals.delete(msg.id);
+        break;
+      }
+      case 'resourceGathered': {
+        const r = this._resources.get(msg.id);
+        if (r) r.depleted = true;
+        break;
+      }
       case 'monsterHit': {
         const m = this._monsters.get(msg.id);
         if (m) {
@@ -97,6 +133,7 @@ export class MultiplayerSystem {
         const m = this._monsters.get(msg.id);
         if (m) { m.dead = true; g.addFloatText(m.x, m.y - m.radius - 6, 'Slain!', '#ffd76a'); }
         this._monsters.delete(msg.id);
+        if (msg.defId) g.lore.onBossKill(msg.defId);
         break;
       }
       case 'playerDamage':
@@ -150,14 +187,47 @@ export class MultiplayerSystem {
     g.remoteMonsters = [...this._monsters.values()].filter((m) => !m.dead);
   }
 
+  _syncWildlife(animals, resources) {
+    const g = this.game;
+    const seenA = new Set();
+    for (const data of animals) {
+      seenA.add(data.id);
+      let a = this._animals.get(data.id);
+      if (!a) {
+        const def = ANIMALS.find((d) => d.id === data.defId);
+        if (!def) continue;
+        a = new RemoteAnimal(g, def, data.id, data);
+        this._animals.set(data.id, a);
+      } else {
+        a.apply(data);
+      }
+    }
+    // drop animals no longer replicated (out of range or dead)
+    for (const [id, a] of this._animals) if (!seenA.has(id) && a.dead) this._animals.delete(id);
+    g.remoteAnimals = [...this._animals.values()].filter((a) => !a.dead);
+
+    const seenR = new Set();
+    for (const data of resources) {
+      seenR.add(data.id);
+      const r = this._resources.get(data.id);
+      if (r) { r.x = data.x; r.y = data.y; r.depleted = data.depleted; }
+      else this._resources.set(data.id, { id: data.id, kind: data.kind, x: data.x, y: data.y, depleted: data.depleted });
+    }
+    g.remoteResources = [...this._resources.values()].filter((r) => !r.depleted);
+  }
+
   _onClose() {
     const g = this.game;
     this.connected = false;
     this._targets.clear();
     this._monsters.clear();
+    this._animals.clear();
+    this._resources.clear();
     g.remotePlayers = [];
     g.remoteMonsters = [];
-    g.sim.respawnMonsters(); // restore local single-player monsters
+    g.remoteAnimals = [];
+    g.remoteResources = [];
+    g.sim.respawnWildlife(); // restore local single-player monsters + animals
     g.toast('Disconnected from the server.');
   }
 
@@ -179,8 +249,9 @@ export class MultiplayerSystem {
     }
     g.remotePlayers = g.remotePlayers.filter((r) => this._targets.has(r.id));
     for (const r of g.remotePlayers) r.update(dt);
-    // remote monsters (interpolation)
+    // remote monsters + animals (interpolation)
     for (const m of g.remoteMonsters) m.update(dt);
+    for (const a of g.remoteAnimals) a.update(dt);
   }
 
   disconnect() {
@@ -189,8 +260,12 @@ export class MultiplayerSystem {
     this.connecting = false;
     this._targets.clear();
     this._monsters.clear();
+    this._animals.clear();
+    this._resources.clear();
     this.game.remotePlayers = [];
     this.game.remoteMonsters = [];
-    this.game.sim.respawnMonsters();
+    this.game.remoteAnimals = [];
+    this.game.remoteResources = [];
+    this.game.sim.respawnWildlife();
   }
 }

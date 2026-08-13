@@ -13,6 +13,15 @@ export class InteractSystem {
   }
   nearestNode(r = 36) {
     let best = null, bd = r;
+    // in co-op, resources are server-authoritative (remoteResources)
+    if (this.game.multiplayer.connected) {
+      for (const n of this.game.remoteResources) {
+        if (n.depleted) continue;
+        const d = Math.hypot(n.x - this.p.x, n.y - this.p.y);
+        if (d < bd) { bd = d; best = n; }
+      }
+      return best;
+    }
     for (const n of this.game.world.nodes) {
       if (n.depleted) continue;
       const d = Math.hypot(n.x - this.p.x, n.y - this.p.y);

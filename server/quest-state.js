@@ -9,6 +9,10 @@
 // animals and resource nodes are not yet server-authoritative (Phase 9 scope).
 const SHARED_POOL = [
   { id: 'coop_wolves', title: 'Wolf Cull', text: 'Together, defeat 5 wolves.', objectives: [{ kind: 'kill', id: 'wolf', count: 5 }], rewards: { gp: 120, gold: 80, xp: 120 } },
+  { id: 'coop_rabbits', title: 'Rabbit Hunt', text: 'Together, hunt 6 rabbits.', objectives: [{ kind: 'hunt', id: 'rabbit', count: 6 }], rewards: { gp: 100, gold: 60, xp: 100 } },
+  { id: 'coop_boars', title: 'Boar Hunt', text: 'Together, hunt 4 wild boars.', objectives: [{ kind: 'hunt', id: 'boar', count: 4 }], rewards: { gp: 140, gold: 90, xp: 140 } },
+  { id: 'coop_herbs', title: 'Herbal Harvest', text: 'Together, gather 12 healing herbs.', objectives: [{ kind: 'gather', id: 'herb', count: 12 }], rewards: { gp: 90, gold: 50, xp: 90 } },
+  { id: 'coop_ore', title: 'Iron Expedition', text: 'Together, mine 8 ore deposits.', objectives: [{ kind: 'gather', id: 'iron_ore', count: 8 }], rewards: { gp: 160, gold: 110, xp: 160 } },
   { id: 'coop_spiders', title: 'Web Infestation', text: 'Together, defeat 4 giant spiders.', objectives: [{ kind: 'kill', id: 'spider', count: 4 }], rewards: { gp: 180, gold: 120, xp: 180 } },
   { id: 'coop_goblins', title: 'Goblin Raids', text: 'Together, defeat 5 goblins.', objectives: [{ kind: 'kill', id: 'goblin', count: 5 }], rewards: { gp: 140, gold: 90, xp: 140 } },
   { id: 'coop_boss_bear', title: 'The Ancient Bear', text: 'Defeat the Ancient Bear as a team.', objectives: [{ kind: 'kill', id: 'ancient_bear', count: 1 }], rewards: { gp: 900, gold: 500, xp: 700 } },
@@ -41,11 +45,21 @@ export class SharedQuestState {
   }
 
   onKill(monsterDefId) {
+    this._advance('kill', monsterDefId, 1);
+  }
+  onHunt(animalDefId) {
+    this._advance('hunt', animalDefId, 1);
+  }
+  onGather(itemId, qty) {
+    this._advance('gather', itemId, qty);
+  }
+
+  _advance(kind, id, qty) {
     let changed = false;
     for (const q of this.active) {
       for (const o of q.objectives) {
-        if (o.kind === 'kill' && o.id === monsterDefId && o.progress < o.count) {
-          o.progress++; changed = true;
+        if (o.kind === kind && o.id === id && o.progress < o.count) {
+          o.progress = Math.min(o.count, o.progress + qty); changed = true;
         }
       }
     }

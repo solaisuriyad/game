@@ -5,6 +5,7 @@ import { BUILDING_FUNC_LABELS } from '../data/buildings.js';
 import { PLAYER_TITLES } from '../data/dialogue.js';
 import { T, TILE, WORLD_W, WORLD_H, VILLAGE_CX, VILLAGE_CY, ZONES } from '../world/WorldSystem.js';
 import { HAIR_COLORS, SKIN_TONES, CLOTH_COLORS } from '../data/npcData.js';
+import { LORE } from '../data/lore.js';
 
 export class MenuManager {
   constructor(game) {
@@ -81,6 +82,7 @@ export class MenuManager {
       case 'guild': this._renderGuild(); break;
       case 'crafting': this._renderCrafting(); break;
       case 'relationships': this._renderRelationships(); break;
+      case 'lore': this._renderLore(); break;
       case 'help': this._renderHelp(); break;
       default: this.close();
     }
@@ -104,6 +106,12 @@ export class MenuManager {
     if (f === 'lodge') {
       this.show("Hunter's Lodge", `<div class="muted">Seasoned hunters trade tips here. Buy supplies:</div>
         ${this._shopItemsHTML(['arrow', 'trap', 'bear_trap', 'knife', 'bandage'])}`);
+      return;
+    }
+    if (f === 'shrine') {
+      g.lore.discover('lore_shrine');
+      this.show('Shrine', `<div class="muted">A quiet shrine at the forest's edge, marked with the old crescent rune. Offerings of bread and flowers lie at its base.</div>
+        ${g.lore.has('lore_shrine') ? '<div class="muted" style="margin-top:8px">📜 You study the shrine and learn something of the old pact.</div>' : ''}`);
       return;
     }
     // generic info
@@ -380,6 +388,19 @@ export class MenuManager {
     ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3, 0, Math.PI * 2); ctx.fill();
   }
 
+  _renderLore() {
+    const g = this.game;
+    let html = `<div class="muted">The History of the Forest — ${g.lore.count()} / ${g.lore.total()} discovered</div>`;
+    for (const entry of LORE) {
+      const found = g.lore.has(entry.id);
+      html += `<div class="item ${found ? 'rarity-uncommon' : ''}" style="opacity:${found ? 1 : 0.55}">
+        <div class="n">${found ? entry.title : '???'}</div>
+        <div class="d">${found ? entry.text : '<span class="muted">Undiscovered — explore the forest, find its hidden places, and defeat its guardians.</span>'}</div>
+      </div>`;
+    }
+    this.show('Codex — History of the Forest', html);
+  }
+
   _renderHelp() {
     this.show('How to Play', `<div class="help">
       <b>Move</b> — WASD / arrows<br>
@@ -389,7 +410,7 @@ export class MenuManager {
       <b>Track</b> — Tab toggles tracking (footprint direction + blood trails)<br>
       <b>Traps</b> — T place snare · Y place bear trap · G bait (raw meat/berries)<br>
       <b>Interact</b> — E (gather, harvest, talk, buildings)<br>
-      <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · R relationships · Esc menu<br><br>
+      <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · R relationships · L codex · Esc menu<br><br>
       Hunt animals, gather materials, then <b>submit them at the Adventure Guild</b> to earn Guild Points, gold and rank.
       Buy food to keep your hunger up, rest at the inn, and push deeper into the forest for better loot — but watch your weight and stamina!
     </div>`);

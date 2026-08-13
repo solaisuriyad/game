@@ -4,6 +4,13 @@ export class GatheringSystem {
   gatherNode(node) {
     const g = this.game;
     const p = g.player;
+    // co-op: server-authoritative resources carry an `id`; send a gather intent
+    // (loot + shared-quest progress arrive via the server `loot` event)
+    if (node.id != null) {
+      g.multiplayer.sendGather(node.id);
+      g.audio.sfx('gather');
+      return { ok: true, message: `Gathering ${node.kind}...` };
+    }
     const yieldBonus = g.skills.getEffect('gatherYield') || 0;
     let itemId, qty;
     switch (node.kind) {

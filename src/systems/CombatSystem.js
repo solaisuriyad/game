@@ -50,9 +50,10 @@ export class CombatSystem {
       }
       this.game.inventory.removeItem('arrow', 1);
       const dmg = this.weaponDamage(heavy);
-      // co-op: server resolves monster hits from this intent
+      // co-op: server resolves monster + animal hits from these intents
       if (this.game.multiplayer.connected) {
         this.game.multiplayer.sendAttack({ damage: dmg, facing: p.facing, weaponType: 'bow' });
+        this.game.multiplayer.sendHuntHit({ damage: dmg, facing: p.facing, weaponType: 'bow' });
       }
       const spd = w.range * 3.4;
       const a = p.facing;
@@ -68,9 +69,10 @@ export class CombatSystem {
     // melee swing
     const dmg = this.weaponDamage(heavy);
     const range = w ? w.range : 40;
-    // co-op: server resolves monster hits from this intent (local animals still hit client-side)
+    // co-op: server resolves monster + animal hits from these intents
     if (this.game.multiplayer.connected) {
       this.game.multiplayer.sendAttack({ damage: dmg, facing: p.facing, weaponType: 'melee' });
+      this.game.multiplayer.sendHuntHit({ damage: dmg, facing: p.facing, weaponType: 'melee' });
     }
     p.attackCd = (w ? w.speed : 0.6) * (heavy ? 1.5 : 1);
     p.attackWindup = (w ? w.speed : 0.6) * 0.7;
@@ -197,6 +199,7 @@ export class CombatSystem {
       if (e.boss) {
         g.bus.emit('bossKilled', { def: e.def });
         g.player.recentBossKill = e.def.name;
+        g.lore.onBossKill(e.def.id);
       }
       // village defense: slaying a monster near the village earns NPC favor
       const vd = Math.hypot(e.x / TILE - VILLAGE_CX, e.y / TILE - VILLAGE_CY);

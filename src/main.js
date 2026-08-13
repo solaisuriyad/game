@@ -36,6 +36,7 @@ import { EventSystem } from './systems/EventSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
 import { SaveSystem } from './systems/SaveSystem.js';
 import { InteractSystem } from './systems/InteractSystem.js';
+import { LoreSystem } from './systems/LoreSystem.js';
 import { MultiplayerSystem } from './net/MultiplayerSystem.js';
 import { RemotePlayer } from './entities/RemotePlayer.js';
 import { HUD } from './ui/HUD.js';
@@ -63,6 +64,8 @@ class Game {
     this.traps = []; this.baitPiles = []; this.floatTexts = []; this.toasts = [];
     this.remotePlayers = [];
     this.remoteMonsters = [];
+    this.remoteAnimals = [];
+    this.remoteResources = [];
 
     // entity classes exposed for systems that spawn
     this.AAnimal = Animal; this.AMonster = Monster; this.DDrop = Drop; this.PProjectile = Projectile;
@@ -91,6 +94,7 @@ class Game {
     this.dialogue = new DialogueSystem(this);
     this.save = new SaveSystem(this);
     this.interact = new InteractSystem(this);
+    this.lore = new LoreSystem(this);
     this.multiplayer = new MultiplayerSystem(this);
     this.RemotePlayer = RemotePlayer;
     this.sim = new PopulationSystem(this);
@@ -204,7 +208,7 @@ class Game {
       if (this.ui.open) this.ui.close(); else this.ui._renderMainMenu();
       return;
     }
-    const menus = { i: 'inventory', c: 'character', k: 'skills', j: 'quests', m: 'map', b: 'crafting', r: 'relationships', h: 'help' };
+    const menus = { i: 'inventory', c: 'character', k: 'skills', j: 'quests', m: 'map', b: 'crafting', r: 'relationships', l: 'lore', h: 'help' };
     for (const [k, menu] of Object.entries(menus)) {
       if (input.pressed(k)) { this.ui.openMenu(menu); return; }
     }
@@ -236,11 +240,15 @@ class Game {
     this.sim.update(dt);
     this.gathering.update(dt);
     this.trapSystem.update(dt);
+    this.lore.update();
     this.multiplayer.update(dt);
     this.events.update(dt);
     if (this.economy.caravanTimer) this.economy.caravanTimer = Math.max(0, this.economy.caravanTimer - dt);
 
-    for (const a of this.animals) a.update(dt, this);
+    // animals are server-authoritative in co-op; clients don't simulate them
+    if (!this.multiplayer.connected) {
+      for (const a of this.animals) a.update(dt, this);
+    }
     // monsters are server-authoritative in co-op; clients don't simulate them
     if (!this.multiplayer.connected) {
       for (const m of this.monsters) m.update(dt, this);
@@ -264,6 +272,7 @@ class Game {
     if (zoneName !== this._lastZone) {
       this._lastZone = zoneName;
       this.quests.onExplore(zoneName);
+      this.lore.onZone(zoneName);
       // guild rank gating — warn (don't hard-block) when under-ranked
       const zi = this.world.getZoneIndex(this.player.x, this.player.y);
       const minRank = ZONES[zi].minRank;
@@ -283,9 +292,11 @@ class Game {
     if (!this.player) return 'forest';
     const zone = this.world.getZoneIndex(this.player.x, this.player.y);
     if (zone === 0) return this.time.isNight ? 'night' : 'village';
-    const nearCombat = this.monsters.some((m) => !m.dead && m.distTo(this.player) < 300);
-    if (nearCombat) return 'combat';
-    return zone >= 2 ? 'combat' : 'forest';
+    const near = (m) => !m.dead && m.distTo(this.player) < 320;
+    const monsters = this.multiplayer.connected ? this.remoteMonsters : this.monsters;
+    if (monsters.some((m) => m.boss && near(m))) return 'boss';
+    if (monsters.some((m) => near(m))) return 'combat';
+    return zone >= 3 ? 'combat' : 'forest';
   }
 
   render(ctx) {

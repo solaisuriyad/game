@@ -146,16 +146,24 @@ ambush, adaptive flags) so behavior differs per species without per-species code
     damage, deaths, and individual loot (assigned to the killer).
   - **Boss scaling** (§61) — bosses scale by party size: +50% HP and +25% damage per extra
     player, and ability cooldowns tighten (more mechanics pressure), not just bigger numbers.
-  - **Shared quests** (Phase 8, `server/quest-state.js`) — server owns kill/boss objective
-    progress (monsters are authoritative); all connected players contribute and are all
-    rewarded on completion. Hunt/gather objectives remain client-side until animals and
-    resource nodes are server-authoritative (Phase 9 scope).
+  - **Shared quests** (Phase 8, `server/quest-state.js`) — server owns kill/boss/**hunt**/
+    **gather** objective progress (monsters, animals and resources are all authoritative);
+    all connected players contribute and are all rewarded on completion.
+  - **Wildlife & resources** (`server/wildlife-sim.js`) — server owns animals (wander/flee
+    AI, health, deaths, loot) and resource nodes (depletion, respawn, loot); clients send
+    `huntHit` / `gather` intents validated by the server.
   - **Shared world events** (Phase 8, `server/world-events.js`) — server-driven raids,
     migrations, and rare sightings broadcast to every player; spawned monsters replicate
     via the monster-state channel.
 - **NPC/world-state sync** — shared world events feed each client's village `events.recent`,
   so every player's NPCs gossip about the same happenings (consistent shared world feel).
   Individual NPC relationships remain client-owned (§62).
+- **Forest history (endgame)** — `src/systems/LoreSystem.js` + `src/data/lore.js`: a 12-entry
+  codex discovered via zone exploration, hidden ruins/watchtower, the shrine, and boss kills.
+  Completing it reveals the forest's full history (the §39 ultimate objective) and is
+  persisted in saves.
+- **Audio** — `AudioManager` provides procedural ambient (wind/birds), mood-shifting
+  generative music (village/forest/night/combat/boss), and SFX — all WebAudio, no assets.
 - Client (`src/net/` + `entities/RemoteMonster.js`): client-side prediction for own movement,
   interpolated remote players/monsters; in co-op the client stops simulating local monsters
   and renders server-authoritative ones instead.

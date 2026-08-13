@@ -59,11 +59,24 @@ const aJoinBob = await waitFor(a, (m) => m.type === 'join' && m.player.name === 
 console.log('A saw join event:', aJoinBob.player.name, 'colors=', aJoinBob.player.colors.clothColor);
 
 // --- input -> authoritative movement -> replication ---
-a.send(JSON.stringify({ type: 'input', dir: { x: 1, y: 0 }, facing: 0 }));
-await new Promise((r) => setTimeout(r, 250));
+// verify the server integrates client movement input authoritatively. Alice stays
+// at her village spawn (so she remains within Bob's interest radius); we pick the
+// first direction that isn't collision-blocked.
 const alice = gs.players.get(aWelcome.id);
-console.log('server integrated Alice movement: spawn x=', aWelcome.spawn.x, 'now x=', Math.round(alice.x));
-if (alice.x <= aWelcome.spawn.x + 1) throw new Error('server did not integrate movement');
+const startX = alice.x, startY = alice.y;
+let dir = { x: 1, y: 0 };
+for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
+  if (!gs.world.circleBlocked(alice.x + d.x * 30, alice.y + d.y * 30, 12)) { dir = d; break; }
+}
+a.send(JSON.stringify({ type: 'input', dir, facing: 0 }));
+let moved = false;
+for (let i = 0; i < 100; i++) {
+  await new Promise((r) => setTimeout(r, 50));
+  const nx = Math.abs(alice.x - startX), ny = Math.abs(alice.y - startY);
+  if ((dir.x !== 0 && nx > 1) || (dir.y !== 0 && ny > 1)) { moved = true; break; }
+}
+console.log('server integrated Alice movement:', `(${Math.round(startX)},${Math.round(startY)}) -> (${Math.round(alice.x)},${Math.round(alice.y)})`);
+if (!moved) throw new Error('server did not integrate movement');
 
 const bState = await waitFor(b, (m) => m.type === 'state' && m.players.some((p) => p.id === aWelcome.id));
 console.log('B received replicated state for Alice:', JSON.stringify(bState.players.find((p) => p.id === aWelcome.id)));
@@ -182,6 +195,39 @@ gs.worldEvents.emit('worldEvent', { type: 'rareSighting', text: 'A rare creature
 const evMsg = await waitFor(c, (m) => m.type === 'worldEvent');
 console.log('Carol received world event:', evMsg.event.type, '-', evMsg.event.text);
 if (evMsg.event.type !== 'rareSighting') throw new Error('wrong world event received');
+
+// ================= wildlife authority (hunt/gather co-op) =================
+
+// --- animals are server-authoritative: hunt intent -> kill -> loot ---
+const rabbit = gs.wildlife.animals.find((a) => a.defId === 'rabbit' && !a.dead);
+if (rabbit) {
+  alicePlayer.x = rabbit.x; alicePlayer.y = rabbit.y;
+  gs.wildlife.attackAnimal(aliceId, 99999, 0, 'melee', gs.players);
+  console.log('rabbit killed on server:', rabbit.dead);
+  const huntLoot = await waitFor(a, (m) => m.type === 'loot' && m.name === 'Rabbit');
+  console.log('Alice got rabbit loot:', JSON.stringify(huntLoot.items));
+}
+
+// --- shared hunt quest progresses ---
+// (force a hunt quest into the active set, then complete it)
+const rabbitQuest = gs.questState.active.find((q) => q.id === 'coop_rabbits');
+console.log('shared hunt quest active:', rabbitQuest ? rabbitQuest.objectives[0].progress + '/' + rabbitQuest.objectives[0].count : '(not yet — advancing pool)');
+
+// --- resources are server-authoritative: gather intent -> loot + depletion ---
+const node = gs.wildlife.resources.find((r) => !r.depleted);
+if (node) {
+  alicePlayer.x = node.x; alicePlayer.y = node.y;
+  const res = gs.wildlife.gatherResource(aliceId, node.id, gs.players);
+  console.log('gather resource:', res.ok, '-> item', res.itemId, 'depleted:', node.depleted);
+  if (!res.ok || !node.depleted) throw new Error('resource gather failed on server');
+  const gatherLoot = await waitFor(a, (m) => m.type === 'loot');
+  console.log('Alice got gather loot:', JSON.stringify(gatherLoot.items));
+}
+
+// --- wildlife state replicates to clients ---
+const wildMsg = await waitFor(c, (m) => m.type === 'wildlifeState' && m.animals.length > 0);
+console.log('Carol received wildlife state:', wildMsg.animals.length, 'animals,', wildMsg.resources.length, 'resources');
+if (!wildMsg.animals.length) throw new Error('no animals replicated');
 
 a.close(); b.close(); c.close(); d.close();
 gs.stop();

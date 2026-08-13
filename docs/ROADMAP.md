@@ -11,7 +11,7 @@
 | 5 | Co-op networking foundation | ✅ WebSocket server, join/leave, replication, interest management |
 | 6 | Co-op player sync | ✅ positional sync + interpolation |
 | 7 | Co-op combat + monster scaling | ✅ server-authoritative monsters, combat, loot, boss scaling by party size |
-| 8 | Co-op quests, loot, world events | ✅ shared kill/boss quests, shared world events, NPC gossip sync |
+| 8 | Co-op quests, loot, world events | ✅ shared kill/**hunt**/**gather** quests, shared world events, NPC gossip sync |
 | 9 | 1000-NPC optimization | ✅ background sim tiers + spatial render culling + bulk spawn; 1000-NPC benchmark |
 | 10 | Multiplayer stress test | ✅ 200-client stress test: tick budget, throughput, mass disconnect |
 
@@ -45,8 +45,23 @@
 **M9 — UI, map, save/load, death** ✅
 - HUD, menus, minimap + world map w/ fog, multi-slot save, death penalties.
 
-## Next steps (recommended order)
+## Remaining items (all roadmap phases 1–10 complete ✅)
 
-1. Server-authoritative animals/resources (bring hunt/gather quests into co-op).
-2. Audio/music polish + handcrafted quests & village story beats (the forest's history).
-3. Player-facing "world history" of the forest (long-term progression's ultimate goal).
+The priority phases per §69 are done. What remains is optional polish/expansion:
+
+1. Audio asset polish (real recordings vs. the current procedural synth).
+2. More handcrafted NPC storylines & quests (the lore entries are in place; more
+   could be added as data).
+3. Art direction pass (sprite/tile art beyond the current vector style).
+
+## Implemented this round (final feature pass)
+
+- **Co-op hunt & gather (Phase 8 extension)** — server-authoritative animals
+  (`server/wildlife-sim.js`) and resource nodes; clients send hunt/gather intents;
+  shared hunt/gather quests (rabbits, boars, herbs, ore) with party-wide rewards.
+- **Generative music** — mood-shifting procedural score (village / forest / night /
+  combat / boss) layered over the existing ambient + SFX.
+- **The History of the Forest (endgame)** — a lore codex (`src/data/lore.js`) of 12
+  entries discovered through zone exploration, hidden ruins/watchtower, the shrine,
+  and boss kills; completing it reveals the forest's full history and crowns the
+  player's journey (matches §39's ultimate objective).

@@ -1,5 +1,15 @@
-// Procedural audio (no asset files). WebAudio ambient + short SFX.
-// All methods are no-ops until the user has interacted (autoplay policy).
+// Procedural audio (no asset files). WebAudio ambient + short SFX + a small
+// generative music engine that shifts with the current mood (village / forest /
+// night / combat / boss). All methods are no-ops until the user has interacted
+// (autoplay policy), and everything degrades gracefully without WebAudio.
+const MUSIC_MOODS = {
+  village: { root: 196.0, scale: [0, 2, 4, 7, 9], tempo: 84, timbre: 'sine', bass: true, perc: false, vol: 0.10 },
+  forest: { root: 174.61, scale: [0, 3, 5, 7, 10], tempo: 68, timbre: 'triangle', bass: true, perc: false, vol: 0.11 },
+  night: { root: 146.83, scale: [0, 3, 5, 7, 10], tempo: 52, timbre: 'sine', bass: true, perc: false, vol: 0.08 },
+  combat: { root: 110.0, scale: [0, 2, 3, 5, 7, 8, 10], tempo: 142, timbre: 'sawtooth', bass: true, perc: true, vol: 0.11 },
+  boss: { root: 98.0, scale: [0, 1, 3, 5, 6, 8, 10], tempo: 112, timbre: 'square', bass: true, perc: true, vol: 0.13 }
+};
+
 export class AudioManager {
   constructor() {
     this.ctx = null;
@@ -7,7 +17,12 @@ export class AudioManager {
     this._t = 0;
     this.master = 0.5;
     this.ambientGain = null;
+    this.musicGain = null;
     this.birdTimer = 0;
+    // music scheduler state
+    this._musicMood = 'forest';
+    this._musicNextTime = 0;
+    this._musicStep = 0;
   }
   resume() {
     if (!this.ctx) {
@@ -16,8 +31,12 @@ export class AudioManager {
         this.ambientGain = this.ctx.createGain();
         this.ambientGain.gain.value = 0.25;
         this.ambientGain.connect(this.ctx.destination);
+        this.musicGain = this.ctx.createGain();
+        this.musicGain.gain.value = 0.0;
+        this.musicGain.connect(this.ctx.destination);
         this._startWind();
         this._startBirds();
+        this._musicNextTime = this.ctx.currentTime + 0.1;
       } catch (e) { this.ctx = null; }
     }
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
@@ -67,6 +86,73 @@ export class AudioManager {
       this._chirp();
       this.birdTimer = 1.5 + Math.random() * 6;
     }
+    this._scheduleMusic(mood);
+  }
+
+  // ---- generative music ----
+  _scheduleMusic(mood) {
+    if (!this.ctx || !this.musicGain) return;
+    const cfg = MUSIC_MOODS[mood] || MUSIC_MOODS.forest;
+    // fade the music channel toward the mood's target volume
+    const target = mood === 'boss' || mood === 'combat' ? cfg.vol : cfg.vol;
+    this.musicGain.gain.setTargetAtTime(target, this.ctx.currentTime, 1.2);
+    // schedule notes ahead (lookahead scheduler)
+    const lookahead = this.ctx.currentTime + 0.18;
+    const beat = 60 / cfg.tempo;
+    while (this._musicNextTime < lookahead) {
+      this._playMusicNote(cfg, this._musicStep, this._musicNextTime, beat);
+      this._musicStep++;
+      this._musicNextTime += beat / 2; // eighth notes
+    }
+    if (mood !== this._musicMood) { this._musicMood = mood; this._musicStep = 0; }
+  }
+  _freq(root, semi) { return root * Math.pow(2, semi / 12); }
+  _playMusicNote(cfg, step, time, beat) {
+    const c = this.ctx;
+    const rng = Math.random;
+    // melody note (mostly on beats)
+    if (step % 2 === 0 && rng() < 0.8) {
+      const semi = cfg.scale[Math.floor(rng() * cfg.scale.length)];
+      const f = this._freq(cfg.root * 2, semi); // one octave up for melody
+      this._pluck(cfg.timbre, f, time, 0.16, 0.10);
+    }
+    // bass every 4 beats
+    if (cfg.bass && step % 8 === 0) {
+      const semi = cfg.scale[0];
+      this._pluck('triangle', this._freq(cfg.root, semi), time, 0.5, 0.16);
+    }
+    // percussion for combat/boss
+    if (cfg.perc && step % 4 === 2) {
+      this._perc(time);
+    }
+  }
+  _pluck(type, freq, time, dur, vol) {
+    const c = this.ctx;
+    const o = c.createOscillator();
+    const g = c.createGain();
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = freq * 4;
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(vol, time + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(f).connect(g).connect(this.musicGain);
+    o.start(time); o.stop(time + dur + 0.05);
+  }
+  _perc(time) {
+    const c = this.ctx;
+    const buf = this._noiseBuffer();
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const g = c.createGain();
+    const f = c.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = 2000;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(0.06, time + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
+    src.connect(f).connect(g).connect(this.musicGain);
+    src.start(time); src.stop(time + 0.1);
   }
   _chirp() {
     const c = this.ctx;

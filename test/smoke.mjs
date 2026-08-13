@@ -168,4 +168,28 @@ if (boar && game.traps.some((t) => t.type === 'bear_trap')) {
   if (!bt.sprung) throw new Error('bear trap did not spring on boar');
 }
 
-console.log('ALL SMOKE TESTS PASSED');
+// ---- lore / forest history ----
+game.player.x = 99 * 32 + 16; game.player.y = 96 * 32 + 16; // back in village
+game.lore.discover('lore_shrine');
+console.log('lore after shrine:', game.lore.count(), 'of', game.lore.total());
+if (!game.lore.has('lore_shrine')) throw new Error('shrine lore not discovered');
+// zone entry unlock
+game.lore.onZone('Deep Forest');
+if (!game.lore.has('lore_deep')) throw new Error('deep forest lore not unlocked');
+// boss kill unlock
+game.lore.onBossKill('forest_guardian');
+if (!game.lore.has('lore_guardian')) throw new Error('guardian lore not unlocked');
+// completion: discovering all other entries unlocks the final history entry
+import('../src/data/lore.js').then(({ LORE }) => {
+  for (const l of LORE) if (l.id !== 'lore_history') game.lore.discover(l.id, { silent: true });
+  console.log('lore total after full discovery:', game.lore.count(), '/', game.lore.total(), '| history unlocked:', game.lore.has('lore_history'));
+  if (!game.lore.has('lore_history')) throw new Error('final history entry did not unlock');
+  // save/load preserves lore
+  game.save.save(0);
+  game.lore.discovered.clear();
+  game.save.load(0);
+  console.log('lore after reload:', game.lore.count());
+  if (game.lore.count() === 0) throw new Error('lore did not persist through save/load');
+  console.log('ALL SMOKE TESTS PASSED');
+  process.exit(0);
+});

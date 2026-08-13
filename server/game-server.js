@@ -5,6 +5,7 @@
 //          resolution, deaths, and loot, and scales bosses by party size.
 import { WorldSystem, PX_W, PX_H } from '../src/world/WorldSystem.js';
 import { MonsterSim } from './monster-sim.js';
+import { WildlifeSim } from './wildlife-sim.js';
 import { SharedQuestState } from './quest-state.js';
 import { WorldEvents } from './world-events.js';
 
@@ -19,6 +20,8 @@ export class GameServer {
     this.players = new Map();
     this.sim = new MonsterSim(this.world);
     this.sim.emit = (type, data) => this._routeEvent(type, data);
+    this.wildlife = new WildlifeSim(this.world);
+    this.wildlife.emit = (type, data) => this._routeEvent(type, data);
     this.questState = new SharedQuestState();
     this.questState.emit = (type, data) => this._routeEvent(type, data);
     this.worldEvents = new WorldEvents(this.world, this.sim);
@@ -86,6 +89,21 @@ export class GameServer {
         this.sim.applyPlayerAttack(p.id, damage, facing, weaponType, this.players);
         break;
       }
+      case 'huntHit': {
+        const p = this.players.get(ws.playerId);
+        if (!p) break;
+        const damage = Math.max(1, Math.round(Number(msg.damage) || 0));
+        const facing = Number(msg.facing) || p.facing;
+        const weaponType = msg.weaponType === 'bow' ? 'bow' : 'melee';
+        this.wildlife.attackAnimal(p.id, damage, facing, weaponType, this.players);
+        break;
+      }
+      case 'gather': {
+        const p = this.players.get(ws.playerId);
+        if (!p) break;
+        this.wildlife.gatherResource(p.id, Number(msg.resourceId), this.players);
+        break;
+      }
     }
   }
 
@@ -119,6 +137,16 @@ export class GameServer {
         this._broadcast({ type, id: data.id, to: data.to, defId: data.defId });
         this.questState.onKill(data.defId);
         break;
+      case 'animalHit':
+        this._broadcast({ type, id: data.id, hp: data.hp, damage: data.damage });
+        break;
+      case 'animalDeath':
+        this._broadcast({ type, id: data.id, to: data.to, defId: data.defId });
+        this.questState.onHunt(data.defId);
+        break;
+      case 'resourceGathered':
+        this._broadcast({ type, id: data.id, to: data.to });
+        break;
       case 'loot':
         this._sendTo(data.to, { type: 'loot', items: data.items, name: data.name });
         break;
@@ -148,6 +176,8 @@ export class GameServer {
     }
     // authoritative monster simulation (AI + combat + phases)
     this.sim.tick(dt, this.players);
+    // authoritative wildlife & resources (hunt/gather)
+    this.wildlife.tick(dt, this.players);
     // shared world events (raids, migrations, rare sightings)
     this.worldEvents.tick(dt);
 
@@ -169,9 +199,25 @@ export class GameServer {
         if (d <= MONSTER_INTEREST || m.boss) monsters.push(this.sim.serialize(m));
       }
       try { p.ws.send(JSON.stringify({ type: 'monsterState', monsters })); } catch (e) {}
+      // replicate wildlife (interest-managed; resources within a larger radius)
+      const animals = [];
+      for (const a of this.wildlife.animals) {
+        if (a.dead) continue;
+        if (Math.hypot(a.x - p.x, a.y - p.y) <= 1600) {
+          animals.push({ id: a.id, defId: a.defId, x: Math.round(a.x), y: Math.round(a.y), radius: a.radius, hp: a.hp, maxHp: a.maxHp, color: a.color, facing: a.facing });
+        }
+      }
+      const resources = [];
+      for (const r of this.wildlife.resources) {
+        if (Math.hypot(r.x - p.x, r.y - p.y) <= 2200) {
+          resources.push({ id: r.id, kind: r.kind, x: Math.round(r.x), y: Math.round(r.y), depleted: r.depleted });
+        }
+      }
+      try { p.ws.send(JSON.stringify({ type: 'wildlifeState', animals, resources })); } catch (e) {}
     }
-    // purge dead monsters (death events already emitted)
+    // purge dead monsters & animals (death events already emitted)
     this.sim.monsters = this.sim.monsters.filter((m) => !m.dead);
+    this.wildlife.animals = this.wildlife.animals.filter((a) => !a.dead);
     this.lastTickMs = performance.now() - t0;
   }
 }

@@ -27,7 +27,7 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 | Tab | Toggle **tracking** (footprint direction + blood trails) |
 | T · Y · G | Place snare · place bear trap · bait (raw meat/berries) |
 | E | Interact (gather / harvest / talk / buildings) |
-| I · C · K · J · M · B · R | Inventory · Character · Skills · Quests · Map · Craft · Relationships |
+| I · C · K · J · M · B · R · L | Inventory · Character · Skills · Quests · Map · Craft · Relationships · Codex |
 | Esc | Menu (save / load / help / quit) |
 
 ## What's implemented (MVP vertical slice)
@@ -47,7 +47,9 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 - **Random events** — caravan, rare sighting, monster attack, injured hunter (NPCs gossip about them).
 - **Death system** — respawn with gold/material/durability penalties, progression kept.
 - **Save/load** — 3 slots, localStorage, versioned schema.
-- **Co-op (Phases 5–8)** — authoritative WebSocket server (`server/`): server-owned player movement + replication, **server-authoritative monsters** (AI, combat, deaths, individual loot), **boss scaling by party size** (+HP/+damage/tighter ability cooldowns), **shared kill/boss quests** (whole party contributes & is rewarded), and **shared world events** (raids, migrations, rare sightings) that NPCs gossip about consistently. Interest management syncs only nearby entities. Single-player remains fully offline.
+- **Co-op (Phases 5–8)** — authoritative WebSocket server (`server/`): server-owned player movement + replication, **server-authoritative monsters & wildlife** (AI, combat, deaths, individual loot), **boss scaling by party size** (+HP/+damage/tighter ability cooldowns), **shared kill/hunt/gather quests** (whole party contributes & is rewarded), and **shared world events** (raids, migrations, rare sightings) that NPCs gossip about consistently. Interest management syncs only nearby entities. Single-player remains fully offline.
+- **Forest history (endgame)** — a 12-entry lore codex discovered through exploration, hidden ruins, the shrine, and boss kills; completing it reveals the forest's full history (the §39 ultimate objective). Press L for the Codex.
+- **Audio & music** — procedural ambient (wind, birds), mood-shifting generative score (village/forest/night/combat/boss), and SFX — no asset files.
 - **1000-NPC optimization (Phase 9)** — background simulation tiers, spatial render culling, and bulk NPC spawning let the village run ~1000 NPCs comfortably (benchmarked at ~3ms/frame). Enable via `?npcs=1000`.
 - **Stress tested (Phase 10)** — the server holds 200 concurrent players at ~25ms/tick (budget 50ms).
 - **UI** — HUD (bars, clock, minimap, compass, quest tracker), full-screen menus, dialogue, world map with fog-of-war.
@@ -90,8 +92,9 @@ src/
   ui/        HUD, MenuManager, style
 ```
 
-## Roadmap (designed, not yet built)
+## Status
 
-Server-authoritative animals/resources (to bring hunt/gather quests into co-op),
-audio/music polish, handcrafted story beats, and the forest's "world history" endgame.
-See `docs/ROADMAP.md`.
+All 10 priority phases (§69) are implemented and tested. The codebase is a complete,
+playable, data-driven vertical slice with working single-player, co-op, and an endgame
+lore arc. Remaining work is optional polish (recorded audio, more storylines, art pass) —
+see `docs/ROADMAP.md`.
