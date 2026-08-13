@@ -116,11 +116,19 @@ export class Player extends Entity {
 
     // ---- flying (press X to start; 30s of flight, 5s cooldown, 50ft ceiling) ----
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
-    if (game.input.pressed('x') && !this.flying && this.flyCd <= 0) {
-      this.flying = true;
-      this.flyTime = 30;
-      game.audio.sfx('levelup');
-      game.toast('✈️ You take flight! (30 seconds, up to 50 feet)');
+    // X toggles flight: press to take off, press again to land
+    if (game.input.pressed('x')) {
+      if (this.flying) {
+        this.flying = false;
+        this.flyCd = 5;
+        this.altitude = 0;
+        game.toast('You land safely. (5s cooldown)');
+      } else if (this.flyCd <= 0) {
+        this.flying = true;
+        this.flyTime = 30;
+        game.audio.sfx('levelup');
+        game.toast('✈️ You take flight! Press X again to land (30s, up to 50 feet)');
+      }
     }
     if (this.flying) {
       this.flyTime -= dt;

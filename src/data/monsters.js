@@ -267,13 +267,15 @@ export const MONSTERS = [
   },
   {
     id: 'fire_dragon', name: 'Fire Dragon', family: 'dragon', zones: [4], level: 28, hp: 1200, damage: 40, defense: 6,
-    speed: 110, size: 30, xp: 1200, color: '#ff5a30', rank: 'S',
+    speed: 110, size: 30, xp: 1200, color: '#ff5a30', rank: 'S', flying: true, mp: 260,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
       { id: 'fire_breath', params: { damage: 1.4, cooldown: 5.0, range: 280, speed: 320 } },
-      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } },
-      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 170 } }
+      { id: 'fire_ball', params: { damage: 1.3, cooldown: 4.5, range: 300, speed: 300 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'fly', params: { damage: 1.2, cooldown: 6.0, range: 260, speed: 400 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } }
     ],
     loot: [
       { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
@@ -284,13 +286,15 @@ export const MONSTERS = [
   },
   {
     id: 'ice_dragon', name: 'Ice Dragon', family: 'dragon', zones: [4], level: 29, hp: 1250, damage: 38, defense: 7,
-    speed: 100, size: 30, xp: 1250, color: '#8ac8ff', rank: 'S',
+    speed: 100, size: 30, xp: 1250, color: '#8ac8ff', rank: 'S', flying: true, mp: 270,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
       { id: 'ice_breath', params: { damage: 1.3, cooldown: 5.0, range: 280, speed: 320 } },
-      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } },
-      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 170 } }
+      { id: 'air_slash', params: { damage: 1.2, cooldown: 4.5, range: 300, speed: 320 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'fly', params: { damage: 1.2, cooldown: 6.0, range: 260, speed: 400 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } }
     ],
     loot: [
       { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
@@ -301,13 +305,14 @@ export const MONSTERS = [
   },
   {
     id: 'earth_dragon', name: 'Earth Dragon', family: 'dragon', zones: [4], level: 30, hp: 1400, damage: 42, defense: 8,
-    speed: 90, size: 32, xp: 1350, color: '#9a8a5a', rank: 'S',
+    speed: 90, size: 32, xp: 1350, color: '#9a8a5a', rank: 'S', flying: false, mp: 280,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.1, range: 64, knockback: 140 } },
       { id: 'ground_slam', params: { damage: 1.5, cooldown: 6.0, range: 130, radius: 130 } },
-      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 120, radius: 120 } },
-      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 180 } }
+      { id: 'water_slash', params: { damage: 1.2, cooldown: 4.5, range: 280, speed: 300 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 120, radius: 120 } }
     ],
     loot: [
       { item: 'meat_raw', chance: 1.0, min: 3, max: 5 },
@@ -318,11 +323,13 @@ export const MONSTERS = [
   },
   {
     id: 'dragonoid_fire', name: 'Fire Dragonoid', family: 'dragonoid', zones: [5], level: 36, hp: 2600, damage: 55, defense: 10,
-    speed: 140, size: 34, xp: 3000, color: '#ff3020', rank: 'A+', boss: true,
+    speed: 140, size: 34, xp: 3000, color: '#ff3020', rank: 'A+', boss: true, flying: true, mp: 500,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
       { id: 'fire_breath', params: { damage: 1.5, cooldown: 4.0, range: 300, speed: 340 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 520 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
       { id: 'summon', params: { summonId: 'fire_dragon', count: 1, cooldown: 16.0, range: 0 } },
       { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }
@@ -335,11 +342,14 @@ export const MONSTERS = [
   },
   {
     id: 'dragonoid_ice', name: 'Ice Dragonoid', family: 'dragonoid', zones: [5], level: 38, hp: 2800, damage: 53, defense: 11,
-    speed: 135, size: 34, xp: 3200, color: '#4080ff', rank: 'A+', boss: true,
+    speed: 135, size: 34, xp: 3200, color: '#4080ff', rank: 'A+', boss: true, flying: true, mp: 500,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
       { id: 'ice_breath', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 340 } },
+      { id: 'air_slash', params: { damage: 1.4, cooldown: 4.0, range: 320, speed: 340 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 520 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
       { id: 'summon', params: { summonId: 'ice_dragon', count: 1, cooldown: 16.0, range: 0 } },
       { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }
@@ -352,11 +362,14 @@ export const MONSTERS = [
   },
   {
     id: 'dragonoid_earth', name: 'Earth Dragonoid', family: 'dragonoid', zones: [5], level: 40, hp: 3200, damage: 60, defense: 12,
-    speed: 120, size: 36, xp: 3600, color: '#c8a060', rank: 'A+', boss: true,
+    speed: 120, size: 36, xp: 3600, color: '#c8a060', rank: 'A+', boss: true, flying: true, mp: 500,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
     abilities: [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 66, knockback: 160 } },
       { id: 'ground_slam', params: { damage: 1.7, cooldown: 5.0, range: 140, radius: 150 } },
+      { id: 'water_slash', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 320 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 500 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 480 } },
       { id: 'summon', params: { summonId: 'earth_dragon', count: 1, cooldown: 16.0, range: 0 } },
       { id: 'rage', params: { heal: 0, cooldown: 14.0, range: 0, buff: 'rage' } }

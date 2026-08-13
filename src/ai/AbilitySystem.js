@@ -134,6 +134,39 @@ export class AbilitySystem {
       }));
     }
   }
+  do_air_slash(monster, params, game) {
+    const p = game.player;
+    if (monster.distTo(p) > (params.range || 260)) return;
+    this._spawnProjectile(monster, p, params, game, { kind: 'web', color: '#d8f0ff', status: null });
+    game.audio.sfx('swing');
+  }
+  do_fire_ball(monster, params, game) {
+    const p = game.player;
+    if (monster.distTo(p) > (params.range || 280)) return;
+    this._spawnProjectile(monster, p, params, game, { kind: 'rock', color: '#ff7a30', status: { type: 'burn', duration: 3, magnitude: 1 } });
+  }
+  do_water_slash(monster, params, game) {
+    const p = game.player;
+    if (monster.distTo(p) > (params.range || 260)) return;
+    this._spawnProjectile(monster, p, params, game, { kind: 'web', color: '#4aa8ff', status: { type: 'slow', duration: 1.5, magnitude: 0.6 } });
+  }
+  do_thunder_attack(monster, params, game) {
+    const p = game.player;
+    game.camera.addShake(7);
+    game.audio.sfx('hit');
+    if (monster.distTo(p) <= (params.radius || 160)) {
+      game.combat.damagePlayer(monster.damage * (params.damage || 1.3), monster, null);
+      if (Math.random() < 0.4) p.addStatus('stun', 0.6, 1);
+      game.addFloatText(p.x, p.y - 30, '⚡ Thunder!', '#c8a0ff');
+    }
+  }
+  do_fly(monster, params, game) {
+    const p = game.player;
+    monster.flyingNow = true;
+    if (monster.distTo(p) > params.range) return;
+    const a = monster.angleTo(p);
+    monster.dash = { dx: Math.cos(a), dy: Math.sin(a), t: 0.4, damage: monster.damage * (params.damage || 1.2), status: null, speed: params.speed || 380 };
+  }
   do_summon(monster, params, game) {
     const def = game.sim.findMonsterDef(params.summonId);
     if (!def) return;

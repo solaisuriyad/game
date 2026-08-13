@@ -87,7 +87,7 @@ export class MapRenderer {
     for (const c of w.collidersNear(cam.x + cam.vw / 2, cam.y + cam.vh / 2, cam.vw / 2 + 60)) {
       const sx = c.x - cam.x, sy = c.y - cam.y;
       if (c.type === 'tree') {
-        this._drawTree(ctx, sx + 13, sy + 13, c.dark, c.depleted, c.variant);
+        this._drawTree(ctx, sx + c.w / 2, sy + c.h / 2, c.dark, c.depleted, c.variant, c.size);
       } else if (c.type === 'yggdrasil') {
         this._drawYggdrasil(ctx, sx + c.w / 2, sy + c.h / 2, c);
       } else if (c.type === 'rock') {
@@ -103,46 +103,49 @@ export class MapRenderer {
     }
   }
 
-  _drawTree(ctx, x, y, dark, depleted, variant = 0) {
+  _drawTree(ctx, x, y, dark, depleted, variant = 0, size = 1) {
+    // scale up big trees (occupy multiple tiles)
+    const k = size;
     if (depleted) {
-      // a chopped stump — passable, will regrow
       ctx.fillStyle = '#8a6a3a';
-      ctx.beginPath(); ctx.ellipse(x, y + 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 7 * k, 5 * k, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#6a4e2a';
-      ctx.beginPath(); ctx.ellipse(x, y + 4, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 5 * k, 3 * k, 0, 0, Math.PI * 2); ctx.fill();
       return;
     }
-    // palette per variant: oak / pine / birch / autumn / willow
+    // palette per variant: oak / pine / birch / autumn / willow / crimson / goldleaf
     const LEAF = [
       { canopy: '#3f7a35', highlight: '#5a9a4a', shape: 'round' },
       { canopy: '#2a5a33', highlight: '#3a7a46', shape: 'pine' },
       { canopy: '#7a9a3a', highlight: '#a8c46a', shape: 'round' },
       { canopy: '#c0682a', highlight: '#e09a4a', shape: 'round' },
-      { canopy: '#4a8a4a', highlight: '#6aaa5a', shape: 'willow' }
+      { canopy: '#4a8a4a', highlight: '#6aaa5a', shape: 'willow' },
+      { canopy: '#8a3040', highlight: '#c04a5a', shape: 'round' },
+      { canopy: '#c8a030', highlight: '#e8c85a', shape: 'round' }
     ][variant] || { canopy: '#3f7a35', highlight: '#5a9a4a', shape: 'round' };
     const col = dark ? this._darken(LEAF.canopy) : LEAF.canopy;
     ctx.fillStyle = '#4a3a26';
-    ctx.fillRect(x - 2, y + 2, 4, 10);
+    ctx.fillRect(x - 2 * k, y + 2 * k, 4 * k, 10 * k);
     if (LEAF.shape === 'pine') {
       ctx.fillStyle = col;
-      for (let i = 0; i < 3; i++) {
-        const w = 14 - i * 3, yy = y - 2 - i * 6;
+      for (let i = 0; i < 3 + k; i++) {
+        const w = (14 - i * 2.5) * k, yy = y - 2 * k - i * 6 * k;
         ctx.beginPath();
-        ctx.moveTo(x, yy - 8); ctx.lineTo(x - w, yy + 4); ctx.lineTo(x + w, yy + 4); ctx.closePath();
+        ctx.moveTo(x, yy - 8 * k); ctx.lineTo(x - w, yy + 4 * k); ctx.lineTo(x + w, yy + 4 * k); ctx.closePath();
         ctx.fill();
       }
     } else if (LEAF.shape === 'willow') {
       ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(x, y - 6, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y - 6 * k, 11 * k, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2 * k;
       for (let i = -2; i <= 2; i++) {
-        ctx.beginPath(); ctx.moveTo(x + i * 4, y - 2); ctx.lineTo(x + i * 5, y + 10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + i * 4 * k, y - 2 * k); ctx.lineTo(x + i * 5 * k, y + 10 * k); ctx.stroke();
       }
     } else {
       ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(x, y - 4, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y - 4 * k, 12 * k, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = LEAF.highlight;
-      ctx.beginPath(); ctx.arc(x - 3, y - 7, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x - 3 * k, y - 7 * k, 5 * k, 0, Math.PI * 2); ctx.fill();
     }
   }
 

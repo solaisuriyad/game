@@ -21,8 +21,10 @@ export function monsterBrain(m, dt, game) {
   // cast (ability windup)
   if (m.casting) {
     m.castTimer -= dt;
-    // telegraph: turn color during windup handled in draw via casting
     if (m.castTimer <= 0) {
+      // deduct MP for the skill (melee basic is free)
+      const cost = skillMpCost(m.casting.ability, m);
+      m.mp = Math.max(0, m.mp - cost);
       game.abilities.execute(m, m.casting.ability, m.casting.params, game);
       m.abilityCd[m.casting.ability] = m.casting.params.cooldown;
       m.casting = null;
@@ -129,10 +131,29 @@ export function monsterBrain(m, dt, game) {
   m.facing = m.angleTo(p);
 }
 
+// MP cost of a monster skill (melee basic is free; stronger skills cost more)
+function skillMpCost(abilityId, m) {
+  const COST = {
+    melee_basic: 0, bleeding_bite: 10, lunge: 12, pounce: 14, throw_rock: 8,
+    web_shot: 12, howl: 15, root_slam: 20, regenerate: 25, rage: 20,
+    ground_slam: 22, charge: 15, roar: 15, fire_breath: 30, ice_breath: 30,
+    tail_swipe: 18, summon: 40, air_slash: 15, fire_ball: 22, water_slash: 16,
+    thunder_attack: 35, fly: 12
+  };
+  return COST[abilityId] || 10;
+}
+
 function moveToward(m, target, speed, dt, game) {
   const a = Math.atan2(target.y - m.y, target.x - m.x);
   m.facing = a;
-  game.world.moveEntity(m, Math.cos(a) * speed * dt, Math.sin(a) * speed * dt);
+  const dx = Math.cos(a) * speed * dt, dy = Math.sin(a) * speed * dt;
+  if (m.flying) {
+    // aerial monsters soar over water, trees and buildings
+    m.x = Math.max(24, Math.min(game.world.PX_W - 24, m.x + dx));
+    m.y = Math.max(24, Math.min(game.world.PX_H - 24, m.y + dy));
+  } else {
+    game.world.moveEntity(m, dx, dy);
+  }
 }
 
 function fleeFrom(m, p, dt, game) {
@@ -165,12 +186,15 @@ function chooseAbility(m, dPlayer, inMelee, game) {
     if (ab.id === 'regenerate' && m.hp > m.maxHp * 0.6) continue;
     if (ab.id === 'rage' && m.hp > m.maxHp * 0.5) continue;
 
+    // skip skills the monster can't afford (MP gate) — but always allow melee
+    if (skillMpCost(ab.id, m) > m.mp) continue;
+
     let weight = 1;
     if (ab.id === 'melee_basic') weight = 4;
-    if ((ab.id === 'lunge' || ab.id === 'pounce' || ab.id === 'charge') && wantsClose) weight += 2;
+    if ((ab.id === 'lunge' || ab.id === 'pounce' || ab.id === 'charge' || ab.id === 'fly') && wantsClose) weight += 2;
     if (ab.id === 'howl') weight = m._wantsHowl ? 3 : 0.4;
-    if ((ab.id === 'web_shot' || ab.id === 'throw_rock' || ab.id === 'fire_breath' || ab.id === 'ice_breath') && dPlayer > 120) weight += 1.5;
-    if ((ab.id === 'root_slam' || ab.id === 'ground_slam' || ab.id === 'tail_swipe') && dPlayer < 110) weight += 1.5;
+    if ((ab.id === 'web_shot' || ab.id === 'throw_rock' || ab.id === 'fire_breath' || ab.id === 'ice_breath' || ab.id === 'air_slash' || ab.id === 'fire_ball' || ab.id === 'water_slash') && dPlayer > 120) weight += 1.5;
+    if ((ab.id === 'root_slam' || ab.id === 'ground_slam' || ab.id === 'tail_swipe' || ab.id === 'thunder_attack') && dPlayer < 130) weight += 1.5;
     if (ab.id === 'summon' && m.boss) weight += 1;
     candidates.push({ ability: ab.id, params: ab.params, w: weight });
   }

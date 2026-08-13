@@ -9,27 +9,27 @@
 import { MONSTERS } from '../src/data/monsters.js';
 import { rankForLevel, essenceId } from '../src/data/ranks.js';
 
-const ZONE_RINGS = { 1: [30, 75], 2: [80, 135], 3: [140, 205], 4: [210, 295], 5: [300, 420] };
+const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 395], 5: [405, 650] };
 
 // spawn plan: how many of each monster the shared world keeps alive
 const SPAWN_PLAN = [
-  { id: 'slime', count: 6 }, { id: 'goblin', count: 5 }, { id: 'wolf', count: 6 },
-  { id: 'spider', count: 4 }, { id: 'treant', count: 3 }, { id: 'skeleton', count: 3 },
-  { id: 'swamp_beast', count: 2 }, { id: 'demon_beast', count: 2 }, { id: 'ancient_beast', count: 1 },
-  { id: 'dire_wolf', count: 4 }, { id: 'goblin_shaman', count: 3 }, { id: 'goblin_brute', count: 3 },
-  { id: 'thorn_beast', count: 3 }, { id: 'shadow_stalker', count: 3 }, { id: 'cave_troll', count: 2 },
-  { id: 'venom_wyrm', count: 3 }, { id: 'hell_hound', count: 3 }, { id: 'yggdrasil_spriggan', count: 2 },
-  { id: 'alpha_wolf', count: 1 }, { id: 'ancient_bear', count: 1 },
-  { id: 'forest_guardian', count: 1 }, { id: 'ancient_dragon', count: 1 },
-  { id: 'fire_dragon', count: 1 }, { id: 'ice_dragon', count: 1 }, { id: 'earth_dragon', count: 1 },
-  { id: 'dragonoid_fire', count: 1 }, { id: 'dragonoid_ice', count: 1 }, { id: 'dragonoid_earth', count: 1 }
+  { id: 'slime', count: 30 }, { id: 'goblin', count: 30 }, { id: 'wolf', count: 35 },
+  { id: 'spider', count: 22 }, { id: 'treant', count: 12 }, { id: 'skeleton', count: 22 },
+  { id: 'swamp_beast', count: 12 }, { id: 'demon_beast', count: 14 }, { id: 'ancient_beast', count: 8 },
+  { id: 'dire_wolf', count: 18 }, { id: 'goblin_shaman', count: 14 }, { id: 'goblin_brute', count: 14 },
+  { id: 'thorn_beast', count: 14 }, { id: 'shadow_stalker', count: 14 }, { id: 'cave_troll', count: 10 },
+  { id: 'venom_wyrm', count: 14 }, { id: 'hell_hound', count: 14 }, { id: 'yggdrasil_spriggan', count: 8 },
+  { id: 'alpha_wolf', count: 2 }, { id: 'ancient_bear', count: 4 },
+  { id: 'forest_guardian', count: 3 }, { id: 'ancient_dragon', count: 3 },
+  { id: 'fire_dragon', count: 8 }, { id: 'ice_dragon', count: 8 }, { id: 'earth_dragon', count: 6 },
+  { id: 'dragonoid_fire', count: 2 }, { id: 'dragonoid_ice', count: 2 }, { id: 'dragonoid_earth', count: 2 }
 ];
 
 const SELF_ABILITIES = new Set(['regenerate', 'rage', 'howl', 'summon', 'roar']);
 const MELEE_ABILITIES = new Set(['melee_basic', 'bleeding_bite']);
-const DASH_ABILITIES = new Set(['lunge', 'pounce', 'charge']);
-const RANGED_ABILITIES = new Set(['throw_rock', 'web_shot', 'fire_breath', 'ice_breath']);
-const AOE_ABILITIES = new Set(['root_slam', 'ground_slam', 'tail_swipe']);
+const DASH_ABILITIES = new Set(['lunge', 'pounce', 'charge', 'fly']);
+const RANGED_ABILITIES = new Set(['throw_rock', 'web_shot', 'fire_breath', 'ice_breath', 'air_slash', 'fire_ball', 'water_slash']);
+const AOE_ABILITIES = new Set(['root_slam', 'ground_slam', 'tail_swipe', 'thunder_attack']);
 
 export class MonsterSim {
   constructor(world) {
@@ -74,7 +74,9 @@ export class MonsterSim {
       x, y, radius: def.size, facing: Math.random() * Math.PI * 2,
       baseHp: def.hp, maxHp: def.hp, hp: def.hp,
       damage: def.damage, defense: def.defense, speed: def.speed,
-      color: def.color, boss: !!def.boss, xp: def.xp,
+      color: def.color, boss: !!def.boss, xp: def.xp, flying: !!def.flying,
+      maxMp: def.mp != null ? def.mp : (def.rank === 'A+' ? 500 : def.level * 10),
+      mp: def.mp != null ? def.mp : (def.rank === 'A+' ? 500 : def.level * 10),
       aiProfile: def.aiProfile, abilities: def.abilities, phases: def.phases || null,
       phaseIndex: 0, loot: def.loot,
       home: { x, y }, territoryR: 240,
@@ -215,7 +217,7 @@ export class MonsterSim {
       case 'bleeding_bite':
         if (d <= (p.range || 40)) this._meleeDamage(m, target, p, ability.id === 'bleeding_bite');
         break;
-      case 'lunge': case 'pounce': case 'charge': {
+      case 'lunge': case 'pounce': case 'charge': case 'fly': {
         // dash toward the target and strike on contact
         const spd = p.speed || 320;
         const dist = Math.min(d, p.range || 200);
@@ -263,6 +265,23 @@ export class MonsterSim {
       case 'roar':
         if (d <= (p.range || 160)) {
           this.emit('playerDamage', { to: target.id, amount: Math.round(m.damage * (p.damage || 0.3)), status: { type: 'stun', duration: 0.7, magnitude: 1 }, from: m.id });
+        }
+        break;
+      case 'air_slash':
+      case 'fire_ball':
+      case 'water_slash': {
+        if (d > (p.range || 280)) break;
+        const status = {
+          fire_ball: { type: 'burn', duration: 3, magnitude: 1 },
+          water_slash: { type: 'slow', duration: 1.5, magnitude: 0.6 }
+        }[ability.id] || null;
+        this.emit('playerDamage', { to: target.id, amount: Math.round(m.damage * (p.damage || 1)), status, from: m.id });
+        break;
+      }
+      case 'thunder_attack':
+        if (d <= (p.radius || 170)) {
+          const status = Math.random() < 0.4 ? { type: 'stun', duration: 0.6, magnitude: 1 } : null;
+          this.emit('playerDamage', { to: target.id, amount: Math.round(m.damage * (p.damage || 1.3)), status, from: m.id });
         }
         break;
       case 'summon': {

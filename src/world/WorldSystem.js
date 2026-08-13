@@ -2,12 +2,12 @@ import { RNG } from '../core/RNG.js';
 import { BUILDINGS } from '../data/buildings.js';
 
 export const TILE = 32;
-export const WORLD_W = 800; // tiles — a massive explorable world
-export const WORLD_H = 800;
+export const WORLD_W = 3000; // tiles — a colossal explorable world (~14x the previous area)
+export const WORLD_H = 3000;
 export const PX_W = WORLD_W * TILE;
 export const PX_H = WORLD_H * TILE;
-export const VILLAGE_CX = 400; // tile center
-export const VILLAGE_CY = 400;
+export const VILLAGE_CX = 1500; // tile center
+export const VILLAGE_CY = 1500;
 
 // ground tile types
 export const T = {
@@ -17,10 +17,10 @@ export const T = {
 export const ZONES = [
   { name: 'Village', from: 0, to: 30, danger: 0, minRank: 0, color: '#5a8a4a' },
   { name: 'Safe Forest', from: 30, to: 80, danger: 1, minRank: 0, color: '#4a7a3a' },
-  { name: 'Deep Forest', from: 80, to: 140, danger: 2, minRank: 1, color: '#3a6a30' },
-  { name: 'Dark Forest', from: 140, to: 210, danger: 3, minRank: 3, color: '#2a5a28' },
-  { name: 'Ancient Forest', from: 210, to: 300, danger: 4, minRank: 5, color: '#1f4a2a' },
-  { name: 'Forbidden Forest', from: 300, to: 999, danger: 5, minRank: 8, color: '#1a3428' }
+  { name: 'Deep Forest', from: 80, to: 160, danger: 2, minRank: 1, color: '#3a6a30' },
+  { name: 'Dark Forest', from: 160, to: 260, danger: 3, minRank: 3, color: '#2a5a28' },
+  { name: 'Ancient Forest', from: 260, to: 400, danger: 4, minRank: 5, color: '#1f4a2a' },
+  { name: 'Forbidden Forest', from: 400, to: 9999, danger: 5, minRank: 8, color: '#1a3428' }
 ];
 
 export function zoneIndexAt(px, py) {
@@ -38,6 +38,7 @@ export class WorldSystem {
     this.tiles = new Uint8Array(WORLD_W * WORLD_H);
     this.buildings = [];
     this.staticGrid = new Map(); // cellKey -> array of collider objects
+    this.depletedTrees = []; // chopped trees awaiting respawn (small list)
     this.nodes = [];       // resource nodes (herb, mushroom, berry, ore, tree, rock)
     this._cell = Math.floor(256 / TILE); // grid cell = 8 tiles = 256px
     this.discovered = new Uint8Array(WORLD_W * WORLD_H); // fog of war (0/1)
@@ -70,7 +71,7 @@ export class WorldSystem {
   _placeYggdrasil() {
     // deep in the Forbidden Forest (zone 5) where the high-level monsters live —
     // a colossal world tree that is the forest's source of power
-    const tx = VILLAGE_CX + 320, ty = VILLAGE_CY;
+    const tx = VILLAGE_CX + 520, ty = VILLAGE_CY;
     const px = tx * TILE, py = ty * TILE;
     const size = 16 * TILE; // 512px footprint — truly massive
     const obj = { type: 'yggdrasil', x: px, y: py, w: size, h: size };
@@ -143,15 +144,16 @@ export class WorldSystem {
       for (let tx = 0; tx < WORLD_W; tx++) {
         if (this.tiles[this.idx(tx, ty)] !== T.GRASS) continue;
         const d = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
-        if (d < 30) {
-          // occasional village tree / flower
+        if (d < 34) {
+          // occasional village tree / flower (slightly bigger clearing for the village)
           if (rng.chance(0.02)) this._addTree(tx, ty);
           else if (rng.chance(0.03)) this.tiles[this.idx(tx, ty)] = T.FLOWER;
           continue;
         }
-        const density = Math.min(0.42, 0.10 + d * 0.0012);
+        // dense forest in the explorable zones, sparse frontier beyond 800 tiles
+        const density = d < 800 ? Math.min(0.15, 0.03 + d * 0.00015) : 0.02;
         if (rng.chance(density)) {
-          this._addTree(tx, ty, d > 140);
+          this._addTree(tx, ty, d > 200);
         } else if (rng.chance(0.02)) {
           this.tiles[this.idx(tx, ty)] = T.FLOWER;
         }
@@ -167,8 +169,15 @@ export class WorldSystem {
 
   _addTree(tx, ty, dark = false) {
     const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
-    const variant = this.rng.int(0, 4); // 0 oak, 1 pine, 2 birch, 3 autumn, 4 willow
-    this._addStatic({ type: 'tree', x: px - 13, y: py - 13, w: 26, h: 26, dark, variant });
+    // 7 tree kinds: oak, pine, birch, autumn, willow, crimson, goldleaf
+    const variant = this.rng.int(0, 6);
+    // most trees are 1 tile, but some are big (occupy 3-6+ tiles)
+    const bigRoll = this.rng.float();
+    let size = 1;
+    if (bigRoll < 0.12) size = 2;      // 2x2 (4 tiles)
+    else if (bigRoll < 0.15) size = 3; // 3x3 (9 tiles)
+    const half = (size * TILE) / 2;
+    this._addStatic({ type: 'tree', x: px - half, y: py - half, w: size * TILE, h: size * TILE, dark, variant, size });
   }
   _addStatic(obj) {
     const cx = Math.floor(obj.x / (this._cell * TILE)), cy = Math.floor(obj.y / (this._cell * TILE));

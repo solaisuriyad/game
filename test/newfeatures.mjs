@@ -39,7 +39,7 @@ import("../src/main.js").then(()=>{
   const y = g.world.yggdrasil;
   console.log("yggdrasil at", Math.round(y.x/32), Math.round(y.y/32), "radius", y.r, "px");
   if(!y.r || y.r < 200) throw new Error("yggdrasil not massive");
-  const distFromVillage = Math.hypot(y.x/32 - 400, y.y/32 - 400);
+  const distFromVillage = Math.hypot(y.x/32 - 1500, y.y/32 - 1500);
   console.log("yggdrasil distance from village:", distFromVillage.toFixed(0), "tiles (expect deep forest)");
   if(distFromVillage < 200) throw new Error("yggdrasil not deep enough");
   // near Yggdrasil detection + blessing

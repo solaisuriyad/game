@@ -49,6 +49,7 @@ export class GatheringSystem {
     g.player.gatheredCount++;
     tree.depleted = true;
     tree.respawn = 300; // chopped tree stays passable for 5 minutes, then regrows
+    if (!g.world.depletedTrees.includes(tree)) g.world.depletedTrees.push(tree);
     // chopping trees sometimes reveals a restorative orb
     if (Math.random() < 0.15) {
       const orb = Math.random() < 0.5 ? 'stamina_orb' : (Math.random() < 0.5 ? 'health_orb' : 'mana_orb');
@@ -73,10 +74,12 @@ export class GatheringSystem {
     for (const n of this.game.world.nodes) {
       if (n.depleted) { n.respawn -= dt; if (n.respawn <= 0) n.depleted = false; }
     }
-    for (const cell of this.game.world.staticGrid.values()) {
-      for (const c of cell) {
-        if (c.type === 'tree' && c.depleted) { c.respawn -= dt; if (c.respawn <= 0) c.depleted = false; }
-      }
+    // only track chopped trees (a tiny list), never scan the whole forest
+    const dl = this.game.world.depletedTrees;
+    for (let i = dl.length - 1; i >= 0; i--) {
+      const c = dl[i];
+      c.respawn -= dt;
+      if (c.respawn <= 0) { c.depleted = false; dl.splice(i, 1); }
     }
   }
 }

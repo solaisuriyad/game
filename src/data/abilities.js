@@ -27,5 +27,10 @@ export const ABILITIES = {
   fire_breath: { category: 'offensive', label: 'Fire Breath', windup: 0.5, active: 0.3 },
   ice_breath: { category: 'offensive', label: 'Ice Breath', windup: 0.5, active: 0.3 },
   tail_swipe: { category: 'offensive', label: 'Tail Swipe', windup: 0.4, active: 0.2 },
-  summon: { category: 'utility', label: 'Summon', windup: 0.7, active: 0.3 }
+  summon: { category: 'utility', label: 'Summon', windup: 0.7, active: 0.3 },
+  air_slash: { category: 'offensive', label: 'Air Slash', windup: 0.4, active: 0.15 },
+  fire_ball: { category: 'offensive', label: 'Fire Ball', windup: 0.5, active: 0.15 },
+  water_slash: { category: 'offensive', label: 'Water Slash', windup: 0.4, active: 0.15 },
+  thunder_attack: { category: 'offensive', label: 'Thunder Attack', windup: 0.6, active: 0.3 },
+  fly: { category: 'mobility', label: 'Flight', windup: 0.3, active: 0.4 }
 };

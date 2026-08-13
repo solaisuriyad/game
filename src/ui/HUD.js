@@ -1,5 +1,6 @@
 import { T, TILE, WORLD_W, WORLD_H, VILLAGE_CX, VILLAGE_CY, ZONES } from '../world/WorldSystem.js';
 import { RANKS } from '../data/quests.js';
+import { ABILITIES } from '../data/abilities.js';
 
 export class HUD {
   constructor(game) {
@@ -80,6 +81,9 @@ export class HUD {
       ctx.fillText('Press O to choose your skills', 12, 110);
     }
 
+    // ---- monster status panel (nearest monster currently engaged with you) ----
+    this._drawMonsterStatus(ctx, W, H);
+
     // ---- top-right: clock / weather / gold / rank (shifted down for the settings gear) ----
     ctx.textAlign = 'right';
     ctx.fillStyle = '#f5f0e0';
@@ -103,7 +107,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v2.2', W - 12, H - 8);
+    ctx.fillText('v3.0', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -205,6 +209,79 @@ export class HUD {
     }
 
     ctx.restore();
+  }
+
+  // Show the engaged monster's breed, rank, level, power, HP/MP and skills.
+  _drawMonsterStatus(ctx, W, H) {
+    const g = this.game;
+    const p = g.player;
+    // nearest monster within combat range
+    const list = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
+    let best = null, bd = 520;
+    for (const m of list) {
+      if (m.dead) continue;
+      const d = Math.hypot(m.x - p.x, m.y - p.y);
+      if (d < bd) { bd = d; best = m; }
+    }
+    if (!best) return;
+
+    const rankColor = { 'F': '#c8c8c8', 'E': '#7ac87a', 'D': '#7ac8e0', 'C': '#5a9ae0', 'B': '#a05ae0', 'A': '#e07a5a', 'S': '#ffd76a', 'A+': '#ff5ae0' }[best.rank] || '#fff';
+    const x = W - 240, y = 12;
+    const w = 228, h = 150;
+    ctx.fillStyle = 'rgba(10,12,18,0.78)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeRect(x, y, w, h);
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#f0e6d0';
+    ctx.fillText(best.name, x + 10, y + 16);
+    // rank badge (right-aligned)
+    ctx.fillStyle = rankColor;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Rank ${best.rank}`, x + w - 10, y + 16);
+    ctx.textAlign = 'left';
+    // breed + level + power
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#b0a888';
+    ctx.fillText(`Breed: ${best.family || '?'} · Lv ${best.level}`, x + 10, y + 32);
+    ctx.fillStyle = '#e8c06a';
+    ctx.fillText(`Power: ${best.power || best.damage || '?'}`, x + 10, y + 45);
+
+    // HP bar
+    this._statBar(ctx, x + 10, y + 54, w - 20, best.hp / best.maxHp, '#d0483a', `HP ${Math.ceil(best.hp)}/${best.maxHp}`);
+    // MP bar
+    this._statBar(ctx, x + 10, y + 68, w - 20, best.mp / best.maxMp, '#7a5ac8', `MP ${Math.ceil(best.mp)}/${best.maxMp}`);
+
+    // skills
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = '#9fe08a';
+    ctx.fillText('Skills:', x + 10, y + 88);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#c8c8b8';
+    let sy = y + 100;
+    const names = best.abilities.map((a) => ABILITIES[a.id] ? ABILITIES[a.id].label : a.id);
+    let line = '';
+    for (const n of names) {
+      if ((line + n).length > 30) { ctx.fillText(line, x + 10, sy); sy += 12; line = ''; }
+      line = line ? line + ' · ' + n : n;
+    }
+    if (line) ctx.fillText(line, x + 10, sy);
+    ctx.textAlign = 'left';
+  }
+
+  _statBar(ctx, x, y, w, frac, color, label) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(x, y, w, 11);
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(x + 1, y + 1, w - 2, 9);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 1, y + 1, (w - 2) * Math.max(0, Math.min(1, frac)), 9);
+    ctx.fillStyle = '#fff';
+    ctx.font = '8px sans-serif';
+    ctx.fillText(label, x + 4, y + 9);
   }
 
   _drawSkills(ctx, W, H) {

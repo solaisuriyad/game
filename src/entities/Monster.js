@@ -16,9 +16,14 @@ export class Monster extends Entity {
     this.xp = def.xp;
     this.color = def.color;
     this.boss = !!def.boss;
+    this.flying = !!def.flying;      // aerial monsters (dragons/dragonoids)
     this.aiProfile = def.aiProfile;
     this.abilities = def.abilities;
     this.loot = def.loot;
+    // MP: dragonoids have massive reserves (500), others scale with rank
+    this.maxMp = def.mp != null ? def.mp : (this.rank === 'A+' ? 500 : this.level * 10);
+    this.mp = this.maxMp;
+    this.power = def.damage;          // attack power (for the status panel)
 
     this.state = 'idle';
     this.target = null;
@@ -55,6 +60,9 @@ export class Monster extends Entity {
     this.flash = Math.max(0, this.flash - dt);
     this.stagger = Math.max(0, this.stagger - dt);
     if (this.buffs.rage) this.buffs.rage = Math.max(0, this.buffs.rage - dt);
+    // MP regenerates slowly; skills consume it (handled in the brain)
+    this.mp = Math.min(this.maxMp, this.mp + 3 * dt);
+    if (this.flyingNow) this.flyingNow = Math.max(0, this.flyingNow - dt);
 
     // boss phase transitions (swap ability set + appearance + announcement)
     if (this.def.phases && this.phaseIndex < this.def.phases.length) {

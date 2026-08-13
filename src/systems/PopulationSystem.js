@@ -16,7 +16,7 @@ const OCC_WEIGHTS = [
 ];
 
 // distance rings (in tiles) for each forest zone number used in data/zone defs
-const ZONE_RINGS = { 1: [30, 75], 2: [80, 135], 3: [140, 205], 4: [210, 295], 5: [300, 420] };
+const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 395], 5: [405, 650] };
 
 export class PopulationSystem {
   constructor(game) {
@@ -157,8 +157,8 @@ export class PopulationSystem {
     if (this._pool) return this._pool;
     const w = this.game.world;
     const pool = [];
-    for (let ty = VILLAGE_CY - 24; ty <= VILLAGE_CY + 24; ty++) {
-      for (let tx = VILLAGE_CX - 24; tx <= VILLAGE_CX + 24; tx++) {
+    for (let ty = VILLAGE_CY - 34; ty <= VILLAGE_CY + 34; ty++) {
+      for (let tx = VILLAGE_CX - 34; tx <= VILLAGE_CX + 34; tx++) {
         if ((tx + ty) % 2) continue; // skip every other cell (denser sampling)
         const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
         if (w.circleBlocked(px, py, 12)) continue;
@@ -188,16 +188,16 @@ export class PopulationSystem {
       { def: 'rabbit', count: 14 }, { def: 'deer', count: 10 }, { def: 'fox', count: 6 },
       { def: 'boar', count: 8 }, { def: 'goat', count: 6 }, { def: 'bear', count: 4 },
       { def: 'bird', count: 12 },
-      { def: 'slime', count: 10 }, { def: 'goblin', count: 8 }, { def: 'wolf', count: 8 },
-      { def: 'spider', count: 6 }, { def: 'treant', count: 3 }, { def: 'alpha_wolf', count: 1 },
-      { def: 'skeleton', count: 6 }, { def: 'swamp_beast', count: 4 },
-      { def: 'demon_beast', count: 5 }, { def: 'ancient_beast', count: 3 },
-      { def: 'dire_wolf', count: 5 }, { def: 'goblin_shaman', count: 4 }, { def: 'goblin_brute', count: 4 },
-      { def: 'thorn_beast', count: 4 }, { def: 'shadow_stalker', count: 4 }, { def: 'cave_troll', count: 3 },
-      { def: 'venom_wyrm', count: 4 }, { def: 'hell_hound', count: 4 }, { def: 'yggdrasil_spriggan', count: 3 },
-      { def: 'ancient_bear', count: 2 }, { def: 'forest_guardian', count: 2 }, { def: 'ancient_dragon', count: 2 },
-      { def: 'fire_dragon', count: 3 }, { def: 'ice_dragon', count: 3 }, { def: 'earth_dragon', count: 3 },
-      { def: 'dragonoid_fire', count: 1 }, { def: 'dragonoid_ice', count: 1 }, { def: 'dragonoid_earth', count: 1 }
+      { def: 'slime', count: 60 }, { def: 'goblin', count: 55 }, { def: 'wolf', count: 60 },
+      { def: 'spider', count: 40 }, { def: 'treant', count: 20 }, { def: 'alpha_wolf', count: 3 },
+      { def: 'skeleton', count: 40 }, { def: 'swamp_beast', count: 20 },
+      { def: 'demon_beast', count: 22 }, { def: 'ancient_beast', count: 14 },
+      { def: 'dire_wolf', count: 30 }, { def: 'goblin_shaman', count: 22 }, { def: 'goblin_brute', count: 22 },
+      { def: 'thorn_beast', count: 22 }, { def: 'shadow_stalker', count: 22 }, { def: 'cave_troll', count: 16 },
+      { def: 'venom_wyrm', count: 22 }, { def: 'hell_hound', count: 22 }, { def: 'yggdrasil_spriggan', count: 14 },
+      { def: 'ancient_bear', count: 8 }, { def: 'forest_guardian', count: 6 }, { def: 'ancient_dragon', count: 6 },
+      { def: 'fire_dragon', count: 14 }, { def: 'ice_dragon', count: 14 }, { def: 'earth_dragon', count: 12 },
+      { def: 'dragonoid_fire', count: 3 }, { def: 'dragonoid_ice', count: 3 }, { def: 'dragonoid_earth', count: 3 }
     ];
     for (const s of spawns) {
       const animal = ANIMALS.find((a) => a.id === s.def);

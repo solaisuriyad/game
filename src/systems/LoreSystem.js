@@ -21,8 +21,8 @@ export class LoreSystem {
     this.game = game;
     this.discovered = new Set(); // lore ids
     this.hiddenLocations = [
-      { id: 'watchtower', loreId: 'lore_old_watch', x: 342 * 32, y: 362 * 32, radius: 90, label: 'The Old Watchtower' },
-      { id: 'ruins', loreId: 'lore_ruins', x: 412 * 32, y: 342 * 32, radius: 110, label: 'The Ruins of the First People' }
+      { id: 'watchtower', loreId: 'lore_old_watch', x: 1442 * 32, y: 1462 * 32, radius: 90, label: 'The Old Watchtower' },
+      { id: 'ruins', loreId: 'lore_ruins', x: 1512 * 32, y: 1442 * 32, radius: 110, label: 'The Ruins of the First People' }
     ];
   }
 

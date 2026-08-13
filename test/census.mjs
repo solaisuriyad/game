@@ -16,7 +16,7 @@ import("../src/main.js").then(()=>{
   for(const m of g.monsters) ranks[m.rank]=(ranks[m.rank]||0)+1;
   console.log("RANK CENSUS:", JSON.stringify(ranks));
   console.log("\nHIGH-TIER MONSTERS (S / A+):");
-  for(const m of g.monsters){ if(m.rank==="S"||m.rank==="A+"){ console.log("  "+m.name+" ("+m.rank+") at dist "+Math.hypot(m.x/32-400,m.y/32-400).toFixed(0)); } }
+  for(const m of g.monsters){ if(m.rank==="S"||m.rank==="A+"){ console.log("  "+m.name+" ("+m.rank+") at dist "+Math.hypot(m.x/32-1500,m.y/32-1500).toFixed(0)); } }
   console.log("spawn tile:", g.player.x/32, g.player.y/32, "(expect 400,400)");
   console.log("buildings:", g.world.buildings.length, "| resources:", g.world.nodes.length);
   console.log("Yggdrasil at:", g.world.yggdrasil ? Math.round(g.world.yggdrasil.x/32)+","+Math.round(g.world.yggdrasil.y/32) : "missing");
