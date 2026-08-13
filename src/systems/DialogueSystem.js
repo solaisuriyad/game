@@ -16,14 +16,28 @@ export class DialogueSystem {
   }
 
   smallTalk(npc) {
+    const g = this.game;
+    const p = g.player;
+    // villagers gossip about the player's heroics
+    if (p.recentBossKill && Math.random() < 0.35) {
+      const boss = p.recentBossKill;
+      p.recentBossKill = null;
+      return `Word travels fast — you slew the ${boss}! The village sleeps easier because of you.`;
+    }
+    if (p.reputation >= 85 && Math.random() < 0.4) {
+      return `It's an honor, ${p.name}. You're a hero to this village.`;
+    }
+    if (p.reputation >= 45 && Math.random() < 0.3) {
+      return `We're lucky to have you around, ${p.name}.`;
+    }
     // NPCs reference recent world events
     if (npc.recentEventComment && EVENT_COMMENTS[npc.recentEventComment]) {
       const lines = EVENT_COMMENTS[npc.recentEventComment];
       npc.recentEventComment = null;
       return this.game.world.rng.pick(lines);
     }
-    if (this.game.events.recent.length && Math.random() < 0.4) {
-      const ev = this.game.events.recent[0];
+    if (g.events.recent.length && Math.random() < 0.4) {
+      const ev = g.events.recent[0];
       if (EVENT_COMMENTS[ev.type]) return this.game.world.rng.pick(EVENT_COMMENTS[ev.type]);
     }
     return this.game.world.rng.pick(SMALL_TALK);

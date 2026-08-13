@@ -20,5 +20,12 @@ export const ABILITIES = {
   howl: { category: 'utility', label: 'Howl', windup: 0.6, active: 0.2 },
   root_slam: { category: 'offensive', label: 'Root Slam', windup: 0.6, active: 0.25 },
   regenerate: { category: 'defensive', label: 'Regenerate', windup: 0.8, active: 0.2 },
-  rage: { category: 'defensive', label: 'Rage', windup: 0.5, active: 0.2 }
+  rage: { category: 'defensive', label: 'Rage', windup: 0.5, active: 0.2 },
+  ground_slam: { category: 'offensive', label: 'Ground Slam', windup: 0.5, active: 0.25 },
+  charge: { category: 'mobility', label: 'Charge', windup: 0.4, active: 0.3 },
+  roar: { category: 'crowd-control', label: 'Roar', windup: 0.5, active: 0.3 },
+  fire_breath: { category: 'offensive', label: 'Fire Breath', windup: 0.5, active: 0.3 },
+  ice_breath: { category: 'offensive', label: 'Ice Breath', windup: 0.5, active: 0.3 },
+  tail_swipe: { category: 'offensive', label: 'Tail Swipe', windup: 0.4, active: 0.2 },
+  summon: { category: 'utility', label: 'Summon', windup: 0.7, active: 0.3 }
 };

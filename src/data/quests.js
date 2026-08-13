@@ -55,6 +55,24 @@ export const QUEST_TEMPLATES = [
     text: 'Winter is coming. Gather 15 wood for the village.',
     objectives: [{ kind: 'gather', id: 'wood', count: 15 }],
     rewards: { gp: 50, gold: 25, xp: 40 }, giver: 'guild'
+  },
+  {
+    id: 'q_ancient_bear', title: 'The Ancient Bear', type: 'boss', rank: 3,
+    text: 'An Ancient Bear has claimed the dark woods. Defeat it and bring back its claws.',
+    objectives: [{ kind: 'kill', id: 'ancient_bear', count: 1 }, { kind: 'submit', id: 'claw_bear', count: 3 }],
+    rewards: { gp: 900, gold: 500, xp: 700 }, giver: 'guild'
+  },
+  {
+    id: 'q_guardian', title: 'Guardian of the Grove', type: 'boss', rank: 5,
+    text: 'The Forest Guardian stirs in the Ancient Forest. Defeat it and bring back its ancient bark.',
+    objectives: [{ kind: 'kill', id: 'forest_guardian', count: 1 }, { kind: 'submit', id: 'treant_bark', count: 4 }],
+    rewards: { gp: 2500, gold: 1400, xp: 1600 }, giver: 'guild'
+  },
+  {
+    id: 'q_dragon', title: 'The Final Guardian', type: 'boss', rank: 8,
+    text: 'An Ancient Dragon slumbers in the Forbidden Forest — the forest\'s ultimate guardian. Face it.',
+    objectives: [{ kind: 'kill', id: 'ancient_dragon', count: 1 }],
+    rewards: { gp: 6000, gold: 3000, xp: 4000 }, giver: 'guild'
   }
 ];
 

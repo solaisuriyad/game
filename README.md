@@ -29,17 +29,17 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 
 ## What's implemented (MVP vertical slice)
 
-- **World** — procedural 200×200 tilemap: village (31 buildings), roads, farms, river, pond, forest with 3 danger zones.
-- **Living village** — ~65 procedurally generated NPCs (name, age, appearance, occupation, personality, schedule, home/work, wealth) with day/night schedules and background simulation tiers.
+- **World** — procedural 200×200 tilemap: village (31 buildings), roads, farms, river, pond, forest with **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden), each visually distinct and gated by guild rank.
+- **Living village** — ~65 procedurally generated NPCs with **families, spouses, friendships & rivalries**, day/night schedules, socializing, background simulation tiers, and gossip about your deeds.
 - **Hunting & wildlife** — 7 animal species with wander/eat/flee/predator AI, footprint & blood-trail tracking, corpse harvesting.
-- **Monsters** — 6 types (slime, goblin, wolf packs, giant spider, treant, Alpha Wolf boss) with a modular **Ability System** (lunge, pounce, web shot, howl, root slam, regenerate, rage, bleeds) and a full AI state machine.
+- **Monsters** — 11 types (slime, goblin, wolf packs, giant spider, treant, skeleton, swamp beast, demon beast, ancient beast + 4 **phased bosses**: Alpha Wolf, Ancient Bear, Forest Guardian, Ancient Dragon) with a modular **Ability System** (lunge, pounce, web shot, howl, root slam, regenerate, rage, charge, roar, ground slam, tail swipe, fire/ice breath, summon, bleeds) and adaptive AI.
 - **Combat** — light/heavy attacks, block, dodge (i-frames), stamina, crits, weapon durability, 3 weapon classes (sword/bow/spear + axe/hammer/dagger).
 - **Survival** — health, stamina, hunger, temperature, energy/rest; day/night cycle and dynamic weather (rain, fog, storm) that affect gameplay.
 - **Inventory & weight** — capacity 20→100 kg, meaningful carry decisions.
 - **Guild progression** — submit materials for Guild Points + gold + XP; ranks F→SSS.
 - **Quests** — hunt / kill / gather / explore / boss quests with progress tracking.
 - **Crafting & economy** — recipes (cooking, arrows, potions, weapons, armor, bags), station gating, shops with reputation-based prices.
-- **NPC relationships & reputation** — -100..+100 relationships, gifts, memories, village reputation titles.
+- **NPC relationships & reputation** — -100..+100 relationships, gifts, memories, village-defense favor, village reputation titles.
 - **Random events** — caravan, rare sighting, monster attack, injured hunter (NPCs gossip about them).
 - **Death system** — respawn with gold/material/durability penalties, progression kept.
 - **Save/load** — 3 slots, localStorage, versioned schema.
@@ -71,5 +71,5 @@ src/
 
 ## Roadmap (designed, not yet built)
 
-Zones 3–5 + full boss suite, deeper NPC social sim, traps/sneak depth, and **2–4 player
-co-op** (authoritative server, interest management for ~1000 NPCs). See `docs/ROADMAP.md`.
+Traps/stealth depth, handcrafted story beats, and **2–4 player co-op** (authoritative
+server, interest management for ~1000 NPCs). See `docs/ROADMAP.md`.

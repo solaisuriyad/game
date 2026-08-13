@@ -15,6 +15,9 @@ const OCC_WEIGHTS = [
   ['blacksmith', 2]
 ];
 
+// distance rings (in tiles) for each forest zone number used in data/zone defs
+const ZONE_RINGS = { 1: [30, 50], 2: [52, 76], 3: [78, 99], 4: [101, 122], 5: [124, 138] };
+
 export class PopulationSystem {
   constructor(game) {
     this.game = game;
@@ -38,8 +41,11 @@ export class PopulationSystem {
     this._minePoint = { x: VILLAGE_CX * TILE, y: 55 * TILE };
 
     this._generateNPCs(65);
+    this._linkFamilies();
     this._spawnPopulation();
   }
+
+  findMonsterDef(id) { return MONSTERS.find((m) => m.id === id) || null; }
 
   _forestEdge() {
     const a = this.rng.range(0, Math.PI * 2);
@@ -61,9 +67,11 @@ export class PopulationSystem {
 
       const homePos = w.randomVillagePosition();
       const workPos = this._workPosFor(occ, homePos);
+      let firstName = name, lastName = '';
+      if (!isChild) { const sp = name.split(' '); firstName = sp[0]; lastName = sp[1] || ''; }
 
       const npc = new NPC(this.game, {
-        id: 'npc_' + i, name, gender,
+        id: 'npc_' + i, name, firstName, lastName, gender,
         age: isChild ? this.rng.int(6, 13) : isElder ? this.rng.int(60, 82) : this.rng.int(17, 59),
         occupation: occId, occupationLabel: occ.label,
         personality: this.rng.pick(PERSONALITIES),
@@ -77,6 +85,51 @@ export class PopulationSystem {
       }, homePos.x, homePos.y);
 
       this.game.npcs.push(npc);
+    }
+  }
+
+  // Build families (couples + children sharing a home/surname) and friendship/rivalry
+  // links between NPCs — the foundation of NPC↔NPC social simulation.
+  _linkFamilies() {
+    const rng = this.rng;
+    const npcs = this.game.npcs;
+    const adults = npcs.filter((n) => n.age >= 18 && n.age < 60);
+    const children = npcs.filter((n) => n.age < 14);
+    const taken = new Set();
+    let familyId = 0;
+    for (let i = 0; i < adults.length - 1; i += 2) {
+      const a = adults[i], b = adults[i + 1];
+      if (taken.has(a.id) || taken.has(b.id)) continue;
+      if (rng.chance(0.45)) continue; // not everyone is coupled
+      const fam = 'fam_' + (familyId++);
+      taken.add(a.id); taken.add(b.id);
+      a.familyId = fam; b.familyId = fam;
+      a.spouseId = b.id; b.spouseId = a.id;
+      a.npcRelations[b.id] = 'spouse'; b.npcRelations[a.id] = 'spouse';
+      b.homePos = a.homePos; b.lastName = a.lastName;
+      b.name = b.firstName + (a.lastName ? ' ' + a.lastName : '');
+      const kids = children.filter((c) => !c.familyId).slice(0, rng.int(0, 2));
+      for (const k of kids) {
+        k.familyId = fam; k.homePos = a.homePos; k.lastName = a.lastName;
+        k.name = k.firstName + (a.lastName ? ' ' + a.lastName : '');
+        k.parentIds = [a.id, b.id];
+        a.npcRelations[k.id] = 'child'; b.npcRelations[k.id] = 'child';
+        k.npcRelations[a.id] = 'parent'; k.npcRelations[b.id] = 'parent';
+        (a.childIds = a.childIds || []).push(k.id);
+        (b.childIds = b.childIds || []).push(k.id);
+      }
+    }
+    // friendship / rivalry among same-occupation peers
+    const byOcc = {};
+    for (const n of npcs) (byOcc[n.occupation] ||= []).push(n);
+    for (const list of Object.values(byOcc)) {
+      if (list.length < 2) continue;
+      const a = rng.pick(list);
+      const others = list.filter((x) => x !== a);
+      if (!others.length) continue;
+      const b = rng.pick(others);
+      const rel = rng.chance(0.7) ? 'friend' : 'rival';
+      a.npcRelations[b.id] = rel;
     }
   }
 
@@ -107,7 +160,10 @@ export class PopulationSystem {
       { def: 'boar', count: 8 }, { def: 'goat', count: 6 }, { def: 'bear', count: 4 },
       { def: 'bird', count: 12 },
       { def: 'slime', count: 10 }, { def: 'goblin', count: 8 }, { def: 'wolf', count: 8 },
-      { def: 'spider', count: 6 }, { def: 'treant', count: 3 }, { def: 'alpha_wolf', count: 1 }
+      { def: 'spider', count: 6 }, { def: 'treant', count: 3 }, { def: 'alpha_wolf', count: 1 },
+      { def: 'skeleton', count: 6 }, { def: 'swamp_beast', count: 4 },
+      { def: 'demon_beast', count: 5 }, { def: 'ancient_beast', count: 3 },
+      { def: 'ancient_bear', count: 1 }, { def: 'forest_guardian', count: 1 }, { def: 'ancient_dragon', count: 1 }
     ];
     for (const s of spawns) {
       const animal = ANIMALS.find((a) => a.id === s.def);
@@ -129,12 +185,9 @@ export class PopulationSystem {
   }
 
   zoneRange(def) {
-    const z = def.zones;
-    if (z.includes(1) && z.includes(2) && z.includes(3)) return [30, 95];
-    if (z.includes(2) && z.includes(3)) return [52, 95];
-    if (z.includes(3)) return [78, 95];
-    if (z.includes(2)) return [52, 76];
-    return [30, 50];
+    // spawn in a random zone the creature is allowed in
+    const z = def.zones[Math.floor(Math.random() * def.zones.length)];
+    return ZONE_RINGS[z] || [30, 50];
   }
 
   _spawnAnimal(def, w) {

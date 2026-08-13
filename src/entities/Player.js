@@ -56,6 +56,7 @@ export class Player extends Entity {
     this.kills = 0;
     this.animalsHunted = 0;
     this.gatheredCount = 0;
+    this.recentBossKill = null;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }

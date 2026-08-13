@@ -36,6 +36,7 @@ export class Monster extends Entity {
     this.id = 'm' + (Math.random() * 1e6 | 0);
     this.stagger = 0;
     this.corpse = null;
+    this.phaseIndex = 0;
   }
 
   get speedMult() {
@@ -51,6 +52,23 @@ export class Monster extends Entity {
     this.flash = Math.max(0, this.flash - dt);
     this.stagger = Math.max(0, this.stagger - dt);
     if (this.buffs.rage) this.buffs.rage = Math.max(0, this.buffs.rage - dt);
+
+    // boss phase transitions (swap ability set + appearance + announcement)
+    if (this.def.phases && this.phaseIndex < this.def.phases.length) {
+      const ph = this.def.phases[this.phaseIndex];
+      if (this.hp <= this.maxHp * ph.hpPct) {
+        this.phaseIndex++;
+        this.abilities = ph.abilities;
+        if (ph.color) this.color = ph.color;
+        this.buffs.rage = 5;
+        this.abilityCd = {}; // reset cooldowns so the new kit is felt immediately
+        game.toast(`${this.name} — ${ph.label}!`);
+        game.addFloatText(this.x, this.y - this.radius - 10, ph.label, '#ff7a30');
+        game.audio.sfx('roar');
+        game.camera.addShake(9);
+      }
+    }
+
     game.ai.monster(this, dt, game);
   }
 

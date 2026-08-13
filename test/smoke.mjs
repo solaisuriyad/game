@@ -54,6 +54,20 @@ console.log('State:', game.state);
 game.newGame({ name: 'Testa', gender: 'female', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a', hairStyle: 0 });
 console.log('After newGame: state=', game.state, 'npcs=', game.npcs.length, 'animals=', game.animals.length, 'monsters=', game.monsters.length, 'nodes=', game.world.nodes.length, 'buildings=', game.world.buildings.length);
 
+// families / NPC↔NPC relationships
+const families = new Set(game.npcs.filter((n) => n.familyId).map((n) => n.familyId));
+const spouses = game.npcs.filter((n) => n.spouseId).length;
+const linked = game.npcs.filter((n) => Object.keys(n.npcRelations).length > 0).length;
+console.log('families=', families.size, 'married NPCs=', spouses, 'NPCs with a relation=', linked);
+if (families.size === 0) throw new Error('no families generated');
+if (spouses === 0) throw new Error('no spouses generated');
+
+// boss + zones present
+const bosses = game.monsters.filter((m) => m.boss);
+console.log('bosses present=', bosses.map((b) => b.name).join(', '));
+if (!game.monsters.find((m) => m.def.id === 'forest_guardian')) throw new Error('forest guardian not spawned');
+if (!game.monsters.find((m) => m.def.id === 'ancient_dragon')) throw new Error('ancient dragon not spawned');
+
 // run 600 frames (~10s)
 const dt = 1 / 60;
 for (let i = 0; i < 600; i++) game.update(dt);
@@ -85,5 +99,32 @@ if (c) { const h = game.hunting.harvestCorpse(c); console.log('harvest:', h.mess
 // guild submit
 game.inventory.addItem('hide_deer', 3, { silent: true });
 console.log('submit:', game.guild.submit('hide_deer').message);
+
+// boss phase transition test
+const guardian = game.monsters.find((m) => m.def.id === 'forest_guardian');
+const baseAbilities = guardian.abilities.length;
+guardian.hp = guardian.maxHp * 0.6; // below 0.7 threshold
+guardian.update(1 / 60, game);
+console.log('guardian phaseIndex=', guardian.phaseIndex, 'abilities=', guardian.abilities.length, 'color=', guardian.color);
+if (guardian.phaseIndex !== 1) throw new Error('boss did not advance phase');
+if (guardian.abilities.length === baseAbilities) throw new Error('boss abilities did not change');
+// summon ability works
+const before = game.monsters.length;
+game.abilities.execute(guardian, 'summon', { summonId: 'spider', count: 2, range: 0 }, game);
+console.log('summon spawned', game.monsters.length - before, 'minions');
+
+// long simulation: stay in village (socializing), then push through every zone (gating + monster brains)
+const dt2 = 1 / 60;
+let sawSocializing = false;
+for (let i = 0; i < 3600; i++) {
+  if (i === 1500) { game.player.x = 45 * 32; game.player.y = 100 * 32; }  // Deep Forest
+  if (i === 2100) { game.player.x = 20 * 32; game.player.y = 100 * 32; }  // Dark Forest
+  if (i === 2700) { game.player.x = 12 * 32; game.player.y = 12 * 32; }   // Forbidden Forest (corner)
+  game.update(dt2);
+  if (i < 1500 && game.npcs.some((n) => n.chatting > 0)) sawSocializing = true;
+}
+console.log('cross-zone sim OK. final zone=', game.world.getZoneName(game.player.x, game.player.y), 'monsters=', game.monsters.length);
+console.log('zone-gating triggered (warnedZone=', game._warnedZone, '):', game._warnedZone >= 1);
+console.log('NPCs socialized near the village:', sawSocializing);
 
 console.log('ALL SMOKE TESTS PASSED');

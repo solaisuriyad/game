@@ -3,7 +3,7 @@ import { Input } from './core/Input.js';
 import { Camera } from './core/Camera.js';
 import { EventBus } from './core/EventBus.js';
 import { AudioManager } from './core/AudioManager.js';
-import { WorldSystem, TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY } from './world/WorldSystem.js';
+import { WorldSystem, TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY, ZONES } from './world/WorldSystem.js';
 import { TimeSystem } from './world/TimeSystem.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { MapRenderer } from './world/MapRenderer.js';
@@ -38,6 +38,7 @@ import { HUD } from './ui/HUD.js';
 import { MenuManager } from './ui/MenuManager.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
+import { RANKS } from './data/quests.js';
 
 class Game {
   constructor(canvas) {
@@ -227,7 +228,18 @@ class Game {
 
     // quest explore tracking (zone enter)
     const zoneName = this.world.getZoneName(this.player.x, this.player.y);
-    if (zoneName !== this._lastZone) { this._lastZone = zoneName; this.quests.onExplore(zoneName); }
+    if (zoneName !== this._lastZone) {
+      this._lastZone = zoneName;
+      this.quests.onExplore(zoneName);
+      // guild rank gating — warn (don't hard-block) when under-ranked
+      const zi = this.world.getZoneIndex(this.player.x, this.player.y);
+      const minRank = ZONES[zi].minRank;
+      const rank = this.guild.rankIndex();
+      if (minRank > rank && zi !== this._warnedZone) {
+        this._warnedZone = zi;
+        this.toast(`⚠ ${ZONES[zi].name} is beyond your rank — ${RANKS[minRank]}+ recommended (you are ${RANKS[rank]}).`);
+      }
+    }
 
     this.camera.follow(this.player.x, this.player.y);
     this.hud.updateDiscovery();

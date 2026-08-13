@@ -386,7 +386,10 @@ export class MenuManager {
     npc.metPlayer = true;
     if (npc.relationship === 0) { g.relationship.change(npc, 1); }
     const mem = g.dialogue.memoryLine(npc);
-    const text = g.dialogue.greeting(npc) + (mem ? `<br><span class="muted">${mem}</span>` : '');
+    const fam = this._familyLine(npc);
+    const text = g.dialogue.greeting(npc)
+      + (mem ? `<br><span class="muted">${mem}</span>` : '')
+      + (fam ? `<br><span class="muted">${fam}</span>` : '');
     this.show(npc.name + ' — ' + npc.occupationLabel, `<div class="dialogue">
       <div class="text">${text}</div>
       <div class="opts">
@@ -395,6 +398,26 @@ export class MenuManager {
         <button class="btn red" data-act="close">Goodbye</button>
       </div>
     </div>`, { className: 'dialogue' });
+  }
+
+  _familyLine(npc) {
+    const parts = [];
+    if (npc.spouseId) {
+      const s = this.game.npcs.find((n) => n.id === npc.spouseId);
+      if (s) parts.push(`married to ${s.firstName}`);
+    }
+    if (npc.childIds && npc.childIds.length) {
+      parts.push(`has ${npc.childIds.length} child${npc.childIds.length > 1 ? 'ren' : ''}`);
+    }
+    if (npc.parentIds && npc.parentIds.length) {
+      parts.push('lives with their family');
+    }
+    const rels = Object.entries(npc.npcRelations).map(([id, rel]) => {
+      const o = this.game.npcs.find((n) => n.id === id);
+      return o ? `${rel} of ${o.firstName}` : null;
+    }).filter(Boolean);
+    if (rels.length) parts.push(rels.slice(0, 3).join(', '));
+    return parts.length ? 'Relations: ' + parts.join(' · ') : null;
   }
 
   _chat() {

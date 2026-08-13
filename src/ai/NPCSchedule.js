@@ -17,7 +17,29 @@ export function npcBrain(npc, dt, game) {
   // background tier: far NPCs teleport at phase boundaries and skip movement
   if (distPlayer > 900) {
     if (npc.targetPos) { npc.x = npc.targetPos.x; npc.y = npc.targetPos.y; npc.targetPos = null; }
+    npc.chatting = Math.max(0, npc.chatting - dt);
+    npc.chatBuddy = null;
     return;
+  }
+
+  // socializing: near idle NPCs pair up to chat (throttled search for scalability)
+  if (!npc.targetPos && !npc.wanderTarget && !npc.chatting) {
+    npc._socialSearch -= dt;
+    if (npc._socialSearch <= 0) {
+      npc._socialSearch = 1.5;
+      const buddy = game.npcs.find((o) => o !== npc && !o.targetPos && !o.wanderTarget && !o.chatting && o.distTo(npc) < 34);
+      if (buddy) {
+        const t = game.world.rng.range(2.5, 5);
+        npc.chatting = t; buddy.chatting = t;
+        npc.chatBuddy = buddy; buddy.chatBuddy = npc;
+      }
+    }
+  }
+  if (npc.chatting > 0) {
+    npc.chatting -= dt;
+    if (npc.chatBuddy) { npc.facing = npc.angleTo(npc.chatBuddy); if (npc.chatBuddy.distTo(npc) > 40) npc.chatBuddy = null; }
+    if (npc.chatting <= 0) { npc.chatting = 0; npc.chatBuddy = null; }
+    return; // stand and talk
   }
 
   if (npc.targetPos) {

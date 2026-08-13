@@ -1,4 +1,5 @@
-import { T, TILE, WORLD_W, WORLD_H, VILLAGE_CX, VILLAGE_CY } from '../world/WorldSystem.js';
+import { T, TILE, WORLD_W, WORLD_H, VILLAGE_CX, VILLAGE_CY, ZONES } from '../world/WorldSystem.js';
+import { RANKS } from '../data/quests.js';
 
 export class HUD {
   constructor(game) {
@@ -74,7 +75,10 @@ export class HUD {
     ctx.fillText(`${g.time.clock} · Day ${g.time.day}`, W - 12, 12);
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#c8e0c8';
-    ctx.fillText(`${g.weather.state[0].toUpperCase() + g.weather.state.slice(1)} · ${g.world.getZoneName(p.x, p.y)}`, W - 12, 30);
+    const zi = g.world.getZoneIndex(p.x, p.y);
+    const zmin = ZONES[zi].minRank;
+    const zoneStr = g.world.getZoneName(p.x, p.y) + (zmin > 0 ? ` (Rank ${RANKS[zmin]}+)` : '');
+    ctx.fillText(`${g.weather.state[0].toUpperCase() + g.weather.state.slice(1)} · ${zoneStr}`, W - 12, 30);
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(`${p.gold}g`, W - 12, 46);
     ctx.fillStyle = '#a0c8ff';

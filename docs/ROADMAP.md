@@ -5,9 +5,9 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Single-player core gameplay | ✅ MVP in this repo |
-| 2 | Monster AI + unique abilities | ✅ partial (state machine + abilities) |
-| 3 | NPC relationship + memory + reputation | ✅ partial |
-| 4 | Village social simulation | ✅ partial (schedules, reactions) |
+| 2 | Monster AI + unique abilities | ✅ state machine, modular abilities, adaptive AI, **phased bosses** |
+| 3 | NPC relationship + memory + reputation | ✅ relationships (−100..+100), memory, gifts, reputation, village-defense favor |
+| 4 | Village social simulation | ✅ families, NPC↔NPC links, socializing, gossip about the player |
 | 5 | Co-op networking foundation | ⬜ designed |
 | 6 | Co-op player sync | ⬜ designed |
 | 7 | Co-op combat + monster scaling | ⬜ designed |
@@ -47,8 +47,7 @@
 
 ## Next steps (recommended order)
 
-1. Zones 3–5 + boss suite (phased bosses).
-2. Deepen NPC social sim (NPC↔NPC memory, village reactions, gossip).
-3. Traps, sneak/stalk depth, full tracking.
-4. Co-op (Phase 5+) behind an authoritative server.
-5. 1000-NPC scale test + audio/music polish.
+1. Traps, sneak/stalk depth, full tracking (stealth).
+2. Co-op (Phase 5+) behind an authoritative server.
+3. 1000-NPC scale test + audio/music polish.
+4. More handcrafted quests & village story beats (the forest's history).

@@ -74,6 +74,158 @@ export const MONSTERS = [
     ]
   },
   {
+    id: 'skeleton', name: 'Skeleton', family: 'undead', zones: [3], level: 8, hp: 85, damage: 20, defense: 2,
+    speed: 95, size: 15, xp: 90, color: '#d8d0c0',
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: true, territorial: false, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.2, range: 40, knockback: 70 } },
+      { id: 'throw_rock', params: { damage: 1.2, cooldown: 3.0, range: 220, speed: 280 } }
+    ],
+    loot: [
+      { item: 'monster_bone', chance: 0.9, min: 1, max: 2 },
+      { item: 'bone', chance: 0.8, min: 1, max: 2 }
+    ]
+  },
+  {
+    id: 'swamp_beast', name: 'Swamp Beast', family: 'swamp', zones: [3], level: 9, hp: 130, damage: 22, defense: 3,
+    speed: 70, size: 22, xp: 130, color: '#4a5a3a',
+    aiProfile: { aggression: 0.8, pack: false, nocturnal: false, territorial: true, ambush: true, adaptive: false, courage: 0.8 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.4, range: 46, knockback: 90, poison: 0.5 } },
+      { id: 'lunge', params: { damage: 1.3, cooldown: 4.5, range: 150, speed: 220 } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 0.8, min: 1, max: 2 },
+      { item: 'poison_gland', chance: 0.6, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'demon_beast', name: 'Demon Beast', family: 'beast', zones: [4], level: 12, hp: 180, damage: 28, defense: 3,
+    speed: 120, size: 24, xp: 220, color: '#7a2a2a',
+    aiProfile: { aggression: 0.95, pack: false, nocturnal: true, territorial: true, ambush: false, adaptive: true, courage: 0.9 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.2, range: 46, knockback: 90 } },
+      { id: 'charge', params: { damage: 1.5, cooldown: 5.0, range: 240, speed: 420 } },
+      { id: 'fire_breath', params: { damage: 1.1, cooldown: 7.0, range: 200, speed: 260 } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 0.9, min: 1, max: 2 },
+      { item: 'magic_core', chance: 0.35, min: 1, max: 1 },
+      { item: 'monster_bone', chance: 0.7, min: 1, max: 2 }
+    ]
+  },
+  {
+    id: 'ancient_beast', name: 'Ancient Beast', family: 'ancient', zones: [4], level: 14, hp: 260, damage: 32, defense: 5,
+    speed: 90, size: 28, xp: 320, color: '#3a4a6a',
+    aiProfile: { aggression: 0.85, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.5, range: 56, knockback: 120 } },
+      { id: 'tail_swipe', params: { damage: 1.2, cooldown: 5.0, range: 90, radius: 90 } },
+      { id: 'ground_slam', params: { damage: 1.5, cooldown: 8.0, range: 120, radius: 110 } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 1.0, min: 2, max: 3 },
+      { item: 'magic_core', chance: 0.5, min: 1, max: 1 },
+      { item: 'crystal', chance: 0.4, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'ancient_bear', name: 'Ancient Bear', family: 'boss', zones: [3], level: 15, hp: 800, damage: 30, defense: 5,
+    speed: 85, size: 30, xp: 700, color: '#4a3a2a', boss: true,
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.1, range: 56, knockback: 110 } },
+      { id: 'charge', params: { damage: 1.4, cooldown: 6.0, range: 260, speed: 400 } },
+      { id: 'ground_slam', params: { damage: 1.3, cooldown: 7.0, range: 110, radius: 100 } },
+      { id: 'roar', params: { damage: 0.3, cooldown: 10.0, range: 160 } },
+      { id: 'rage', params: { heal: 0, cooldown: 16.0, range: 0, buff: 'rage' } }
+    ],
+    phases: [
+      { hpPct: 0.7, label: 'Phase 2 — Ground Rage', color: '#5a4030', abilities: [
+        { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 56, knockback: 110 } },
+        { id: 'charge', params: { damage: 1.5, cooldown: 5.0, range: 280, speed: 430 } },
+        { id: 'ground_slam', params: { damage: 1.4, cooldown: 6.0, range: 120, radius: 110 } },
+        { id: 'roar', params: { damage: 0.4, cooldown: 8.0, range: 180 } },
+        { id: 'rage', params: { heal: 0, cooldown: 16.0, range: 0, buff: 'rage' } }
+      ] },
+      { hpPct: 0.35, label: 'Phase 3 — Enraged', color: '#6a2a2a', abilities: [
+        { id: 'melee_basic', params: { damage: 1.2, cooldown: 0.9, range: 56, knockback: 120 } },
+        { id: 'charge', params: { damage: 1.6, cooldown: 4.0, range: 300, speed: 460 } },
+        { id: 'ground_slam', params: { damage: 1.5, cooldown: 5.0, range: 130, radius: 120 } },
+        { id: 'roar', params: { damage: 0.5, cooldown: 7.0, range: 200 } },
+        { id: 'rage', params: { heal: 0, cooldown: 12.0, range: 0, buff: 'rage' } }
+      ] }
+    ],
+    loot: [
+      { item: 'hide_bear', chance: 1.0, min: 2, max: 4 },
+      { item: 'claw_bear', chance: 1.0, min: 2, max: 4 },
+      { item: 'magic_core', chance: 1.0, min: 1, max: 2 }
+    ]
+  },
+  {
+    id: 'forest_guardian', name: 'Forest Guardian', family: 'boss', zones: [4], level: 18, hp: 1500, damage: 34, defense: 7,
+    speed: 55, size: 34, xp: 1500, color: '#3a6a3a', boss: true,
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.6, range: 66, knockback: 140 } },
+      { id: 'root_slam', params: { damage: 1.2, cooldown: 6.0, range: 130, radius: 100 } },
+      { id: 'regenerate', params: { heal: 60, cooldown: 14.0, range: 0 } }
+    ],
+    phases: [
+      { hpPct: 0.7, label: 'Phase 2 — The Grove Awakens', color: '#4a7a3a', abilities: [
+        { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.5, range: 66, knockback: 140 } },
+        { id: 'root_slam', params: { damage: 1.3, cooldown: 5.5, range: 130, radius: 110 } },
+        { id: 'summon', params: { summonId: 'spider', count: 2, cooldown: 12.0, range: 0 } },
+        { id: 'regenerate', params: { heal: 70, cooldown: 13.0, range: 0 } }
+      ] },
+      { hpPct: 0.35, label: 'Phase 3 — Wrath of the Forest', color: '#2a5a2a', abilities: [
+        { id: 'melee_basic', params: { damage: 1.1, cooldown: 1.4, range: 66, knockback: 150 } },
+        { id: 'root_slam', params: { damage: 1.5, cooldown: 4.5, range: 140, radius: 120 } },
+        { id: 'summon', params: { summonId: 'treant', count: 2, cooldown: 10.0, range: 0 } },
+        { id: 'ground_slam', params: { damage: 1.2, cooldown: 7.0, range: 120, radius: 120 } },
+        { id: 'regenerate', params: { heal: 80, cooldown: 12.0, range: 0 } }
+      ] }
+    ],
+    loot: [
+      { item: 'treant_bark', chance: 1.0, min: 3, max: 5 },
+      { item: 'rare_wood', chance: 1.0, min: 3, max: 5 },
+      { item: 'magic_core', chance: 1.0, min: 1, max: 3 }
+    ]
+  },
+  {
+    id: 'ancient_dragon', name: 'Ancient Dragon', family: 'boss', zones: [5], level: 24, hp: 3000, damage: 40, defense: 8,
+    speed: 120, size: 40, xp: 4000, color: '#3a3a5a', boss: true,
+    aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 120 } },
+      { id: 'fire_breath', params: { damage: 1.2, cooldown: 5.0, range: 260, speed: 300 } },
+      { id: 'tail_swipe', params: { damage: 1.2, cooldown: 6.0, range: 100, radius: 100 } },
+      { id: 'charge', params: { damage: 1.4, cooldown: 8.0, range: 320, speed: 480 } }
+    ],
+    phases: [
+      { hpPct: 0.7, label: 'Phase 2 — Inferno', color: '#5a3a3a', abilities: [
+        { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 60, knockback: 120 } },
+        { id: 'fire_breath', params: { damage: 1.3, cooldown: 4.5, range: 280, speed: 320 } },
+        { id: 'ice_breath', params: { damage: 1.0, cooldown: 6.0, range: 260, speed: 300 } },
+        { id: 'tail_swipe', params: { damage: 1.3, cooldown: 5.5, range: 110, radius: 110 } },
+        { id: 'charge', params: { damage: 1.5, cooldown: 7.0, range: 340, speed: 500 } }
+      ] },
+      { hpPct: 0.35, label: 'Phase 3 — Apocalypse', color: '#6a2a2a', abilities: [
+        { id: 'melee_basic', params: { damage: 1.2, cooldown: 0.8, range: 60, knockback: 130 } },
+        { id: 'fire_breath', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 340 } },
+        { id: 'ice_breath', params: { damage: 1.1, cooldown: 5.5, range: 280, speed: 320 } },
+        { id: 'tail_swipe', params: { damage: 1.4, cooldown: 5.0, range: 120, radius: 120 } },
+        { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 360, speed: 520 } },
+        { id: 'summon', params: { summonId: 'demon_beast', count: 1, cooldown: 14.0, range: 0 } }
+      ] }
+    ],
+    loot: [
+      { item: 'magic_core', chance: 1.0, min: 2, max: 4 },
+      { item: 'crystal', chance: 1.0, min: 2, max: 4 },
+      { item: 'monster_hide', chance: 1.0, min: 3, max: 5 }
+    ]
+  },
+  {
     id: 'alpha_wolf', name: 'Alpha Wolf', family: 'boss', zones: [2], level: 12, hp: 500, damage: 24, defense: 3,
     speed: 150, size: 24, xp: 400, color: '#3a3a44', boss: true,
     aiProfile: { aggression: 1.0, pack: true, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },

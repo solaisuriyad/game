@@ -35,12 +35,13 @@ One interconnected world:
 |---|---|---|
 | Main Village | ~30 buildings (guild, lodge, shops, farms, well, shrine, houses) | Safe |
 | Zone 1 — Safe Forest | rabbits, deer, fox, herbs, wood, berries, mushrooms, slimes | Low |
-| Zone 2 — Deep Forest | boar, wolves, goblins, rare plants, iron | Mid |
-| Zone 3 — Dark Forest | giant spiders, predators, poison, night spawns | High |
-| Zone 4 — Ancient Forest | treants, ancient beasts, mythril | Very high |
-| Zone 5 — Forbidden Forest | legendary monsters, bosses, secrets | End-game |
+| Zone 2 — Deep Forest | boar, wolves, goblins, Alpha Wolf boss | Mid |
+| Zone 3 — Dark Forest | giant spiders, treants, skeletons, swamp beasts, Ancient Bear boss | High |
+| Zone 4 — Ancient Forest | demon beasts, ancient beasts, Forest Guardian boss | Very high |
+| Zone 5 — Forbidden Forest | Ancient Dragon, rare materials, secrets | End-game |
 
-Zones are gated by guild rank (F→E→D→C→B→A→S→SS→SSS) and visually distinct.
+Zones are gated by guild rank (F→E→D→C→B→A→S→SS→SSS) and visually distinct
+(each deeper zone gets its own ambience tint).
 
 ## 4. Village & NPC simulation
 

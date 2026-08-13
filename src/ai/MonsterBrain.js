@@ -136,24 +136,28 @@ function chooseAbility(m, dPlayer, inMelee, game) {
   const wantsClose = playerRanged && dPlayer > 140;
 
   const candidates = [];
+  const isSelf = (id) => ['regenerate', 'rage', 'howl', 'summon', 'roar'].includes(id);
   for (const ab of m.abilities) {
     if ((m.abilityCd[ab.id] || 0) > 0) continue;
-    const cd = ab.params.cooldown || 2;
-    // filter by reach
+    // reach gating: melee abilities require close range; ranged/dash require within reach
     if (ab.id === 'melee_basic' || ab.id === 'bleeding_bite') {
       if (!inMelee) continue;
+    } else if (!isSelf(ab.id)) {
+      const r = ab.params.range || 0;
+      if (r > 0 && dPlayer > r * 1.15) continue; // out of reach
     }
-    if (ab.id === 'howl' && m.hp > m.maxHp * 0.5) continue; // howl when pressured
+    // hp-gated abilities
+    if (ab.id === 'howl' && m.hp > m.maxHp * 0.5) continue;
     if (ab.id === 'regenerate' && m.hp > m.maxHp * 0.6) continue;
     if (ab.id === 'rage' && m.hp > m.maxHp * 0.5) continue;
 
     let weight = 1;
     if (ab.id === 'melee_basic') weight = 4;
-    if ((ab.id === 'lunge' || ab.id === 'pounce') && wantsClose) weight += 2;
+    if ((ab.id === 'lunge' || ab.id === 'pounce' || ab.id === 'charge') && wantsClose) weight += 2;
     if (ab.id === 'howl') weight = m._wantsHowl ? 3 : 0.4;
-    if (ab.id === 'web_shot' && dPlayer > 120) weight = 2;
-    if (ab.id === 'throw_rock' && dPlayer > 120) weight = 2;
-    if (ab.id === 'root_slam' && dPlayer < 100) weight = 1.5;
+    if ((ab.id === 'web_shot' || ab.id === 'throw_rock' || ab.id === 'fire_breath' || ab.id === 'ice_breath') && dPlayer > 120) weight += 1.5;
+    if ((ab.id === 'root_slam' || ab.id === 'ground_slam' || ab.id === 'tail_swipe') && dPlayer < 110) weight += 1.5;
+    if (ab.id === 'summon' && m.boss) weight += 1;
     candidates.push({ ability: ab.id, params: ab.params, w: weight });
   }
   m._wantsHowl = false;

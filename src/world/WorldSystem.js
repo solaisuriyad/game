@@ -15,10 +15,12 @@ export const T = {
 };
 
 export const ZONES = [
-  { name: 'Village', from: 0, to: 30, danger: 0, color: '#5a8a4a' },
-  { name: 'Safe Forest', from: 30, to: 52, danger: 1, color: '#4a7a3a' },
-  { name: 'Deep Forest', from: 52, to: 78, danger: 2, color: '#3a6a30' },
-  { name: 'Dark Forest', from: 78, to: 101, danger: 3, color: '#2a5a28' }
+  { name: 'Village', from: 0, to: 30, danger: 0, minRank: 0, color: '#5a8a4a' },
+  { name: 'Safe Forest', from: 30, to: 52, danger: 1, minRank: 0, color: '#4a7a3a' },
+  { name: 'Deep Forest', from: 52, to: 78, danger: 2, minRank: 1, color: '#3a6a30' },
+  { name: 'Dark Forest', from: 78, to: 101, danger: 3, minRank: 3, color: '#2a5a28' },
+  { name: 'Ancient Forest', from: 101, to: 124, danger: 4, minRank: 5, color: '#1f4a2a' },
+  { name: 'Forbidden Forest', from: 124, to: 999, danger: 5, minRank: 8, color: '#1a3428' }
 ];
 
 export function zoneIndexAt(px, py) {

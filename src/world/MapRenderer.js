@@ -229,6 +229,15 @@ export class MapRenderer {
       ctx.fillStyle = `rgba(200,205,210,${0.28 * w.intensity})`;
       ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
     }
+    // zone ambience tint (deeper forest feels distinct & foreboding)
+    if (game.player) {
+      const zi = game.world.getZoneIndex(game.player.x, game.player.y);
+      if (zi >= 4) {
+        const tint = zi === 5 ? 'rgba(70,20,30,0.22)' : 'rgba(25,55,38,0.18)';
+        ctx.fillStyle = tint;
+        ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
+      }
+    }
     // night lighting
     if (darkness > 0.08) {
       const p = game.player;

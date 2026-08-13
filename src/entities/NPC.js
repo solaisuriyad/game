@@ -4,6 +4,8 @@ export class NPC extends Entity {
   constructor(game, data, x, y) {
     super(x, y, 11);
     this.name = data.name;
+    this.firstName = data.firstName || data.name;
+    this.lastName = data.lastName || '';
     this.age = data.age;
     this.gender = data.gender;
     this.occupation = data.occupation;   // occupation id
@@ -17,6 +19,16 @@ export class NPC extends Entity {
     this.homePos = data.homePos;
     this.workPos = data.workPos;
     this.scheduleType = data.scheduleType;
+
+    // social simulation state
+    this.familyId = null;
+    this.spouseId = null;
+    this.parentIds = [];
+    this.childIds = [];
+    this.npcRelations = {};   // { npcId: 'spouse'|'child'|'parent'|'friend'|'rival' }
+    this.chatting = 0;
+    this.chatBuddy = null;
+    this._socialSearch = 0;
 
     this.phase = 'idle';
     this.targetPos = null;
@@ -64,6 +76,17 @@ export class NPC extends Entity {
     ctx.fillStyle = '#1a1a1a';
     ctx.beginPath(); ctx.arc(-s * 0.18, -s * 0.55 + bob * 0.2, 1.5, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(s * 0.18, -s * 0.55 + bob * 0.2, 1.5, 0, Math.PI * 2); ctx.fill();
+    // chat bubble when socializing
+    if (this.chatting > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = '#6a4a2a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, -s * 1.5, 8, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-4, -s * 1.5 + 6); ctx.lineTo(0, -s * 0.9); ctx.lineTo(4, -s * 1.5 + 6); ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+    }
     ctx.restore();
   }
 }

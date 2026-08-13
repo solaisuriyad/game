@@ -1,3 +1,5 @@
+import { TILE, VILLAGE_CX, VILLAGE_CY } from '../world/WorldSystem.js';
+
 export class CombatSystem {
   constructor(game) { this.game = game; }
 
@@ -184,7 +186,18 @@ export class CombatSystem {
       g.addXP(e.xp);
       g.player.kills++;
       g.quests.onKill(e.def.id);
-      if (e.boss) g.bus.emit('bossKilled', { def: e.def });
+      if (e.boss) {
+        g.bus.emit('bossKilled', { def: e.def });
+        g.player.recentBossKill = e.def.name;
+      }
+      // village defense: slaying a monster near the village earns NPC favor
+      const vd = Math.hypot(e.x / TILE - VILLAGE_CX, e.y / TILE - VILLAGE_CY);
+      if (vd < 34) {
+        for (const n of g.npcs) {
+          if (n.distTo(e) < 260) g.relationship.change(n, 1, 'saw you fight off a monster near the village');
+        }
+        g.player.reputation = Math.min(100, g.player.reputation + 1);
+      }
     }
     g.audio.sfx('death');
   }
