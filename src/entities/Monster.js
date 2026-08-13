@@ -164,14 +164,22 @@ export class Monster extends Entity {
       ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(0, 0, s * 1.3, 0, Math.PI * 2); ctx.stroke();
     }
-    // rank label (F/E/D/C/B/A/S/A+) above the monster
+    // name + rank label above the monster
     const rankColor = { 'F': '#c8c8c8', 'E': '#7ac87a', 'D': '#7ac8e0', 'C': '#5a9ae0', 'B': '#a05ae0', 'A': '#e07a5a', 'S': '#ffd76a', 'A+': '#ff5ae0' }[this.rank] || '#fff';
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(-8, -s * 1.6 - 12, 16, 12);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px sans-serif';
+    const nm = this.name.length > 14 ? this.name.slice(0, 13) + '…' : this.name;
+    const nw = ctx.measureText(nm).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(-nw / 2 - 4, -s * 1.6 - 14, nw + 8, 13);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(nm, 0, -s * 1.55 - 5);
+    // rank badge (colored letter) right below the name
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(-8, -s * 1.6, 16, 12);
     ctx.fillStyle = rankColor;
     ctx.font = 'bold 9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(this.rank, 0, -s * 1.55 - 4);
+    ctx.fillText(this.rank, 0, -s * 1.52 + 8);
     ctx.textAlign = 'left';
     ctx.restore();
   }

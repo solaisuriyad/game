@@ -9,14 +9,19 @@ export class HUD {
   }
 
   _buildMinimap() {
-    const w = WORLD_W, h = WORLD_H;
+    // cap the minimap/terrain canvas at a fixed resolution so a huge world
+    // doesn't create a multi-megapixel canvas that stalls rendering
+    const MM = 700;
+    this.mm = MM;
     this.terrain = document.createElement('canvas');
-    this.terrain.width = w; this.terrain.height = h;
+    this.terrain.width = MM; this.terrain.height = MM;
     const tc = this.terrain.getContext('2d');
-    const img = tc.createImageData(w, h);
+    const img = tc.createImageData(MM, MM);
     const d = img.data;
-    for (let ty = 0; ty < h; ty++) {
-      for (let tx = 0; tx < w; tx++) {
+    for (let my = 0; my < MM; my++) {
+      const ty = (my * WORLD_H / MM) | 0;
+      for (let mx = 0; mx < MM; mx++) {
+        const tx = (mx * WORLD_W / MM) | 0;
         const t = this.game.world.tileAt(tx, ty);
         const dist = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
         let r, g, b;
@@ -25,32 +30,33 @@ export class HUD {
         else if (t === T.FARM) { r = 107; g = 74; b = 42; }
         else if (t === T.SAND) { r = 203; g = 184; b = 138; }
         else {
-          const shade = 70 - dist * 0.45;
+          const shade = 70 - dist * 0.02;
           r = 40; g = Math.max(40, shade + 30); b = 30;
         }
-        const i = (ty * w + tx) * 4;
+        const i = (my * MM + mx) * 4;
         d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255;
       }
     }
     tc.putImageData(img, 0, 0);
-    // fog
-    this.fog = tc.createImageData(w, h);
+    // fog (small, at minimap resolution)
+    this.fog = tc.createImageData(MM, MM);
     for (let i = 3; i < this.fog.data.length; i += 4) this.fog.data[i] = 235;
+    this._fogDirty = true;
   }
 
   updateDiscovery() {
     const p = this.game.player;
-    const w = this.game.world;
-    const R = 12;
-    const ptx = Math.floor(p.x / TILE), pty = Math.floor(p.y / TILE);
-    for (let ty = pty - R; ty <= pty + R; ty++) {
-      for (let tx = ptx - R; tx <= ptx + R; tx++) {
-        if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) continue;
-        if (Math.hypot(tx - ptx, ty - pty) > R) continue;
-        const idx = ty * WORLD_W + tx;
-        if (w.discovered[idx]) continue;
-        w.discovered[idx] = 1;
-        this.fog.data[idx * 4 + 3] = 0;
+    // reveal a radius around the player in minimap space (cheap, capped size)
+    const mx = Math.floor((p.x / TILE) * (this.mm / WORLD_W));
+    const my = Math.floor((p.y / TILE) * (this.mm / WORLD_H));
+    const R = 9;
+    for (let dy = -R; dy <= R; dy++) {
+      for (let dx = -R; dx <= R; dx++) {
+        if (dx * dx + dy * dy > R * R) continue;
+        const px = mx + dx, py = my + dy;
+        if (px < 0 || py < 0 || px >= this.mm || py >= this.mm) continue;
+        const idx = (py * this.mm + px) * 4 + 3;
+        if (this.fog.data[idx] !== 0) { this.fog.data[idx] = 0; this._fogDirty = true; }
       }
     }
   }
@@ -107,7 +113,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v3.0', W - 12, H - 8);
+    ctx.fillText('v3.1', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -334,19 +340,21 @@ export class HUD {
   }
 
   _drawMinimap(ctx, x, y, size) {
-    const s = size / WORLD_W;
     ctx.drawImage(this.terrain, x, y, size, size);
     ctx.drawImage(this._fogCanvas(), x, y, size, size);
-    // player marker
+    // player marker (world tiles -> display px)
     const p = this.game.player;
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(x + (p.x / TILE) * s, y + (p.y / TILE) * s, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + (p.x / TILE) * (size / WORLD_W), y + (p.y / TILE) * (size / WORLD_H), 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
     ctx.strokeRect(x, y, size, size);
   }
   _fogCanvas() {
-    if (!this._fogc) { this._fogc = document.createElement('canvas'); this._fogc.width = WORLD_W; this._fogc.height = WORLD_H; }
-    this._fogc.getContext('2d').putImageData(this.fog, 0, 0);
+    if (!this._fogc) { this._fogc = document.createElement('canvas'); this._fogc.width = this.mm; this._fogc.height = this.mm; }
+    if (this._fogDirty) {
+      this._fogc.getContext('2d').putImageData(this.fog, 0, 0);
+      this._fogDirty = false;
+    }
     return this._fogc;
   }
 }

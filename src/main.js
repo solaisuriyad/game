@@ -110,7 +110,7 @@ class Game {
     this.paused = false;
 
     // optional NPC scale override: ?npcs=1000 (Phase 9 — 1000-NPC optimization)
-    this.npcCount = 2000; // a living village of 2000 NPCs
+    this.npcCount = 1000; // a living village (1000 NPCs)
     try {
       const q = new URLSearchParams(window.location.search).get('npcs');
       if (q) this.npcCount = Math.max(1, Math.min(2000, parseInt(q, 10) || 65));

@@ -430,12 +430,17 @@ export class MenuManager {
 
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, this._mapView, this._mapView);
+    const hud = g.hud;
+    // draw only the visible slice of the terrain + fog (source-rect crop) so we
+    // never scale a giant world canvas to a huge destination (black-screen fix)
+    const srcW = (this._mapView / s) * (hud.mm / WORLD_W);
+    const srcH = (this._mapView / s) * (hud.mm / WORLD_H);
+    const srcX = (px / s) * (hud.mm / WORLD_W);
+    const srcY = (py / s) * (hud.mm / WORLD_H);
+    ctx.drawImage(hud.terrain, srcX, srcY, srcW, srcH, 0, 0, this._mapView, this._mapView);
+    ctx.drawImage(hud._fogCanvas(), srcX, srcY, srcW, srcH, 0, 0, this._mapView, this._mapView);
     ctx.save();
     ctx.translate(-px, -py);
-    // terrain (scaled up) + fog
-    const hud = g.hud;
-    ctx.drawImage(hud.terrain, 0, 0, content, content);
-    ctx.drawImage(hud._fogCanvas(), 0, 0, content, content);
     // zone rings
     ctx.strokeStyle = 'rgba(255,215,106,0.4)';
     for (const z of ZONES) {
@@ -676,7 +681,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 3.0 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
+      <div class="muted" style="margin-bottom:10px">Version 3.1 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

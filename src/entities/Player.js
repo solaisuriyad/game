@@ -97,6 +97,25 @@ export class Player extends Entity {
   equipWeapon(w) { this.weapon = w; }
   equipArmor(a) { if (a) this.armor[a.slot] = a; }
 
+  // stop flying and snap to the nearest walkable ground so the player is never
+  // left stuck inside a tree / building / water (which caused "frozen" movement)
+  land(game) {
+    this.flying = false;
+    this.flyCd = 5;
+    this.altitude = 0;
+    for (let r = 0; r <= 80; r += 8) {
+      for (let a = 0; a < 8; a++) {
+        const ang = (a / 8) * Math.PI * 2;
+        const x = this.x + Math.cos(ang) * r;
+        const y = this.y + Math.sin(ang) * r;
+        if (!game.world.circleBlocked(x, y, 14)) {
+          this.x = x; this.y = y;
+          return;
+        }
+      }
+    }
+  }
+
   update(dt, game) {
     this.tickStatuses(dt, game);
     // face the mouse
@@ -114,14 +133,11 @@ export class Player extends Entity {
     this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
-    // ---- flying (press X to start; 30s of flight, 5s cooldown, 50ft ceiling) ----
+    // ---- flying (press X to take off, press X again to land) ----
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
-    // X toggles flight: press to take off, press again to land
     if (game.input.pressed('x')) {
       if (this.flying) {
-        this.flying = false;
-        this.flyCd = 5;
-        this.altitude = 0;
+        this.land(game);
         game.toast('You land safely. (5s cooldown)');
       } else if (this.flyCd <= 0) {
         this.flying = true;
@@ -134,9 +150,7 @@ export class Player extends Entity {
       this.flyTime -= dt;
       this.altitude = Math.min(50, this.altitude + 200 * dt); // ascend to 50 feet
       if (this.flyTime <= 0) {
-        this.flying = false;
-        this.flyCd = 5;
-        this.altitude = 0;
+        this.land(game);
         game.toast('You descend to the ground. (5s cooldown)');
       }
     }
