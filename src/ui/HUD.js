@@ -90,6 +90,9 @@ export class HUD {
       ctx.fillStyle = '#7ae07a';
       ctx.fillText(`Online · ${g.remotePlayers.length + 1} hunters`, W - 12, 94);
     }
+    ctx.fillStyle = '#888';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('v2.0', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
