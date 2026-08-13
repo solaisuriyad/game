@@ -68,6 +68,11 @@ export class HUD {
     this._bar(ctx, 12, 44, 160, p.mp / p.maxMp, '#7a5ac8', `MP ${Math.ceil(p.mp)}`);
     this._bar(ctx, 12, 60, 160, p.hunger / 100, '#d08a3a', 'HUNGER');
     this._bar(ctx, 12, 76, 120, (p.temperature + 10) / 40, '#4a8ac8', `${Math.round(p.temperature)}°C`);
+    if (p.recovering) {
+      ctx.fillStyle = '#7ae07a';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('⚡ Recovering…', 12, 94);
+    }
 
     // ---- top-right: clock / weather / gold / rank ----
     ctx.textAlign = 'right';
@@ -92,7 +97,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v2.0', W - 12, H - 8);
+    ctx.fillText('v2.1', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----

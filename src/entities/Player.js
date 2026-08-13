@@ -69,6 +69,7 @@ export class Player extends Entity {
     this.moving = false;
     this.working = 0;
     this.idleTime = 0;
+    this.recovering = false;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }

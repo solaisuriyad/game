@@ -39,6 +39,7 @@ export class SurvivalSystem {
 
     // ---- idle timer (5 seconds of rest triggers full regeneration) ----
     if (idle) p.idleTime = (p.idleTime || 0) + dt; else p.idleTime = 0;
+    p.recovering = (p.idleTime || 0) >= 5; // exposed to the HUD for a visible indicator
 
     // ---- STAMINA: drains very slowly on activity; after 5s idle it refills to
     //      FULL within 1 minute ----
