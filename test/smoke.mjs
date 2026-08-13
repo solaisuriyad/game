@@ -168,6 +168,18 @@ if (boar && game.traps.some((t) => t.type === 'bear_trap')) {
   if (!bt.sprung) throw new Error('bear trap did not spring on boar');
 }
 
+// ---- 3-resource system (Health/Stamina/MP at 200% + drops) ----
+if (game.player.maxHealth !== 200 || game.player.maxStamina !== 200 || game.player.maxMp !== 200) throw new Error('resources not at 200% capacity');
+const mpBefore = game.player.mp;
+game.inventory.addItem('mana_orb', 1, { silent: true });
+game.player.mp = 100;
+game.inventory.useItem('mana_orb');
+if (game.player.mp !== 150) throw new Error('mana orb did not restore MP');
+game.inventory.addItem('holy_stamina', 1, { silent: true });
+game.inventory.useItem('holy_stamina');
+if (game.player.buffs.staminaHold !== 240) throw new Error('charm buff not applied');
+console.log('resources: 200% capacity + orbs + charms OK');
+
 // ---- lore / forest history ----
 game.player.x = 99 * 32 + 16; game.player.y = 96 * 32 + 16; // back in village
 game.lore.discover('lore_shrine');

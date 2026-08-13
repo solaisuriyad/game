@@ -158,6 +158,7 @@ export class MenuManager {
       <div class="stats">
         <span>Health</span><span>${Math.ceil(p.health)} / ${p.maxHealth}</span>
         <span>Stamina</span><span>${Math.ceil(p.stamina)} / ${p.maxStamina}</span>
+        <span>MP</span><span>${Math.ceil(p.mp)} / ${p.maxMp}</span>
         <span>Strength</span><span>${s.strength}</span>
         <span>Agility</span><span>${s.agility}</span>
         <span>Defense</span><span>${p.totalDefense}</span>

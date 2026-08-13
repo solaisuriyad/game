@@ -103,12 +103,15 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 ## PART 4 — THE SCREEN (HUD) EXPLAINED
 
 ### Top-left — your body's bars
-- **Red bar** = Health. At 0 you "die" and wake up in the village (you keep your levels). It **slowly heals on its own** when you're calm and well-fed.
-- **Green bar** = Stamina. Used by **running, attacking, dodging, blocking, and working**. It **refills fast when you stand still**.
-- **Orange bar** = Hunger. Drains **very slowly**. Eating refills it. At 0 you slowly lose health.
-- **Blue bar** = Temperature. Drops at night and in rain. Too cold = you lose health.
+- **Red bar** = Health (max **200**). Drops only from monster hits / starving / freezing. Slowly heals on its own when you're calm and fed.
+- **Green bar** = Stamina (max **200**). Drains **very slowly** while running/attacking/gathering. Refills fast when you stand still.
+- **Purple bar** = MP (max **200**). A third energy resource that drains slowly during activity and recovers when you rest.
+- **Orange bar** = Hunger. Drains **very slowly**. Eating refills it.
+- **Blue bar** = Temperature. Drops at night and in rain.
 
-> **The rule:** your bars drop **slowly** and mostly while you're *doing things* (fighting, running, gathering). When you rest, they climb back up on their own.
+> **The safety net:** if Stamina, MP or Health drops below **50%**, it starts recovering at 25% speed even while you're busy. Below **25%**, it recovers at 95% speed no matter what you're doing. So your bars stay high.
+
+> **Drops & charms:** defeating monsters and chopping trees can drop **Orbs** (restore health/stamina/MP). Bosses drop rare **Charms** that keep a resource FULL for a few minutes (Health 2 min · MP 3 min · Stamina 4 min).
 
 ### Top-right — world info
 - The **time** (e.g. `7:59 AM · Day 1`).

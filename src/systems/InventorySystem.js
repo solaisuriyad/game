@@ -69,12 +69,18 @@ export class InventorySystem {
       return { ok: true, message: `Ate ${item.name}.` };
     }
     if (item.category === 'consumable') {
+      let msg = `Used ${item.name}.`;
       if (item.heal) {
         const bonus = 1 + (this.game.skills.getEffect('healBonus') || 0);
         p.health = Math.min(p.maxHealth, p.health + Math.round(item.heal * bonus));
       }
+      if (item.stamina) p.stamina = Math.min(p.maxStamina, p.stamina + item.stamina);
+      if (item.mp) p.mp = Math.min(p.maxMp, p.mp + item.mp);
+      if (item.holdHealth) { p.buffs.healthHold = item.holdHealth; msg = `${item.name} active — health full for ${item.holdHealth / 60} min.`; }
+      if (item.holdStamina) { p.buffs.staminaHold = item.holdStamina; msg = `${item.name} active — stamina full for ${item.holdStamina / 60} min.`; }
+      if (item.holdMana) { p.buffs.manaHold = item.holdMana; msg = `${item.name} active — MP full for ${item.holdMana / 60} min.`; }
       this.removeItem(id, 1);
-      return { ok: true, message: `Used ${item.name}.` };
+      return { ok: true, message: msg };
     }
     if (item.id === 'backpack') {
       if (p.backpackLevel >= CAPACITIES.length - 1) return { ok: false, message: 'Backpack is already maxed.' };

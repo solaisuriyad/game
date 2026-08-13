@@ -196,6 +196,11 @@ export class CombatSystem {
       for (const d of drops) {
         g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() - 0.5) * 20, d.item, d.qty));
       }
+      // restorative orbs sometimes drop when a monster is defeated
+      if (Math.random() < 0.4) {
+        const orb = ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)];
+        g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 24, e.y + (Math.random() - 0.5) * 24, orb, 1));
+      }
       g.addXP(e.xp);
       g.player.kills++;
       g.quests.onKill(e.def.id);
@@ -203,6 +208,10 @@ export class CombatSystem {
         g.bus.emit('bossKilled', { def: e.def });
         g.player.recentBossKill = e.def.name;
         g.lore.onBossKill(e.def.id);
+        // bosses drop a hidden "hold full" charm
+        const charm = ['holy_health', 'holy_stamina', 'holy_mana'][Math.floor(Math.random() * 3)];
+        g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 30, e.y + (Math.random() - 0.5) * 30, charm, 1));
+        g.toast('✨ A hidden charm dropped!');
       }
       // village defense: slaying a monster near the village earns NPC favor
       const vd = Math.hypot(e.x / TILE - VILLAGE_CX, e.y / TILE - VILLAGE_CY);

@@ -34,13 +34,13 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 
 ## What's implemented (MVP vertical slice)
 
-- **World** — procedural 200×200 tilemap: village (31 buildings), roads, farms, river, pond, forest with **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden), each visually distinct and gated by guild rank.
+- **World** — procedural 280×280 tilemap (bigger world): a spread-out village (31 buildings with clear walkable gaps — no road is blocked), roads, farms, river, pond, forest with **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden), each visually distinct and gated by guild rank.
 - **Living village** — ~65 procedurally generated NPCs with **families, spouses, friendships & rivalries**, day/night schedules, socializing, background simulation tiers, and gossip about your deeds.
 - **Hunting & wildlife** — 7 animal species with wander/eat/flee/predator AI, footprint & blood-trail tracking, corpse harvesting.
 - **Stealth, tracking & traps** — sneak (crouch), vision cones, line-of-sight through trees, noise-based detection & monster investigation, directional footprint/blood tracking mode, snare + bear traps with bait attraction.
 - **Monsters** — 11 types (slime, goblin, wolf packs, giant spider, treant, skeleton, swamp beast, demon beast, ancient beast + 4 **phased bosses**: Alpha Wolf, Ancient Bear, Forest Guardian, Ancient Dragon) with a modular **Ability System** (lunge, pounce, web shot, howl, root slam, regenerate, rage, charge, roar, ground slam, tail swipe, fire/ice breath, summon, bleeds) and adaptive AI.
 - **Combat** — light/heavy attacks, block, dodge (i-frames), stamina, crits, weapon durability, 3 weapon classes (sword/bow/spear + axe/hammer/dagger).
-- **Survival** — health, stamina, hunger, temperature, energy/rest; day/night cycle and dynamic weather (rain, fog, storm) that affect gameplay.
+- **Survival** — health, stamina & MP (each 200% capacity) with very slow activity drain, low-resource recovery safety nets, and restorative **orbs** (from monsters/trees) + hidden **charms** (keep a resource full for 2/3/4 min); plus hunger, temperature, energy/rest, day/night and dynamic weather.
 - **Inventory & weight** — capacity 20→100 kg, meaningful carry decisions.
 - **Guild progression** — submit materials for Guild Points + gold + XP; ranks F→SSS.
 - **Quests** — hunt / kill / gather / explore / boss quests with progress tracking.

@@ -40,6 +40,7 @@ export class SaveSystem {
         x: p.x, y: p.y, level: p.level, xp: p.xp, xpNext: p.xpNext, skillPoints: p.skillPoints,
         learnedSkills: p.learnedSkills, baseStats: p.baseStats,
         health: p.health, maxHealth: p.maxHealth, stamina: p.stamina, maxStamina: p.maxStamina,
+        mp: p.mp, maxMp: p.maxMp, buffs: p.buffs,
         hunger: p.hunger, temperature: p.temperature, energy: p.energy,
         gold: p.gold, guildPoints: p.guildPoints, reputation: p.reputation,
         backpackLevel: p.backpackLevel, kills: p.kills, animalsHunted: p.animalsHunted,
@@ -82,6 +83,14 @@ export class SaveSystem {
     p.armor = {};
     for (const [k, v] of Object.entries(pl.armor)) p.armor[k] = v ? getItem(v) : null;
     p.inventory = pl.inventory.map((it) => ({ id: it.id, qty: it.qty }));
+    // migration: 200% capacity for the 3 core resources + MP/buffs (new fields)
+    p.maxHealth = Math.max(p.maxHealth || 0, 200);
+    p.maxStamina = Math.max(p.maxStamina || 0, 200);
+    p.maxMp = pl.maxMp || 200;
+    p.mp = pl.mp ?? p.maxMp;
+    p.health = Math.min(p.health, p.maxHealth);
+    p.stamina = Math.min(p.stamina, p.maxStamina);
+    p.buffs = pl.buffs || { healthHold: 0, staminaHold: 0, manaHold: 0 };
 
     g.time.deserialize(d.time);
     g.weather.deserialize(d.weather);

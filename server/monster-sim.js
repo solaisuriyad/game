@@ -299,6 +299,14 @@ export class MonsterSim {
       target.dead = true;
       this.emit('monsterDeath', { id: target.id, to: playerId, defId: target.defId });
       const items = this._rollLoot(target);
+      // restorative orbs sometimes drop
+      if (Math.random() < 0.4) {
+        items.push({ item: ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)], qty: 1 });
+      }
+      // bosses drop a hidden "hold full" charm
+      if (target.boss) {
+        items.push({ item: ['holy_health', 'holy_stamina', 'holy_mana'][Math.floor(Math.random() * 3)], qty: 1 });
+      }
       if (items.length) this.emit('loot', { to: playerId, items, name: target.name });
     }
     return { hit: true, id: target.id };

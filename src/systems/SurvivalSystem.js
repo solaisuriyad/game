@@ -1,50 +1,55 @@
+// Survival: Health / Stamina / MP (each with 200% capacity), plus hunger,
+// temperature and rest. The 3 core resources drain very slowly during activity,
+// recover when idle, and have a "safety net" — once a resource drops below 50%
+// (then 25%) it starts recovering even while you're busy, so vitals stay high.
 export class SurvivalSystem {
   constructor(game) { this.game = game; }
 
   update(dt) {
-    const p = this.game.player;
-    const t = this.game.time;
-    const w = this.game.weather;
-    const combat = this.game.combat;
+    const g = this.game;
+    const p = g.player;
+    const t = g.time;
+    const w = g.weather;
+    const combat = g.combat;
 
-    // decrement the "working" timer (set by gathering/chopping/harvesting)
     p.working = Math.max(0, (p.working || 0) - dt);
 
-    // activity flags (what the player is doing right now)
     const active = p.attackWindup > 0 || p.blocking || p.dodgeTimer > 0 || p.charging;
     const inCombat = (combat._recentCombat || 0) > 0;
     const working = p.working > 0;
-    const idle = !p.moving && !p.sprinting && !active && !working && !inCombat;
+    const busy = active || working || inCombat || p.sprinting;
+    const idle = !p.moving && !busy;
 
-    // ---- HUNGER: drains very slowly; a bit faster when active ----
-    let hungerRate = 0.04; // base — very slow
+    // ---- hold-full buffs (hidden drops) keep a resource pinned at max ----
+    if (p.buffs.healthHold > 0) { p.buffs.healthHold -= dt; p.health = p.maxHealth; }
+    if (p.buffs.staminaHold > 0) { p.buffs.staminaHold -= dt; p.stamina = p.maxStamina; }
+    if (p.buffs.manaHold > 0) { p.buffs.manaHold -= dt; p.mp = p.maxMp; }
+
+    // ---- HUNGER: drains very slowly ----
+    let hungerRate = 0.04;
     if (p.moving) hungerRate += 0.04;
     if (p.sprinting) hungerRate += 0.12;
     if (working) hungerRate += 0.08;
     if (inCombat) hungerRate += 0.08;
-    hungerRate *= (1 + (this.game.skills.getEffect('hungerRate') || 0));
+    hungerRate *= (1 + (g.skills.getEffect('hungerRate') || 0));
     p.hunger = Math.max(0, p.hunger - hungerRate * dt);
 
-    // ---- STAMINA: drains while sprinting/working/fighting; refills when calm ----
-    let drain = 0;
-    if (p.sprinting) drain += 12;
-    if (working) drain += 8;
-    if (active) drain += 4;
-    if (drain > 0) {
-      p.stamina = Math.max(0, p.stamina - drain * dt);
-    } else if (!p.sprinting) {
-      const regen = 20 * (1 + (this.game.skills.getEffect('staminaRegen') || 0));
-      const hungerPenalty = p.hunger < 20 ? 0.4 : 1;
-      p.stamina = Math.min(p.maxStamina, p.stamina + regen * hungerPenalty * dt);
-    }
+    // ---- STAMINA (drain ~80x slower on attack, ~90x slower on run/gather) ----
+    let sDrain = 0;
+    if (p.sprinting) sDrain += 0.13; // running (90x slower than original 12/sec)
+    if (working) sDrain += 0.09;     // chopping/gathering (90x slower than 8/sec)
+    if (active) sDrain += 0.05;      // attacking/blocking/dodging (80x slower than 4/sec)
+    this._resource(p, 'stamina', 'maxStamina', sDrain, 20, dt, { idle, busy });
 
-    // ---- HEALTH: regen when rested & fed; drop slowly from starvation/cold ----
-    if (idle && p.hunger > 40 && p.health < p.maxHealth) {
-      p.health = Math.min(p.maxHealth, p.health + 1.5 * dt);
-    }
-    if (p.hunger <= 0 && p.health > 1) {
-      p.health = Math.max(1, p.health - 0.5 * dt); // starvation (slow)
-    }
+    // ---- MP (drains very slowly during any activity) ----
+    const mDrain = busy ? 0.03 : 0;
+    this._resource(p, 'mp', 'maxMp', mDrain, 10, dt, { idle, busy });
+
+    // ---- HEALTH (only drops from damage/starvation/cold; regen when fed) ----
+    this._resource(p, 'health', 'maxHealth', 0, 2, dt, { idle, busy, idleRequiresFed: true });
+
+    // starvation (slow) & cold (slow)
+    if (p.hunger <= 0 && p.health > 1) p.health = Math.max(1, p.health - 0.5 * dt);
 
     // temperature
     let target = 20;
@@ -58,16 +63,36 @@ export class SurvivalSystem {
     p.energy = Math.max(0, p.energy - 0.3 * dt);
   }
 
+  // One resource's drain/recovery with the low-resource safety net.
+  //   fullRegen = recovery per second when resting at normal capacity
+  //   - below 50%: recover at 25% of fullRegen, even while busy
+  //   - below 25%: recover at 95% of fullRegen, even while busy
+  _resource(p, key, maxKey, drain, fullRegen, dt, { idle, busy, idleRequiresFed }) {
+    const max = p[maxKey];
+    const frac = p[key] / max;
+    let regen = 0;
+    if (frac <= 0.25) {
+      regen = fullRegen * 0.95;
+    } else if (frac <= 0.5) {
+      regen = fullRegen * 0.25;
+    } else if (idle && !(idleRequiresFed && p.hunger <= 40)) {
+      regen = fullRegen;
+    }
+    const net = regen - drain;
+    if (net > 0) p[key] = Math.min(max, p[key] + net * dt);
+    else if (net < 0) p[key] = Math.max(0, p[key] + net * dt);
+  }
+
   // mark recent damage so regen pauses briefly
   noteDamage() { this._recentDamage = 3; }
 
   rest() {
     const g = this.game;
     const p = g.player;
-    // sleep until morning
     g.time.timeOfDay = 0.3;
     p.health = p.maxHealth;
     p.stamina = p.maxStamina;
+    p.mp = p.maxMp;
     p.energy = 100;
     p.temperature = 21;
     g.toast('You rest and wake refreshed at dawn.');

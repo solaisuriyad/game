@@ -37,9 +37,9 @@ export class PopulationSystem {
       community: w.buildingCenterByFunc('community'),
       shrine: w.buildingCenterByFunc('shrine')
     };
-    this._farmCenter = { x: 79 * TILE + 16, y: 109 * TILE + 16 };
-    this._pondCenter = { x: 124 * TILE, y: 125 * TILE };
-    this._minePoint = { x: VILLAGE_CX * TILE, y: 55 * TILE };
+    this._farmCenter = { x: 113 * TILE + 16, y: 151 * TILE + 16 };
+    this._pondCenter = { x: 164 * TILE, y: 166 * TILE };
+    this._minePoint = { x: VILLAGE_CX * TILE, y: (VILLAGE_CY - 45) * TILE };
 
     // bulk-generate positions first (fast), then assign to NPCs
     this._generateNPCs(npcCount);
@@ -157,8 +157,8 @@ export class PopulationSystem {
     if (this._pool) return this._pool;
     const w = this.game.world;
     const pool = [];
-    for (let ty = 82; ty <= 112; ty++) {
-      for (let tx = 76; tx <= 124; tx++) {
+    for (let ty = 116; ty <= 164; ty++) {
+      for (let tx = 116; tx <= 164; tx++) {
         if ((tx + ty) % 2) continue; // skip every other cell (denser sampling)
         const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
         if (w.circleBlocked(px, py, 12)) continue;

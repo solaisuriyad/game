@@ -56,6 +56,14 @@ export const ITEMS = [
   { id: 'potion_small', name: 'Healing Potion', category: 'consumable', rarity: 'common', weight: 0.4, value: 40, guildValue: 8, desc: 'Restores 40 health.', heal: 40, hunger: 0, tags: ['potion'] },
   { id: 'potion_big', name: 'Greater Potion', category: 'consumable', rarity: 'uncommon', weight: 0.5, value: 120, guildValue: 20, desc: 'Restores 100 health.', heal: 100, hunger: 0, tags: ['potion'] },
   { id: 'bandage', name: 'Bandage', category: 'consumable', rarity: 'common', weight: 0.2, value: 15, guildValue: 4, desc: 'Stops bleeding. Restores 20 health.', heal: 20, hunger: 0, tags: ['potion'] },
+  // Restorative orbs (drop from monsters and trees)
+  { id: 'health_orb', name: 'Health Orb', category: 'consumable', rarity: 'uncommon', weight: 0.3, value: 30, guildValue: 10, desc: 'Restores 50 health.', heal: 50, tags: ['orb'] },
+  { id: 'stamina_orb', name: 'Stamina Orb', category: 'consumable', rarity: 'uncommon', weight: 0.3, value: 30, guildValue: 10, desc: 'Restores 50 stamina.', stamina: 50, tags: ['orb'] },
+  { id: 'mana_orb', name: 'Mana Orb', category: 'consumable', rarity: 'uncommon', weight: 0.3, value: 30, guildValue: 10, desc: 'Restores 50 MP.', mp: 50, tags: ['orb'] },
+  // Hidden "hold full" charms (rare drops — keep a resource FULL for a while)
+  { id: 'holy_health', name: 'Vitality Charm', category: 'consumable', rarity: 'epic', weight: 0.2, value: 200, guildValue: 60, desc: 'Keeps your health FULL for 2 minutes.', holdHealth: 120, tags: ['charm'] },
+  { id: 'holy_stamina', name: 'Endurance Charm', category: 'consumable', rarity: 'epic', weight: 0.2, value: 200, guildValue: 60, desc: 'Keeps your stamina FULL for 4 minutes.', holdStamina: 240, tags: ['charm'] },
+  { id: 'holy_mana', name: 'Focus Charm', category: 'consumable', rarity: 'epic', weight: 0.2, value: 200, guildValue: 60, desc: 'Keeps your MP FULL for 3 minutes.', holdMana: 180, tags: ['charm'] },
 
   // ---- Tools / ammo ----
   { id: 'arrow', name: 'Arrow', category: 'tool', rarity: 'common', weight: 0.1, value: 3, guildValue: 1, desc: 'A fletched arrow.', tags: ['ammo'] },

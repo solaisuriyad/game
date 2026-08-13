@@ -49,6 +49,12 @@ export class GatheringSystem {
     g.player.gatheredCount++;
     tree.depleted = true;
     tree.respawn = 90;
+    // chopping trees sometimes reveals a restorative orb
+    if (Math.random() < 0.15) {
+      const orb = Math.random() < 0.5 ? 'stamina_orb' : (Math.random() < 0.5 ? 'health_orb' : 'mana_orb');
+      g.drops.push(new g.DDrop(tree.x + 13, tree.y + 13, orb, 1));
+      g.addFloatText(tree.x + 13, tree.y - 24, '✨ orb!', '#c8a0ff');
+    }
     g.audio.sfx('gather');
     g.addFloatText(tree.x + 13, tree.y - 12, '+' + qty + ' ' + this.itemName(itemId), '#d8b06a');
     return { ok: true, message: `Chopped ${qty}x ${this.itemName(itemId)}.` };

@@ -2,12 +2,12 @@ import { RNG } from '../core/RNG.js';
 import { BUILDINGS } from '../data/buildings.js';
 
 export const TILE = 32;
-export const WORLD_W = 200; // tiles
-export const WORLD_H = 200;
+export const WORLD_W = 280; // tiles (bigger world)
+export const WORLD_H = 280;
 export const PX_W = WORLD_W * TILE;
 export const PX_H = WORLD_H * TILE;
-export const VILLAGE_CX = 100; // tile center
-export const VILLAGE_CY = 100;
+export const VILLAGE_CX = 140; // tile center
+export const VILLAGE_CY = 140;
 
 // ground tile types
 export const T = {
@@ -67,7 +67,7 @@ export class WorldSystem {
 
   _carveRiver() {
     for (let ty = 0; ty < WORLD_H; ty++) {
-      const x = 26 + Math.floor(Math.sin(ty * 0.08) * 5);
+      const x = 66 + Math.floor(Math.sin(ty * 0.08) * 5);
       for (let dx = -1; dx <= 2; dx++) {
         const tx = x + dx;
         if (tx >= 0 && tx < WORLD_W) {
@@ -77,19 +77,19 @@ export class WorldSystem {
       }
     }
     // pond south-east of village
-    for (let ty = 122; ty < 130; ty++) {
-      for (let tx = 120; tx < 128; tx++) {
+    for (let ty = 162; ty < 170; ty++) {
+      for (let tx = 160; tx < 168; tx++) {
         this.tiles[this.idx(tx, ty)] = T.WATER;
       }
     }
-    for (let ty = 121; ty < 131; ty++) for (let tx = 119; tx < 129; tx++) {
+    for (let ty = 161; ty < 171; ty++) for (let tx = 159; tx < 169; tx++) {
       if (this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.SAND;
     }
   }
 
   _placeFarms() {
-    for (let ty = 104; ty < 114; ty++) {
-      for (let tx = 74; tx < 84; tx++) {
+    for (let ty = 146; ty < 156; ty++) {
+      for (let tx = 108; tx < 118; tx++) {
         if (this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.FARM;
       }
     }
@@ -97,13 +97,16 @@ export class WorldSystem {
 
   _placePaths() {
     const mark = (tx, ty) => { if (tx >= 0 && ty >= 0 && tx < WORLD_W && ty < WORLD_H && this.tiles[this.idx(tx, ty)] === T.GRASS) this.tiles[this.idx(tx, ty)] = T.PATH; };
-    // main cross through village
-    for (let tx = 76; tx <= 124; tx++) { mark(tx, 96); mark(tx, 101); }
-    for (let ty = 84; ty <= 110; ty++) { mark(96, ty); mark(101, ty); }
-    // farm road + forest entrance roads
-    for (let tx = 74; tx <= 100; tx++) mark(tx, 108);
-    for (let tx = 100; tx <= 130; tx++) mark(tx, 102);
-    for (let ty = 84; ty <= 100; ty++) mark(84, ty);
+    // main cross through village center
+    for (let tx = 116; tx <= 166; tx++) mark(tx, 140);
+    for (let ty = 116; ty <= 166; ty++) mark(140, ty);
+    // lower road
+    for (let tx = 116; tx <= 166; tx++) mark(tx, 156);
+    // east roads to the forest
+    for (let tx = 166; tx <= 184; tx++) mark(tx, 140);
+    for (let ty = 140; ty <= 156; ty++) mark(156, ty);
+    // west farm road
+    for (let tx = 112; tx <= 116; tx++) mark(tx, 150);
   }
 
   _placeBuildings() {
@@ -127,7 +130,7 @@ export class WorldSystem {
       for (let tx = 0; tx < WORLD_W; tx++) {
         if (this.tiles[this.idx(tx, ty)] !== T.GRASS) continue;
         const d = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
-        if (d < 26) {
+        if (d < 30) {
           // occasional village tree / flower
           if (rng.chance(0.02)) this._addTree(tx, ty);
           else if (rng.chance(0.03)) this.tiles[this.idx(tx, ty)] = T.FLOWER;
@@ -259,7 +262,7 @@ export class WorldSystem {
 
   randomVillagePosition(tries = 60) {
     for (let i = 0; i < tries; i++) {
-      const tx = this.rng.int(76, 124), ty = this.rng.int(82, 112);
+      const tx = this.rng.int(116, 164), ty = this.rng.int(116, 164);
       const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
       if (!this.circleBlocked(px, py, 12)) return { x: px, y: py };
     }

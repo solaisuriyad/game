@@ -20,12 +20,15 @@ export class Player extends Entity {
     };
     this.learnedSkills = [];
 
-    // vitals
-    this.maxHealth = 100; this.health = 100;
-    this.maxStamina = 100; this.stamina = 100;
+    // vitals (200% capacity for the 3 core resources)
+    this.maxHealth = 200; this.health = 200;
+    this.maxStamina = 200; this.stamina = 200;
+    this.maxMp = 200; this.mp = 200;
     this.hunger = 100;
     this.temperature = 21;
     this.energy = 100;
+    // timed "hold full" buffs (from hidden drops)
+    this.buffs = { healthHold: 0, staminaHold: 0, manaHold: 0 };
 
     // progression
     this.gold = 50;

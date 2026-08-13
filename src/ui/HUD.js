@@ -64,9 +64,10 @@ export class HUD {
 
     // ---- status bars (top-left) ----
     this._bar(ctx, 12, 12, 180, p.health / p.maxHealth, '#d0483a', `${Math.ceil(p.health)}/${p.maxHealth}`);
-    this._bar(ctx, 12, 28, 160, p.stamina / p.maxStamina, '#4a9a4a', 'STAMINA');
-    this._bar(ctx, 12, 44, 160, p.hunger / 100, '#d08a3a', 'HUNGER');
-    this._bar(ctx, 12, 60, 120, (p.temperature + 10) / 40, '#4a8ac8', `${Math.round(p.temperature)}°C`);
+    this._bar(ctx, 12, 28, 160, p.stamina / p.maxStamina, '#4a9a4a', `STAMINA ${Math.ceil(p.stamina)}`);
+    this._bar(ctx, 12, 44, 160, p.mp / p.maxMp, '#7a5ac8', `MP ${Math.ceil(p.mp)}`);
+    this._bar(ctx, 12, 60, 160, p.hunger / 100, '#d08a3a', 'HUNGER');
+    this._bar(ctx, 12, 76, 120, (p.temperature + 10) / 40, '#4a8ac8', `${Math.round(p.temperature)}°C`);
 
     // ---- top-right: clock / weather / gold / rank ----
     ctx.textAlign = 'right';
@@ -128,6 +129,7 @@ export class HUD {
     if (p.sprinting) status.push('🏃 Running');
     if (p.crouching) status.push('🕵️ Sneaking');
     if (p.tracking) status.push('👣 Tracking');
+    if (p.buffs && (p.buffs.healthHold > 0 || p.buffs.staminaHold > 0 || p.buffs.manaHold > 0)) status.push('✨ Charm');
     if (status.length) {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(0,0,0,0.45)';

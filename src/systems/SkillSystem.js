@@ -16,6 +16,7 @@ export class SkillSystem {
       p.xpNext = Math.round(p.xpNext * 1.4);
       p.maxHealth += 10; p.health = p.maxHealth;
       p.maxStamina += 5; p.stamina = p.maxStamina;
+      p.maxMp += 5; p.mp = p.maxMp;
       leveled = true;
     }
     if (leveled) {
