@@ -69,7 +69,7 @@ export class LoreSystem {
     }
     // the Yggdrasil: discovering the world tree reveals its lore
     const y = this.game.world.yggdrasil;
-    if (y && !this.has('lore_yggdrasil') && Math.hypot(y.x - p.x, y.y - p.y) < 260) {
+    if (y && !this.has('lore_yggdrasil') && Math.hypot(y.x - p.x, y.y - p.y) < (y.r || 260) + 120) {
       this.game.toast('🌳 You stand before the Yggdrasil — the living source of the forest\'s power.');
       this.discover('lore_yggdrasil');
     }

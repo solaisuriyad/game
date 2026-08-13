@@ -140,10 +140,22 @@ export class HUD {
 
     // ---- stealth / tracking status (top-center-left) ----
     let status = [];
+    if (p.flying) status.push(`✈️ Flying ${Math.round(p.altitude)}ft`);
     if (p.sprinting) status.push('🏃 Running');
     if (p.crouching) status.push('🕵️ Sneaking');
     if (p.tracking) status.push('👣 Tracking');
+    if (p.yggBlessing > 0) status.push('🌳 Blessed (invincible)');
     if (p.buffs && (p.buffs.healthHold > 0 || p.buffs.staminaHold > 0 || p.buffs.manaHold > 0)) status.push('✨ Charm');
+    // prompt near the Yggdrasil
+    if (g.nearYggdrasil()) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(W / 2 - 150, 100, 300, 30);
+      ctx.fillStyle = '#9fe08a';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌳 Press Q to receive the Yggdrasil\'s blessing', W / 2, 120);
+      ctx.textAlign = 'left';
+    }
     if (status.length) {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(0,0,0,0.45)';

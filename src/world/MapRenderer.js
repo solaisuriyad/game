@@ -20,6 +20,7 @@ export class MapRenderer {
     this._drawBuildings(ctx, game);
     this._drawTrails(ctx, game);
     this._drawCorpsesAndTraps(ctx, game);
+    this._drawDrops(ctx, game);
     this._drawEntities(ctx, game);
     this._drawProjectiles(ctx, game);
     // floating damage/text (world-space)
@@ -158,26 +159,51 @@ export class MapRenderer {
   _drawYggdrasil(ctx, x, y, c) {
     const t = this.game.time.timeOfDay;
     const COLORS = ['#ff5040', '#ffa030', '#ffe040', '#7ae040', '#40e0a0', '#40c0e0', '#5070ff', '#a050ff', '#ff50c0'];
-    // massive trunk
-    ctx.fillStyle = '#5a4028';
-    ctx.fillRect(x - 22, y - 60, 44, 120);
-    ctx.fillStyle = '#7a5a38';
-    ctx.fillRect(x - 14, y - 60, 12, 120);
-    // layered canopy — each ring a different color, slowly pulsing
+    const S = c.w / 2; // half footprint (massive)
+    // colossal trunk
+    ctx.fillStyle = '#4a3220';
+    ctx.fillRect(x - S * 0.28, y - S * 0.6, S * 0.56, S * 1.4);
+    ctx.fillStyle = '#6a4a2c';
+    ctx.fillRect(x - S * 0.16, y - S * 0.6, S * 0.16, S * 1.4);
+    // giant roots
+    ctx.strokeStyle = '#4a3220'; ctx.lineWidth = S * 0.12;
+    for (let i = -1; i <= 1; i += 2) {
+      ctx.beginPath(); ctx.moveTo(x, y + S * 0.3); ctx.quadraticCurveTo(x + i * S * 0.7, y + S * 0.5, x + i * S * 0.9, y + S * 0.7); ctx.stroke();
+    }
+    // layered canopy — each ring a different color, slowly pulsing + rotating
+    const rot = t * 0.05;
     for (let i = 0; i < COLORS.length; i++) {
-      const r = 90 - i * 8;
-      const pulse = 1 + Math.sin(t * 60 + i) * 0.06;
+      const r = S * (1.05 - i * 0.08);
+      const pulse = 1 + Math.sin(t * 60 + i * 0.8) * 0.05;
       ctx.fillStyle = COLORS[i];
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.arc(x, y - 80, r * pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      // draw the canopy as a cluster of lobes so it looks organic
+      for (let k = 0; k < 7; k++) {
+        const a = rot + (k / 7) * Math.PI * 2;
+        const lx = x + Math.cos(a) * r * 0.45;
+        const ly = y - S * 0.7 + Math.sin(a) * r * 0.45;
+        ctx.moveTo(lx + r * 0.4, ly);
+        ctx.arc(lx, ly, r * 0.42 * pulse, 0, Math.PI * 2);
+      }
+      ctx.fill();
     }
     ctx.globalAlpha = 1;
-    // glow
-    const g = ctx.createRadialGradient(x, y - 80, 10, x, y - 80, 120);
-    g.addColorStop(0, 'rgba(255,255,255,0.5)');
+    // radiant glow
+    const g = ctx.createRadialGradient(x, y - S * 0.6, 10, x, y - S * 0.6, S * 1.3);
+    g.addColorStop(0, 'rgba(255,255,255,0.6)');
+    g.addColorStop(0.4, 'rgba(255,230,160,0.15)');
     g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y - 80, 120, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - S * 0.6, S * 1.3, 0, Math.PI * 2); ctx.fill();
+    // floating light motes
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    for (let i = 0; i < 14; i++) {
+      const a = t * 1.5 + i * 2.4;
+      const mx = x + Math.cos(a) * S * 0.7;
+      const my = y - S * 0.4 + Math.sin(a * 1.7) * S * 0.5;
+      ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   _drawNodes(ctx, game) {
@@ -336,6 +362,26 @@ export class MapRenderer {
 
   _drawProjectiles(ctx, game) {
     for (const pr of game.projectiles) pr.draw(ctx, game.camera);
+  }
+
+  // visible loot pickups on the ground (overflow drops, death penalties)
+  _drawDrops(ctx, game) {
+    const cam = game.camera;
+    for (const d of game.drops) {
+      const x = cam.sx(d.x), y = cam.sy(d.y);
+      if (x < -20 || y < -20 || x > cam.vw + 20 || y > cam.vh + 20) continue;
+      const bob = Math.sin(game.time.timeOfDay * 40 + d.x) * 2;
+      // glow
+      ctx.fillStyle = 'rgba(255,220,120,0.35)';
+      ctx.beginPath(); ctx.arc(x, y + bob, 8, 0, Math.PI * 2); ctx.fill();
+      // orb
+      ctx.fillStyle = '#ffe98a';
+      ctx.strokeStyle = '#b8903a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x, y + bob, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#8a6a20';
+      ctx.beginPath(); ctx.arc(x - 1.5, y + bob - 1.5, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   _drawWeatherAndLight(ctx, game, off) {

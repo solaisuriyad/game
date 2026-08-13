@@ -499,13 +499,46 @@ export class MenuManager {
       ctx.strokeStyle = '#fff';
       ctx.beginPath(); ctx.arc(yx * s, yy * s, 8, 0, Math.PI * 2); ctx.stroke();
     }
-    // player
+    // player — blinking bright light
     const p = g.player;
+    const mpx = p.x / TILE * s, mpy = p.y / TILE * s;
+    const blink = 0.5 + 0.5 * Math.sin(g.time.timeOfDay * 200);
+    // radiating glow
+    const glow = ctx.createRadialGradient(mpx, mpy, 1, mpx, mpy, 14 + blink * 8);
+    glow.addColorStop(0, `rgba(255,255,255,${0.9})`);
+    glow.addColorStop(0.4, `rgba(255,255,150,${0.4 + blink * 0.4})`);
+    glow.addColorStop(1, 'rgba(255,255,150,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(mpx, mpy, 22 + blink * 8, 0, Math.PI * 2); ctx.fill();
+    // bright core
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(mpx, mpy, 4 + blink * 2, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#000';
-    ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(mpx, mpy, 4 + blink * 2, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
+    // ---- legend (main things on the map) ----
+    const lx = 10, ly = 10;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(lx, ly, 170, 118);
+    ctx.fillStyle = '#f0e6d0';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('Map Legend', lx + 8, ly + 14);
+    ctx.font = '10px sans-serif';
+    const legend = [
+      ['#fff', 'You (blinking light)'],
+      ['#ffd76a', 'Building'],
+      ['#2f6b2a', 'Tree'],
+      ['#5fbf5f', 'Resource'],
+      ['#c05050', 'Monster'],
+      ['#ff7ae0', 'Yggdrasil']
+    ];
+    legend.forEach(([c, label], i) => {
+      const yy = ly + 26 + i * 15;
+      ctx.fillStyle = c;
+      ctx.fillRect(lx + 8, yy - 7, 9, 9);
+      ctx.fillStyle = '#e8e0c8';
+      ctx.fillText(label, lx + 22, yy);
+    });
   }
 
   _renderLore() {
@@ -542,6 +575,8 @@ export class MenuManager {
     this.show('How to Play', `<div class="help">
       <b>Move</b> — WASD / arrows<br>
       <b>Run</b> — hold R while moving (drains stamina)<br>
+      <b>Fly</b> — X to take flight (30s, 50ft high, 5s cooldown)<br>
+      <b>Yggdrasil blessing</b> — press Q near the world tree to fully restore + become invincible<br>
       <b>Aim</b> — mouse · <b>Attack</b> — click (hold & release for heavy)<br>
       <b>Block</b> — hold right mouse · <b>Dodge</b> — Space<br>
       <b>Sneak</b> — hold Shift (quieter, harder to detect, use cover & approach from behind)<br>

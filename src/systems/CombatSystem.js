@@ -153,6 +153,8 @@ export class CombatSystem {
   damagePlayer(amount, source, status) {
     const p = this.game.player;
     if (p.dodgeTimer > 0) return; // i-frames
+    // invulnerable while blessed by the Yggdrasil or standing within its aura
+    if (p.yggBlessing > 0 || this.game.nearYggdrasil()) return;
     let dmg = amount;
     if (p.blocking) { dmg *= 0.25; p.stamina = Math.max(0, p.stamina - 12); }
     dmg -= p.totalDefense * 0.5;
@@ -203,29 +205,36 @@ export class CombatSystem {
       g.player.animalsHunted++;
       g.quests.onHunt(e.def.id);
     } else {
-      // monster -> auto loot + xp
-      const drops = this.rollLoot(e.loot);
-      const scatter = () => (Math.random() - 0.5) * 20;
-      for (const d of drops) {
-        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), d.item, d.qty));
-      }
+      // monster -> auto-collect loot + xp (guaranteed, with a visible toast)
+      const loot = [];
+      for (const d of this.rollLoot(e.loot)) loot.push({ item: d.item, qty: d.qty });
       // every monster drops some meat
-      const meatQty = 1 + Math.floor(Math.random() * 3);
-      g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), 'meat_raw', meatQty));
+      loot.push({ item: 'meat_raw', qty: 1 + Math.floor(Math.random() * 3) });
       // every monster drops its rank essence (helps defeat the NEXT rank)
-      if (e.rank) {
-        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), essenceId(e.rank), 1));
-      }
+      if (e.rank) loot.push({ item: essenceId(e.rank), qty: 1 });
       // weapon-crafting materials scale with rank
       const weaponMat = this._rankMaterial(e);
-      if (weaponMat) {
-        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), weaponMat, 1 + (Math.random() < 0.5 ? 1 : 0)));
-      }
-      // restorative orbs sometimes drop when a monster is defeated
+      if (weaponMat) loot.push({ item: weaponMat, qty: 1 + (Math.random() < 0.5 ? 1 : 0) });
+      // restorative orbs sometimes drop
       if (Math.random() < 0.4) {
-        const orb = ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)];
-        g.drops.push(new g.DDrop(e.x + scatter(), e.y + scatter(), orb, 1));
+        loot.push({ item: ['health_orb', 'stamina_orb', 'mana_orb'][Math.floor(Math.random() * 3)], qty: 1 });
       }
+      if (e.boss) {
+        loot.push({ item: ['holy_health', 'holy_stamina', 'holy_mana'][Math.floor(Math.random() * 3)], qty: 1 });
+      }
+      // collect into inventory (fall back to a visible ground drop if over weight)
+      const got = [];
+      for (const l of loot) {
+        const res = g.inventory.addItem(l.item, l.qty);
+        if (res.ok) {
+          const name = g.items.get(l.item)?.name || l.item;
+          got.push(`${l.qty}× ${name}`);
+        } else {
+          // backpack full — drop on the ground as a visible pickup
+          g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 24, e.y + (Math.random() - 0.5) * 24, l.item, l.qty));
+        }
+      }
+      if (got.length) g.toast(`⬇ ${e.name} dropped: ${got.join(', ')}`);
       g.addXP(e.xp);
       g.player.kills++;
       g.quests.onKill(e.def.id);
@@ -233,9 +242,6 @@ export class CombatSystem {
         g.bus.emit('bossKilled', { def: e.def });
         g.player.recentBossKill = e.def.name;
         g.lore.onBossKill(e.def.id);
-        // bosses drop a hidden "hold full" charm
-        const charm = ['holy_health', 'holy_stamina', 'holy_mana'][Math.floor(Math.random() * 3)];
-        g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 30, e.y + (Math.random() - 0.5) * 30, charm, 1));
         g.toast('✨ A hidden charm dropped!');
       }
       // village defense: slaying a monster near the village earns NPC favor

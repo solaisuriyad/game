@@ -177,11 +177,13 @@ if (progMsg.quests[0].objectives[0].progress < 3) throw new Error('progress upda
 // force-complete the wolf quest via kills
 const remain = gs.questState.active.find((q) => q.id === 'coop_wolves');
 if (remain) {
-  while (remain.objectives[0].progress < remain.objectives[0].count) {
-    // spawn + kill a wolf to advance
-    const def = (await import('../src/data/monsters.js')).MONSTERS.find((m) => m.id === 'wolf');
-    const pos = gs.world.randomPosition(52, 76);
+  const def = (await import('../src/data/monsters.js')).MONSTERS.find((m) => m.id === 'wolf');
+  let guard = 0;
+  while (remain.objectives[0].progress < remain.objectives[0].count && guard++ < 20) {
+    // spawn + kill a wolf to advance (teleport Alice to it so the hit lands)
+    const pos = gs.world.randomPosition(80, 135);
     const w = gs.sim.spawn(def, pos.x, pos.y);
+    alicePlayer.x = w.x; alicePlayer.y = w.y;
     gs.sim.applyPlayerAttack(aliceId, 99999, 0, 'melee', gs.players);
   }
   const completeMsg = await waitFor(d, (m) => m.type === 'questComplete');

@@ -15,14 +15,16 @@ export class Drop extends Entity {
     // magnet toward player if close and they can carry
     const p = game.player;
     const d = this.distTo(p);
-    if (d < 90 && this.lifetime < 170) {
-      const spd = 240 * (1 - d / 90);
+    if (d < 110) {
+      const spd = 260 * (1 - d / 110);
       const a = this.angleTo(p);
       game.world.moveEntity(this, Math.cos(a) * spd * dt, Math.sin(a) * spd * dt);
-      if (d < 18) {
-        game.inventory.addItem(this.itemId, this.qty);
-        game.audio.sfx('pickup');
-        this.dead = true;
+      if (d < 20) {
+        if (game.inventory.addItem(this.itemId, this.qty, { silent: true }).ok) {
+          game.toast(`+${this.qty}× ${game.items.get(this.itemId)?.name || this.itemId}`);
+          game.audio.sfx('pickup');
+          this.dead = true;
+        }
       }
     }
   }

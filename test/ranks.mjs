@@ -25,14 +25,15 @@ import("../src/main.js").then(()=>{
   const slime = g.monsters.find(m=>m.def.id==="slime");
   console.log("slime rank:", slime.rank, "(expect F)");
   if(slime.rank!=="F") throw new Error("slime rank wrong");
-  // monster drops meat + essence + weapon material
+  // monster drops meat + essence + weapon material (auto-collected into inventory)
   const wolf = g.monsters.find(m=>m.def.id==="wolf" && !m.dead);
   g.player.x = wolf.x; g.player.y = wolf.y;
   g.combat.hitEntity(wolf, 99999, {});
-  const droppedItems = g.drops.map(d=>d.itemId);
-  console.log("wolf drops:", droppedItems.join(", "));
-  if(!droppedItems.includes("meat_raw")) throw new Error("monster did not drop meat");
-  if(!droppedItems.includes("essence_e")) throw new Error("monster did not drop rank essence");
+  const gotMeat = g.inventory.countItem("meat_raw") > 0;
+  const gotEssence = g.inventory.countItem("essence_e") > 0;
+  console.log("wolf drops collected: meat =", gotMeat, "| essence_e =", gotEssence);
+  if(!gotMeat) throw new Error("monster did not drop meat");
+  if(!gotEssence) throw new Error("monster did not drop rank essence");
   // rank bonus: holding essence_e boosts damage vs D-rank monster
   const before = g.player.inventory.length;
   g.inventory.addItem("essence_e", 1, {silent:true});

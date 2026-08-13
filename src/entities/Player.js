@@ -1,4 +1,5 @@
 import { Entity } from './Entity.js';
+import { PX_W, PX_H } from '../world/WorldSystem.js';
 
 export class Player extends Entity {
   constructor(x, y, customization) {
@@ -70,6 +71,12 @@ export class Player extends Entity {
     this.working = 0;
     this.idleTime = 0;
     this.recovering = false;
+    // flying (basic power: fly 30s, then 5s cooldown, max height 50 feet)
+    this.flying = false;
+    this.flyTime = 0;
+    this.flyCd = 0;
+    this.altitude = 0;      // 0..50 feet
+    this.yggBlessing = 0;   // invulnerability aura near the Yggdrasil (seconds)
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
@@ -107,7 +114,27 @@ export class Player extends Entity {
     this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
+    // ---- flying (press X to start; 30s of flight, 5s cooldown, 50ft ceiling) ----
+    if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
+    if (game.input.pressed('x') && !this.flying && this.flyCd <= 0) {
+      this.flying = true;
+      this.flyTime = 30;
+      game.audio.sfx('levelup');
+      game.toast('✈️ You take flight! (30 seconds, up to 50 feet)');
+    }
+    if (this.flying) {
+      this.flyTime -= dt;
+      this.altitude = Math.min(50, this.altitude + 200 * dt); // ascend to 50 feet
+      if (this.flyTime <= 0) {
+        this.flying = false;
+        this.flyCd = 5;
+        this.altitude = 0;
+        game.toast('You descend to the ground. (5s cooldown)');
+      }
+    }
+
     let spd = this.sprinting ? 230 : this.speed;
+    if (this.flying) spd = 260; // fly faster than walking
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;
@@ -115,7 +142,15 @@ export class Player extends Entity {
     if (this.dodgeTimer > 0) spd *= 2.3;
     if (this.crouching) spd *= 0.55;
 
-    if (moving) game.world.moveEntity(this, dir.x * spd * dt, dir.y * spd * dt);
+    if (moving) {
+      if (this.flying) {
+        // flying ignores ground collision (soars over water, trees and buildings)
+        this.x = Math.max(24, Math.min(PX_W - 24, this.x + dir.x * spd * dt));
+        this.y = Math.max(24, Math.min(PX_H - 24, this.y + dir.y * spd * dt));
+      } else {
+        game.world.moveEntity(this, dir.x * spd * dt, dir.y * spd * dt);
+      }
+    }
 
     this.attackCd = Math.max(0, this.attackCd - dt);
     this.attackAnim = Math.max(0, this.attackAnim - dt);
@@ -132,6 +167,17 @@ export class Player extends Entity {
     const bob = this.attackAnim > 0 ? Math.sin(this.attackAnim * 40) * 1.5 : 0;
     ctx.save();
     ctx.translate(x, y);
+    // flying: draw a ground shadow and lift the body up
+    const lift = this.flying ? -this.altitude * 0.5 : 0;
+    if (this.flying) {
+      ctx.fillStyle = 'rgba(0,0,0,0.30)';
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.7, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.translate(0, lift);
+      // wing aura
+      ctx.fillStyle = 'rgba(200,230,255,0.25)';
+      ctx.beginPath(); ctx.ellipse(-s * 1.1, -s * 0.2, s * 0.5, s * 0.25, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 1.1, -s * 0.2, s * 0.5, s * 0.25, 0.4, 0, Math.PI * 2); ctx.fill();
+    }
     if (this.crouching) ctx.scale(1, 0.8);
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();

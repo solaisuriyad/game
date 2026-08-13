@@ -68,13 +68,14 @@ export class WorldSystem {
   }
 
   _placeYggdrasil() {
-    // in the dark forest (dense), east of the village
-    const tx = VILLAGE_CX + 170, ty = VILLAGE_CY;
+    // deep in the Forbidden Forest (zone 5) where the high-level monsters live —
+    // a colossal world tree that is the forest's source of power
+    const tx = VILLAGE_CX + 320, ty = VILLAGE_CY;
     const px = tx * TILE, py = ty * TILE;
-    const size = 6 * TILE; // 192px collider (solid trunk footprint)
+    const size = 16 * TILE; // 512px footprint — truly massive
     const obj = { type: 'yggdrasil', x: px, y: py, w: size, h: size };
     this._addStatic(obj);
-    this.yggdrasil = { x: px + size / 2, y: py + size / 2 };
+    this.yggdrasil = { x: px + size / 2, y: py + size / 2, r: size / 2 };
   }
 
   _carveRiver() {

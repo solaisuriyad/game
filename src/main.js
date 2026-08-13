@@ -231,6 +231,28 @@ class Game {
     if (input.pressed('1') && !this.ui.open) this.toast(this.activeSkills.use(0).message);
     if (input.pressed('2') && !this.ui.open) this.toast(this.activeSkills.use(1).message);
     if (input.pressed('3') && !this.ui.open) this.toast(this.activeSkills.use(2).message);
+    // Yggdrasil blessing: press Q while near the world tree for a full restore
+    if (input.pressed('q') && !this.ui.open && this.nearYggdrasil()) {
+      this.yggdrasilBlessing();
+    }
+  }
+
+  nearYggdrasil() {
+    const y = this.world.yggdrasil;
+    if (!y || !this.player) return false;
+    return Math.hypot(y.x - this.player.x, y.y - this.player.y) < y.r + 120;
+  }
+
+  yggdrasilBlessing() {
+    const p = this.player;
+    p.health = p.maxHealth;
+    p.stamina = p.maxStamina;
+    p.mp = p.maxMp;
+    p.hunger = 100;
+    p.temperature = 21;
+    p.yggBlessing = 60; // 60s of invulnerability
+    this.audio.sfx('levelup');
+    this.toast('🌳 The Yggdrasil blesses you! All stats restored, invincible for 60s.');
   }
 
   update(dt) {

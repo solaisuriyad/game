@@ -30,6 +30,17 @@ export class SurvivalSystem {
     // active-skill buffs (Stone Guard armor, Swift Step speed)
     if (p.buffs.armor > 0) p.buffs.armor = Math.max(0, p.buffs.armor - dt);
     if (p.buffs.speed > 0) p.buffs.speed = Math.max(0, p.buffs.speed - dt);
+    // Yggdrasil blessing invulnerability timer
+    if (p.yggBlessing > 0) p.yggBlessing = Math.max(0, p.yggBlessing - dt);
+    // while standing within the Yggdrasil's aura, the tree sustains you fully
+    const nearYgg = g.nearYggdrasil();
+    if (nearYgg) {
+      p.health = Math.min(p.maxHealth, p.health + 40 * dt);
+      p.stamina = Math.min(p.maxStamina, p.stamina + 40 * dt);
+      p.mp = Math.min(p.maxMp, p.mp + 40 * dt);
+      p.hunger = Math.min(100, p.hunger + 10 * dt);
+      p.temperature += (21 - p.temperature) * Math.min(1, dt * 2);
+    }
 
     // ---- HUNGER: drains very slowly ----
     let hungerRate = 0.04;
@@ -84,8 +95,8 @@ export class SurvivalSystem {
     // ---- HEALTH (only drops from damage/starvation/cold; regen when fed) ----
     this._resource(p, 'health', 'maxHealth', 0, 2, dt, { idle: resting, busy, idleRequiresFed: true });
 
-    // starvation (slow) & cold (slow)
-    if (p.hunger <= 0 && p.health > 1) p.health = Math.max(1, p.health - 0.5 * dt);
+    // starvation (slow) & cold (slow) — but the Yggdrasil's aura prevents death
+    if (p.hunger <= 0 && p.health > 1 && !nearYgg) p.health = Math.max(1, p.health - 0.5 * dt);
 
     // temperature
     let target = 20;
@@ -93,7 +104,7 @@ export class SurvivalSystem {
     if (w.raining) target -= 3;
     if (w.isStorm) target -= 4;
     p.temperature += (target - p.temperature) * Math.min(1, dt * 0.3);
-    if (p.temperature < 5 && p.health > 1) p.health = Math.max(1, p.health - 0.6 * dt);
+    if (p.temperature < 5 && p.health > 1 && !nearYgg) p.health = Math.max(1, p.health - 0.6 * dt);
 
     // energy (rest)
     p.energy = Math.max(0, p.energy - 0.3 * dt);
