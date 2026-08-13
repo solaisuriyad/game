@@ -2,7 +2,7 @@ import { getItem } from '../data/index.js';
 
 // Shop stock by building function. sellFactor applies to player-sold goods.
 const SHOP_STOCK = {
-  general: { label: 'General Store', stock: ['bread', 'apple', 'bandage', 'arrow', 'trap', 'backpack'] },
+  general: { label: 'General Store', stock: ['bread', 'apple', 'bandage', 'arrow', 'trap', 'bear_trap', 'backpack'] },
   foodshop: { label: 'Food Shop', stock: ['bread', 'apple', 'meat_cooked', 'cooked_fish'] },
   weaponshop: { label: 'Weapon Shop', stock: ['sword_wood', 'sword_stone', 'sword_iron', 'bow_wood', 'bow_iron', 'spear_wood', 'spear_iron', 'axe_iron', 'dagger_iron'] },
   armorshop: { label: 'Armor Shop', stock: ['cloth_shirt', 'cloth_pants', 'leather_vest', 'leather_legs', 'hood', 'iron_chest', 'iron_legs', 'boots_leather', 'boots_iron'] },

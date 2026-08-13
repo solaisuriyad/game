@@ -4,6 +4,7 @@
   "description": "Verdant Hollow — open-world hunting/survival RPG (browser MVP)",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node test/smoke.mjs && node test/coop.mjs"
   }
 }

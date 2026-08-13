@@ -127,4 +127,38 @@ console.log('cross-zone sim OK. final zone=', game.world.getZoneName(game.player
 console.log('zone-gating triggered (warnedZone=', game._warnedZone, '):', game._warnedZone >= 1);
 console.log('NPCs socialized near the village:', sawSocializing);
 
+// ---- stealth / traps / tracking ----
+// stealth reduces detection radius; crouching lowers it further
+const wolf = game.monsters.find((m) => m.def.id === 'wolf' && !m.dead);
+if (wolf) {
+  game.player.x = wolf.x + 100; game.player.y = wolf.y;
+  game.player.moving = true; game.player.crouching = false;
+  const rStand = game.stealth.detectionRadius(wolf, 200);
+  game.player.crouching = true;
+  const rCrouch = game.stealth.detectionRadius(wolf, 200);
+  console.log('stealth radius: standing=', rStand.toFixed(0), 'crouching=', rCrouch.toFixed(0));
+  if (!(rCrouch < rStand)) throw new Error('crouching did not reduce detection radius');
+  // line of sight blocked by trees
+  if (typeof game.world.hasLineOfSight !== 'function') throw new Error('no hasLineOfSight');
+}
+// traps: place snare + bear trap + bait
+game.inventory.addItem('trap', 2, { silent: true });
+game.inventory.addItem('bear_trap', 1, { silent: true });
+game.inventory.addItem('meat_raw', 3, { silent: true });
+const pSnare = game.trapSystem.place('snare');
+const pBear = game.trapSystem.place('bear_trap');
+const pBait = game.trapSystem.placeBait();
+console.log('traps:', pSnare.message, '|', pBear.message, '|', pBait.message);
+if (!pSnare.ok || !pBear.ok || !pBait.ok) throw new Error('trap placement failed');
+if (game.traps.length < 2) throw new Error('traps not recorded');
+// bear trap springs on a large animal
+const boar = game.animals.find((a) => a.def.id === 'boar' && !a.dead);
+if (boar && game.traps.some((t) => t.type === 'bear_trap')) {
+  const bt = game.traps.find((t) => t.type === 'bear_trap');
+  boar.x = bt.x; boar.y = bt.y;
+  game.trapSystem.update(1 / 60);
+  console.log('bear trap sprung:', bt.sprung, 'boar rooted:', boar.hasStatus('root'));
+  if (!bt.sprung) throw new Error('bear trap did not spring on boar');
+}
+
 console.log('ALL SMOKE TESTS PASSED');

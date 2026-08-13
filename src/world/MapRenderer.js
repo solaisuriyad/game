@@ -159,17 +159,40 @@ export class MapRenderer {
 
   _drawTrails(ctx, game) {
     const cam = game.camera;
-    const trackRange = 60 * (1 + (game.skills.getEffect('trackingRange') || 0));
+    const tracking = game.player.tracking;
+    const trackRange = 80 * (1 + (game.skills.getEffect('trackingRange') || 0));
     for (const a of game.animals) {
-      if (!a.trail) continue;
-      if (a.dead) continue;
-      if (a.distTo(game.player) > trackRange * 2) continue;
-      for (const tr of a.trail) {
+      if (!a.trail || a.dead) continue;
+      if (a.distTo(game.player) > trackRange * 1.6) continue;
+      const trail = a.trail;
+      for (let i = 0; i < trail.length; i++) {
+        const tr = trail[i];
         if (tr.t > 22) continue;
-        const alpha = Math.max(0, 1 - tr.t / 22) * 0.5;
+        const age = Math.max(0, 1 - tr.t / 22);
+        const alpha = (tracking ? 0.9 : 0.5) * age;
         const sx = tr.x - cam.x, sy = tr.y - cam.y;
-        ctx.fillStyle = tr.blood ? `rgba(180,30,30,${alpha})` : `rgba(120,90,50,${alpha})`;
-        ctx.beginPath(); ctx.arc(sx, sy, tr.blood ? 2.5 : 1.8, 0, Math.PI * 2); ctx.fill();
+        if (tracking) {
+          // draw direction ticks toward the next footprint
+          const nxt = trail[i + 1];
+          if (nxt && nxt.t < 22) {
+            const ang = Math.atan2(nxt.y - tr.y, nxt.x - tr.x);
+            ctx.strokeStyle = tr.blood ? `rgba(255,80,80,${alpha})` : `rgba(230,200,120,${alpha})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + Math.cos(ang) * 7, sy + Math.sin(ang) * 7);
+            ctx.stroke();
+          }
+        }
+        ctx.fillStyle = tr.blood ? `rgba(190,30,30,${alpha})` : `rgba(120,90,50,${alpha})`;
+        ctx.beginPath(); ctx.arc(sx, sy, tr.blood ? 2.6 : 1.9, 0, Math.PI * 2); ctx.fill();
+      }
+      // wounded animal: pulsing blood trail end marker
+      if (tracking && a.hp < a.maxHp * 0.5) {
+        const sx = a.x - cam.x, sy = a.y - cam.y;
+        const pulse = 4 + Math.sin(game.time.timeOfDay * 80) * 1.5;
+        ctx.strokeStyle = 'rgba(255,60,60,0.8)';
+        ctx.beginPath(); ctx.arc(sx, sy, pulse, 0, Math.PI * 2); ctx.stroke();
       }
     }
   }
@@ -186,9 +209,32 @@ export class MapRenderer {
     }
     for (const t of game.traps) {
       const sx = t.x - cam.x, sy = t.y - cam.y;
-      ctx.strokeStyle = '#7a5a3a';
-      ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.stroke();
-      if (t.caught) { ctx.fillStyle = '#d04040'; ctx.fillRect(sx - 1, sy - 8, 2, 16); }
+      if (t.type === 'bear_trap') {
+        // open spring jaws (or closed when sprung)
+        ctx.strokeStyle = '#8a8a90';
+        ctx.lineWidth = 3;
+        const gap = t.sprung ? 2 : 10;
+        ctx.beginPath(); ctx.arc(sx, sy, 9, -Math.PI * 0.8, -Math.PI * 0.2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx, sy, 9, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
+        ctx.fillStyle = '#5a5a60';
+        ctx.fillRect(sx - gap / 2, sy - 2, gap, 4);
+      } else {
+        // snare noose
+        ctx.strokeStyle = t.armed ? '#9a8a5a' : '#6a5a3a';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI * 2); ctx.stroke();
+        if (!t.armed) { ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+        if (t.bait) { ctx.fillStyle = '#c05050'; ctx.beginPath(); ctx.arc(sx + 6, sy + 4, 2.5, 0, Math.PI * 2); ctx.fill(); }
+      }
+      if (t.caught) { ctx.fillStyle = '#d04040'; ctx.fillRect(sx - 1, sy - 10, 2, 18); }
+    }
+    // bait piles (lures)
+    for (const b of game.baitPiles) {
+      const sx = b.x - cam.x, sy = b.y - cam.y;
+      ctx.fillStyle = b.kind === 'meat_raw' ? '#a05040' : '#c04060';
+      ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,220,140,0.5)';
+      ctx.beginPath(); ctx.arc(sx, sy, 7 + Math.sin(b.t * 2) * 1.5, 0, Math.PI * 2); ctx.stroke();
     }
   }
 
@@ -198,6 +244,7 @@ export class MapRenderer {
     for (const a of game.animals) if (!a.dead) list.push(a);
     for (const m of game.monsters) if (!m.dead) list.push(m);
     for (const n of game.npcs) list.push(n);
+    for (const r of game.remotePlayers) list.push(r);
     list.push(game.player);
     list.sort((a, b) => a.y - b.y);
     for (const e of list) e.draw(ctx, cam, game);

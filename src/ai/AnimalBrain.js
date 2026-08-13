@@ -1,6 +1,15 @@
 // Animal behavior: wander / eat / drink / flee / attack (predators).
 import { VILLAGE_CX, VILLAGE_CY, TILE } from '../world/WorldSystem.js';
 
+function nearestBait(game, animal, radius) {
+  let best = null, bd = radius;
+  for (const b of game.baitPiles) {
+    const d = Math.hypot(b.x - animal.x, b.y - animal.y);
+    if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+
 export function animalBrain(animal, dt, game) {
   const p = game.player;
   const rng = game.world.rng;
@@ -17,12 +26,12 @@ export function animalBrain(animal, dt, game) {
   for (const tr of animal.trail) tr.t += dt;
   if (animal.trail) animal.trail = animal.trail.filter((tr) => tr.t < 22);
 
-  // determine threat
+  // determine threat (stealth-aware detection)
   const wasWounded = animal.hp < animal.maxHp;
-  const tooClose = dPlayer < 70;
+  const detected = game.stealth.canDetect(animal, 150);
   if (wasWounded) animal.threat = p;
-  else if (tooClose) animal.threat = p;
-  else if (animal.threat && dPlayer > 240) animal.threat = null;
+  else if (detected) animal.threat = p;
+  else if (animal.threat && dPlayer > 260) animal.threat = null;
 
   // aggression check (boar/bear fight back)
   const aggressive = animal.aggression > 0.45;
@@ -55,6 +64,14 @@ export function animalBrain(animal, dt, game) {
       break;
     }
     default: {
+      // bait attraction: hungry herbivores/omnivores move toward nearby bait
+      const bait = nearestBait(game, animal, 160);
+      if (bait) {
+        animal.facing = animal.angleTo(bait);
+        game.world.moveEntity(animal, Math.cos(animal.facing) * animal.speed * 0.7 * dt, Math.sin(animal.facing) * animal.speed * 0.7 * dt);
+        animal.state = 'eat';
+        break;
+      }
       // wander / eat / idle
       animal.eatTimer = (animal.eatTimer || 0) - dt;
       animal.wanderTimer = (animal.wanderTimer || 0) - dt;

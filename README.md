@@ -23,6 +23,9 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 | Click (release) | Light attack (hold & release for **heavy**) |
 | Right-click (hold) | Block |
 | Space | Dodge |
+| Shift (hold) | **Sneak** (quieter, harder to detect — use cover & approach from behind) |
+| Tab | Toggle **tracking** (footprint direction + blood trails) |
+| T · Y · G | Place snare · place bear trap · bait (raw meat/berries) |
 | E | Interact (gather / harvest / talk / buildings) |
 | I · C · K · J · M · B · R | Inventory · Character · Skills · Quests · Map · Craft · Relationships |
 | Esc | Menu (save / load / help / quit) |
@@ -32,6 +35,7 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 - **World** — procedural 200×200 tilemap: village (31 buildings), roads, farms, river, pond, forest with **5 danger zones** (Safe → Deep → Dark → Ancient → Forbidden), each visually distinct and gated by guild rank.
 - **Living village** — ~65 procedurally generated NPCs with **families, spouses, friendships & rivalries**, day/night schedules, socializing, background simulation tiers, and gossip about your deeds.
 - **Hunting & wildlife** — 7 animal species with wander/eat/flee/predator AI, footprint & blood-trail tracking, corpse harvesting.
+- **Stealth, tracking & traps** — sneak (crouch), vision cones, line-of-sight through trees, noise-based detection & monster investigation, directional footprint/blood tracking mode, snare + bear traps with bait attraction.
 - **Monsters** — 11 types (slime, goblin, wolf packs, giant spider, treant, skeleton, swamp beast, demon beast, ancient beast + 4 **phased bosses**: Alpha Wolf, Ancient Bear, Forest Guardian, Ancient Dragon) with a modular **Ability System** (lunge, pounce, web shot, howl, root slam, regenerate, rage, charge, roar, ground slam, tail swipe, fire/ice breath, summon, bleeds) and adaptive AI.
 - **Combat** — light/heavy attacks, block, dodge (i-frames), stamina, crits, weapon durability, 3 weapon classes (sword/bow/spear + axe/hammer/dagger).
 - **Survival** — health, stamina, hunger, temperature, energy/rest; day/night cycle and dynamic weather (rain, fog, storm) that affect gameplay.
@@ -43,13 +47,25 @@ Then open the live preview (server binds `0.0.0.0:3000`).
 - **Random events** — caravan, rare sighting, monster attack, injured hunter (NPCs gossip about them).
 - **Death system** — respawn with gold/material/durability penalties, progression kept.
 - **Save/load** — 3 slots, localStorage, versioned schema.
+- **Co-op (Phase 5 foundation)** — authoritative WebSocket server (`server/`), client-side prediction, server-integrated movement, player replication with interpolation, and interest management (only nearby players sync). Single-player remains fully offline.
 - **UI** — HUD (bars, clock, minimap, compass, quest tracker), full-screen menus, dialogue, world map with fog-of-war.
 
 ## Tests
 
 ```bash
-node test/smoke.mjs   # headless smoke test (world gen, systems, combat, save/load)
+npm test                  # both
+node test/smoke.mjs       # headless single-player (world gen, systems, combat, stealth, traps, save/load)
+node test/coop.mjs        # end-to-end networking (join, replication, interest management)
 ```
+
+## Co-op
+
+`npm start` serves the game **and** runs the authoritative server on the same port
+(WebSocket on `/ws`). The in-game **"Play Online (co-op)"** button connects to
+`ws(s)://<host>/ws`. The server is authoritative for player positions and only
+replicates players within interest range. **Note:** your hosting/proxy must forward
+WebSocket upgrades (works directly on `localhost`; some sandboxed preview proxies
+don't — in that case the button reports "could not connect").
 
 ## Architecture
 
@@ -71,5 +87,5 @@ src/
 
 ## Roadmap (designed, not yet built)
 
-Traps/stealth depth, handcrafted story beats, and **2–4 player co-op** (authoritative
-server, interest management for ~1000 NPCs). See `docs/ROADMAP.md`.
+Full co-op combat/loot/boss-scaling (Phases 6–8), ~1000-NPC scale, handcrafted story
+beats. See `docs/ROADMAP.md`.

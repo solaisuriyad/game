@@ -34,21 +34,27 @@ export function monsterBrain(m, dt, game) {
   m.attackCd = Math.max(0, m.attackCd - dt);
   for (const k in m.abilityCd) m.abilityCd[k] -= dt;
 
-  // detection
-  const detectR = 220 + (night ? 60 : 0);
-  const playerHidden = dPlayer > detectR * game.weather.visibility;
+  // detection (stealth-aware: crouch, cover, vision cone, line of sight, noise)
+  const detectR = 230 + (night ? 60 : 0);
+  const detected = game.stealth.canDetect(m, detectR);
   if (m.aggroTimer > 0) m.aggroTimer -= dt;
 
   if (!m.target || m.target.dead) {
-    if (m.aggroTimer <= 0 && playerHidden) m.target = null;
-  } else if (m.aggroTimer <= 0 && dPlayer > 700) {
+    if (m.aggroTimer <= 0 && !detected) m.target = null;
+  } else if (m.aggroTimer <= 0 && dPlayer > 720) {
     m.target = null; // leash broken
   }
 
-  if (dPlayer < detectR && m.aggroTimer <= 0 && !playerHidden && m.target !== p) {
+  if (detected && m.aggroTimer <= 0 && m.target !== p) {
     m.target = p;
     m.aggroTimer = 8;
     if (prof.pack) m._wantsHowl = true;
+  }
+
+  // noise investigation: loud movement makes monsters suspicious even without sight
+  if (!m.target && !m.investigate && game.stealth.audible(m, 260)) {
+    m.investigate = { x: p.x, y: p.y, t: 4 };
+    m.lastSeenPlayer = { x: p.x, y: p.y };
   }
 
   // rage threshold (bosses / aggressive monsters enrage below 50%)
@@ -65,6 +71,14 @@ export function monsterBrain(m, dt, game) {
   }
 
   if (!hasTarget) {
+    // investigate a sound before returning to normal behavior
+    if (m.investigate) {
+      m.investigate.t -= dt;
+      const dI = Math.hypot(m.investigate.x - m.x, m.investigate.y - m.y);
+      if (m.investigate.t <= 0 || dI < 16) { m.investigate = null; m.state = 'idle'; }
+      else { m.state = 'investigate'; moveToward(m, m.investigate, m.speed * 0.8 * m.speedMult, dt, game); }
+      return;
+    }
     // no target: wander / patrol / sleep / return home
     if (!m._awake && !night && prof.nocturnal) {
       m.state = 'sleep'; return;

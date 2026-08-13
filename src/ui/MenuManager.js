@@ -62,6 +62,8 @@ export class MenuManager {
       case 'load': g.save.load(+arg); this.close(); g.toast('Game loaded.'); break;
       case 'resume': this.close(); break;
       case 'newgame': this._startNewGame(); break;
+      case 'online': this._startOnline(); break;
+      case 'disconnect': this._disconnect(); break;
       case 'continue': this._continue(); break;
       case 'title': g.returnToTitle(); break;
       case 'setname': this._collectCustomization(); break;
@@ -101,7 +103,7 @@ export class MenuManager {
     if (f === 'tavern') { this._renderTavern(); return; }
     if (f === 'lodge') {
       this.show("Hunter's Lodge", `<div class="muted">Seasoned hunters trade tips here. Buy supplies:</div>
-        ${this._shopItemsHTML(['arrow', 'trap', 'knife', 'bandage'])}`);
+        ${this._shopItemsHTML(['arrow', 'trap', 'bear_trap', 'knife', 'bandage'])}`);
       return;
     }
     // generic info
@@ -372,6 +374,9 @@ export class MenuManager {
       <b>Move</b> — WASD / arrows<br>
       <b>Aim</b> — mouse · <b>Attack</b> — click (hold & release for heavy)<br>
       <b>Block</b> — hold right mouse · <b>Dodge</b> — Space<br>
+      <b>Sneak</b> — hold Shift (quieter, harder to detect, use cover & approach from behind)<br>
+      <b>Track</b> — Tab toggles tracking (footprint direction + blood trails)<br>
+      <b>Traps</b> — T place snare · Y place bear trap · G bait (raw meat/berries)<br>
       <b>Interact</b> — E (gather, harvest, talk, buildings)<br>
       <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · R relationships · Esc menu<br><br>
       Hunt animals, gather materials, then <b>submit them at the Adventure Guild</b> to earn Guild Points, gold and rank.
@@ -475,6 +480,7 @@ export class MenuManager {
         <div class="opt-row"><span class="muted">Hair color:</span><span id="haircolors"></span></div>
         <div class="opt-row"><span class="muted">Clothing:</span><span id="clothcolors"></span></div>
         <button class="btn gold big" data-act="newgame" style="margin-top:12px">Begin Adventure</button>
+        <button class="btn green" data-act="online" style="margin-top:8px">Play Online (co-op)</button>
         <button class="btn" data-act="continue" style="margin-top:8px">Continue</button>
       </div>
       <div class="muted" style="margin-top:16px">Press M in-game for the world map · Esc for the menu</div>
@@ -516,6 +522,27 @@ export class MenuManager {
     if (r.ok) { this.close(); this.game.toast(r.message); }
   }
 
+  _startOnline() {
+    this._collectCustomization();
+    const c = this._cust;
+    this.game.newGame({
+      name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
+      hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
+    });
+    this.close();
+    const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    this.game.toast('Connecting to the shared world...');
+    this.game.multiplayer.connect(url, c.name).then((r) => {
+      if (!r.ok) this.game.toast('Connection failed: ' + (r.message || 'unreachable'));
+    });
+  }
+
+  _disconnect() {
+    this.game.multiplayer.disconnect();
+    this.close();
+    this.game.toast('Left the shared world.');
+  }
+
   _startNewGame() {
     this._collectCustomization();
     const c = this._cust;
@@ -530,6 +557,10 @@ export class MenuManager {
     const g = this.game;
     let html = '<div class="row" style="flex-direction:column;gap:8px;align-items:stretch">';
     html += '<button class="btn big" data-act="resume">Resume</button>';
+    if (g.multiplayer.connected) {
+      html += `<div class="muted">Online — ${g.remotePlayers.length + 1} hunters in this world</div>`;
+      html += '<button class="btn red" data-act="disconnect">Disconnect from server</button>';
+    }
     html += '<h3>Save</h3><div class="row">';
     for (let i = 0; i < 3; i++) html += `<button class="btn" data-act="save" data-arg="${i}">Save slot ${i + 1}</button>`;
     html += '</div><h3>Load</h3><div class="row">';

@@ -11,7 +11,7 @@ export const Input = {
       const k = e.key.toLowerCase();
       KEYS.add(k);
       PRESSED.add(k);
-      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
+      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(k)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => { KEYS.delete(e.key.toLowerCase()); });
     window.addEventListener('blur', () => KEYS.clear());

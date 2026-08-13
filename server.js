@@ -1,9 +1,11 @@
-// Minimal static file server for the Verdant Hollow browser game.
-// Binds 0.0.0.0 so it works behind the live preview proxy.
+// Verdant Hollow entrypoint: static file server + authoritative game server.
+// WebSocket connections upgrade on path /ws.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GameServer } from './server/game-server.js';
+import { handleUpgrade } from './server/ws.js';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -21,6 +23,8 @@ const MIME = {
   '.woff2': 'font/woff2'
 };
 
+const gameServer = new GameServer();
+
 const server = http.createServer(async (req, res) => {
   try {
     let urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -36,4 +40,13 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Verdant Hollow serving on http://0.0.0.0:${PORT}`));
+server.on('upgrade', (req, socket) => {
+  const url = new URL(req.url, 'http://x').pathname;
+  if (url !== '/ws') { socket.destroy(); return; }
+  const ws = handleUpgrade(req, socket);
+  if (ws) gameServer.handle(ws);
+});
+
+server.listen(PORT, '0.0.0.0', () =>
+  console.log(`Verdant Hollow serving on http://0.0.0.0:${PORT} (ws: /ws)`)
+);

@@ -29,6 +29,7 @@ export class Monster extends Entity {
     this.casting = null;     // { ability, params }
     this.abilityCd = {};     // per ability cooldown
     this.lastSeenPlayer = null;
+    this.investigate = null;
     this.aggroTimer = 0;
     this.buffs = {};         // { rage: 0 }
     this.anim = 0;

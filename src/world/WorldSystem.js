@@ -266,6 +266,32 @@ export class WorldSystem {
     return { x: VILLAGE_CX * TILE, y: VILLAGE_CY * TILE };
   }
 
+  // Line of sight: returns true if there is NO blocking obstacle (tree/rock/bush/
+  // building) between two points. Water does not block sight.
+  hasLineOfSight(x1, y1, x2, y2) {
+    const dist = Math.hypot(x2 - x1, y2 - y1);
+    const steps = Math.max(1, Math.ceil(dist / 14));
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const x = x1 + (x2 - x1) * t;
+      const y = y1 + (y2 - y1) * t;
+      if (this.staticBlockedAt(x, y)) return false;
+    }
+    return true;
+  }
+
+  // blocked only by opaque static colliders (trees/rocks/bushes) and buildings,
+  // not water — used for vision rays.
+  staticBlockedAt(x, y) {
+    for (const b of this.buildings) {
+      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return true;
+    }
+    for (const c of this.collidersNear(x, y, 40)) {
+      if (x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) return true;
+    }
+    return false;
+  }
+
   getZoneName(px, py) { return ZONES[zoneIndexAt(px, py)].name; }
   getZoneIndex(px, py) { return zoneIndexAt(px, py); }
 

@@ -8,6 +8,7 @@ export const RECIPES = [
   // Ammo / tools
   { id: 'arrows', name: 'Fletch Arrows (x5)', station: 'crafting', inputs: [{ id: 'wood', qty: 1 }, { id: 'feather', qty: 1 }], outputs: [{ id: 'arrow', qty: 5 }], desc: 'Craft five arrows.' },
   { id: 'trap', name: 'Snare Trap', station: 'crafting', inputs: [{ id: 'wood', qty: 2 }, { id: 'hide_rabbit', qty: 1 }], outputs: [{ id: 'trap', qty: 1 }], desc: 'A small game trap.' },
+  { id: 'bear_trap', name: 'Bear Trap', station: 'blacksmith', inputs: [{ id: 'iron_ore', qty: 2 }, { id: 'wood', qty: 1 }], outputs: [{ id: 'bear_trap', qty: 1 }], desc: 'A heavy spring trap.' },
   { id: 'bandage', name: 'Bandage', station: 'crafting', inputs: [{ id: 'herb', qty: 1 }, { id: 'cloth_shirt', qty: 1 }], outputs: [{ id: 'bandage', qty: 2 }], desc: 'Cloth bandages.' },
   // Potions
   { id: 'potion_small', name: 'Healing Potion', station: 'herbalist', inputs: [{ id: 'herb', qty: 2 }], outputs: [{ id: 'potion_small', qty: 1 }], desc: 'A basic healing draught.' },

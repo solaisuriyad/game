@@ -21,6 +21,8 @@ import { InventorySystem } from './systems/InventorySystem.js';
 import { EquipmentSystem } from './systems/EquipmentSystem.js';
 import { CombatSystem } from './systems/CombatSystem.js';
 import { HuntingSystem } from './systems/HuntingSystem.js';
+import { TrapSystem } from './systems/TrapSystem.js';
+import { StealthSystem } from './systems/StealthSystem.js';
 import { GatheringSystem } from './systems/GatheringSystem.js';
 import { SurvivalSystem } from './systems/SurvivalSystem.js';
 import { SkillSystem } from './systems/SkillSystem.js';
@@ -34,6 +36,8 @@ import { EventSystem } from './systems/EventSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
 import { SaveSystem } from './systems/SaveSystem.js';
 import { InteractSystem } from './systems/InteractSystem.js';
+import { MultiplayerSystem } from './net/MultiplayerSystem.js';
+import { RemotePlayer } from './entities/RemotePlayer.js';
 import { HUD } from './ui/HUD.js';
 import { MenuManager } from './ui/MenuManager.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
@@ -56,7 +60,8 @@ class Game {
     // entity arrays
     this.animals = []; this.monsters = []; this.npcs = [];
     this.corpses = []; this.drops = []; this.projectiles = [];
-    this.traps = []; this.floatTexts = []; this.toasts = [];
+    this.traps = []; this.baitPiles = []; this.floatTexts = []; this.toasts = [];
+    this.remotePlayers = [];
 
     // entity classes exposed for systems that spawn
     this.AAnimal = Animal; this.AMonster = Monster; this.DDrop = Drop; this.PProjectile = Projectile;
@@ -70,6 +75,8 @@ class Game {
     this.equipment = new EquipmentSystem(this);
     this.combat = new CombatSystem(this);
     this.hunting = new HuntingSystem(this);
+    this.trapSystem = new TrapSystem(this);
+    this.stealth = new StealthSystem(this);
     this.gathering = new GatheringSystem(this);
     this.survival = new SurvivalSystem(this);
     this.skills = new SkillSystem(this);
@@ -83,6 +90,8 @@ class Game {
     this.dialogue = new DialogueSystem(this);
     this.save = new SaveSystem(this);
     this.interact = new InteractSystem(this);
+    this.multiplayer = new MultiplayerSystem(this);
+    this.RemotePlayer = RemotePlayer;
     this.sim = new PopulationSystem(this);
 
     this.renderer = new MapRenderer(this);
@@ -113,7 +122,7 @@ class Game {
     // clear transient world state
     this.animals.length = 0; this.monsters.length = 0; this.npcs.length = 0;
     this.corpses.length = 0; this.drops.length = 0; this.projectiles.length = 0;
-    this.traps.length = 0; this.floatTexts.length = 0; this.toasts.length = 0;
+    this.traps.length = 0; this.baitPiles.length = 0; this.floatTexts.length = 0; this.toasts.length = 0;
 
     const spawn = { x: 99 * TILE + 16, y: 96 * TILE + 16 }; // on the village path
     this.player = new Player(spawn.x, spawn.y, cust);
@@ -192,6 +201,18 @@ class Game {
       if (input.pressed(k)) { this.ui.openMenu(menu); return; }
     }
     if (input.pressed('e') && !this.ui.open) this.interact.interact();
+    if (input.pressed('t') && !this.ui.open) {
+      const r = this.trapSystem.place('snare');
+      this.toast(r.message);
+    }
+    if (input.pressed('y') && !this.ui.open) {
+      const r = this.trapSystem.place('bear_trap');
+      this.toast(r.message);
+    }
+    if (input.pressed('g') && !this.ui.open) {
+      const r = this.trapSystem.placeBait();
+      this.toast(r.message);
+    }
   }
 
   update(dt) {
@@ -206,7 +227,8 @@ class Game {
     this.survival.update(dt);
     this.sim.update(dt);
     this.gathering.update(dt);
-    this.hunting.update(dt);
+    this.trapSystem.update(dt);
+    this.multiplayer.update(dt);
     this.events.update(dt);
     if (this.economy.caravanTimer) this.economy.caravanTimer = Math.max(0, this.economy.caravanTimer - dt);
 

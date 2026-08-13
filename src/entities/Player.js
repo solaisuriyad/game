@@ -57,6 +57,11 @@ export class Player extends Entity {
     this.animalsHunted = 0;
     this.gatheredCount = 0;
     this.recentBossKill = null;
+
+    // stealth / movement state
+    this.crouching = false;
+    this.tracking = false;
+    this.moving = false;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
@@ -86,12 +91,17 @@ export class Player extends Entity {
 
     const dir = game.input.dirVector();
     const moving = dir.x !== 0 || dir.y !== 0;
+    this.moving = moving;
+    this.crouching = game.input.held('shift');
+    if (game.input.pressed('tab')) this.tracking = !this.tracking;
+
     let spd = this.speed;
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;
     if (this.charging) spd *= 0.55;
     if (this.dodgeTimer > 0) spd *= 2.3;
+    if (this.crouching) spd *= 0.55;
 
     if (moving) game.world.moveEntity(this, dir.x * spd * dt, dir.y * spd * dt);
 
@@ -107,6 +117,7 @@ export class Player extends Entity {
     const bob = this.attackAnim > 0 ? Math.sin(this.attackAnim * 40) * 1.5 : 0;
     ctx.save();
     ctx.translate(x, y);
+    if (this.crouching) ctx.scale(1, 0.8);
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
 

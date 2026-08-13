@@ -39,12 +39,18 @@ src/
   systems/
     InventorySystem.js  EquipmentSystem.js  CombatSystem.js
     HuntingSystem.js  GatheringSystem.js  SurvivalSystem.js
-    SkillSystem.js  CraftingSystem.js  EconomySystem.js
-    GuildSystem.js  QuestSystem.js  RelationshipSystem.js
-    ReputationSystem.js  EventSystem.js  DialogueSystem.js
-    SaveSystem.js
+    StealthSystem.js  TrapSystem.js  SkillSystem.js  CraftingSystem.js
+    EconomySystem.js  GuildSystem.js  QuestSystem.js  RelationshipSystem.js
+    ReputationSystem.js  EventSystem.js  DialogueSystem.js  SaveSystem.js
+  net/
+    NetworkClient.js  MultiplayerSystem.js
+  entities/
+    ...  RemotePlayer.js
   ui/
-    HUD.js  MenuManager.js  Minimap.js  DialogueBox.js  TitleScreen.js
+    HUD.js  MenuManager.js
+server/
+  ws.js            # dependency-free RFC6455 WebSocket server
+  game-server.js   # authoritative sim + replication + interest management
 ```
 
 ## 3. Key architectural decisions
@@ -119,14 +125,18 @@ MonsterBrain : idle | wander | patrol | investigate | detect | chase | attack |
 Both brains read an `aiProfile` (aggression, courage, territorial, pack, nocturnal,
 ambush, adaptive flags) so behavior differs per species without per-species code.
 
-## 6. Co-op architecture (designed; Phase 5+)
+## 6. Co-op architecture (Phase 5+ — foundation implemented)
 
-- Authoritative Node server (WebSocket): owns enemy/NPC/world-event/combat/loot/quest
-  state; clients own input + prediction + interpolation.
-- Replication with interest management: only NPCs near a player are fully synced; far NPCs
-  are abstract (mirrors the single-player simulation tiers).
+- Authoritative Node server (WebSocket on `/ws`, `server/ws.js` + `server/game-server.js`):
+  currently owns player positions (integrates client inputs, world-collision-clamped) and
+  replicates state snapshots at 20 Hz. Enemy/NPC/world-event/combat/loot/quest authority
+  attach here in Phases 6–8 — the protocol and tick loop are structured for it.
+- Replication with **interest management**: each client only receives players within its
+  interest radius; far entities are simply not synchronized.
+- Client (`src/net/`): client-side prediction for own movement, server snapshots for remote
+  players with interpolation smoothing.
 - Individual progression (client/account) vs. shared world progression (server).
-- Boss scaling: difficulty table keyed by party size adding mechanics, not just HP.
+- Boss scaling: difficulty table keyed by party size adding mechanics, not just HP (designed).
 
 ## 7. Extensibility
 

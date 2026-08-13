@@ -60,6 +60,7 @@ export const ITEMS = [
   // ---- Tools / ammo ----
   { id: 'arrow', name: 'Arrow', category: 'tool', rarity: 'common', weight: 0.1, value: 3, guildValue: 1, desc: 'A fletched arrow.', tags: ['ammo'] },
   { id: 'trap', name: 'Snare Trap', category: 'tool', rarity: 'common', weight: 1.0, value: 25, guildValue: 6, desc: 'Place to catch small game.', tags: ['trap'] },
+  { id: 'bear_trap', name: 'Bear Trap', category: 'tool', rarity: 'uncommon', weight: 3.0, value: 90, guildValue: 20, desc: 'A spring trap that wounds and holds large game.', tags: ['trap'] },
   { id: 'knife', name: 'Hunting Knife', category: 'tool', rarity: 'common', weight: 0.5, value: 30, guildValue: 6, desc: 'For skinning and harvesting.', tags: ['tool'] },
   { id: 'backpack', name: 'Backpack Upgrade', category: 'tool', rarity: 'uncommon', weight: 1.0, value: 150, guildValue: 30, desc: 'Expands carry capacity.', tags: ['tool'] }
 ];

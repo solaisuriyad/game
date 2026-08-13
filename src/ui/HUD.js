@@ -85,6 +85,10 @@ export class HUD {
     ctx.fillText(`Rank ${g.guild.rank()} · ${p.guildPoints} GP`, W - 12, 62);
     ctx.fillStyle = '#d0c0f0';
     ctx.fillText(g.reputation.title(), W - 12, 78);
+    if (g.multiplayer.connected) {
+      ctx.fillStyle = '#7ae07a';
+      ctx.fillText(`Online · ${g.remotePlayers.length + 1} hunters`, W - 12, 94);
+    }
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker ----
@@ -106,6 +110,19 @@ export class HUD {
       ctx.fillText(parts.join('  '), 20, qy + 34 + i * 22);
       ctx.fillStyle = '#f5f0e0';
       i++;
+    }
+
+    // ---- stealth / tracking status (top-center-left) ----
+    let status = [];
+    if (p.crouching) status.push('🕵️ Sneaking');
+    if (p.tracking) status.push('👣 Tracking');
+    if (status.length) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(W / 2 - 90, 12, 180, 22);
+      ctx.fillStyle = '#c8e0c8';
+      ctx.fillText(status.join('  ·  '), W / 2, 19);
+      ctx.textAlign = 'left';
     }
 
     // ---- bottom-center: weapon + weight ----
