@@ -1,0 +1,60 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #10141a; font-family: 'Segoe UI', system-ui, sans-serif; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+
+#ui-root { position: fixed; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 10; }
+
+.panel { pointer-events: auto; background: linear-gradient(#2a2118, #1d1710); border: 2px solid #6a4a2a; border-radius: 8px; color: #f0e6d0; box-shadow: 0 12px 40px rgba(0,0,0,.6); max-height: 88vh; display: flex; flex-direction: column; min-width: 460px; max-width: 860px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #3a2c1a; border-bottom: 1px solid #6a4a2a; font-weight: 700; letter-spacing: .5px; }
+.panel-head .close { cursor: pointer; background: #5a2a2a; border: none; color: #fff; width: 26px; height: 26px; border-radius: 4px; font-size: 16px; line-height: 1; }
+.panel-body { padding: 12px 14px; overflow-y: auto; }
+h3 { color: #e8c46a; margin: 12px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+
+.btn { pointer-events: auto; cursor: pointer; background: #4a3624; border: 1px solid #6a4a2a; color: #f0e6d0; border-radius: 5px; padding: 5px 10px; font-size: 12px; }
+.btn:hover { background: #5a4430; }
+.btn.gold { background: #5a4a1a; border-color: #8a7a3a; }
+.btn.green { background: #2a4a2a; border-color: #4a7a3a; }
+.btn.red { background: #4a2424; border-color: #7a3a3a; }
+.btn.big { font-size: 14px; padding: 8px 16px; }
+
+.item { background: #241c14; border: 1px solid #4a3a28; border-radius: 5px; padding: 6px 8px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.item .n { font-weight: 600; }
+.item .d { color: #b0a088; font-size: 11px; min-height: 26px; }
+.item .btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.rarity-common { border-left: 3px solid #888; }
+.rarity-uncommon { border-left: 3px solid #4ac84a; }
+.rarity-rare { border-left: 3px solid #4a8ac8; }
+.rarity-epic { border-left: 3px solid #c84ac8; }
+.rarity-legendary { border-left: 3px solid #ffd76a; }
+
+.muted { color: #a89878; font-size: 12px; }
+.gold { color: #ffd76a; }
+.gp { color: #9ac8ff; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: 13px; }
+.bar-wrap { background: #1a1510; border: 1px solid #4a3a28; border-radius: 4px; height: 14px; overflow: hidden; }
+.bar-fill { height: 100%; }
+
+.dialogue { min-width: 480px; max-width: 560px; }
+.dialogue .speaker { color: #e8c46a; font-weight: 700; margin-bottom: 6px; }
+.dialogue .text { background: #171310; border: 1px solid #4a3a28; border-radius: 6px; padding: 12px; min-height: 60px; margin-bottom: 10px; font-size: 14px; line-height: 1.5; }
+.dialogue .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.title-screen { text-align: center; align-items: center; }
+.title-screen h1 { font-size: 44px; color: #ffd76a; text-shadow: 0 3px 8px #000; letter-spacing: 2px; }
+.title-screen .sub { color: #b8d8a0; margin-bottom: 18px; }
+.title-form { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.title-form input { background: #171310; border: 1px solid #6a4a2a; color: #fff; padding: 8px 12px; border-radius: 5px; width: 260px; text-align: center; font-size: 15px; }
+.opt-row { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.swatch.sel { border-color: #fff; }
+
+.map-canvas { width: 100%; border: 1px solid #6a4a2a; border-radius: 6px; image-rendering: pixelated; }
+
+.help { font-size: 11px; color: #a89878; line-height: 1.6; }
+kbd { background: #2a2118; border: 1px solid #6a4a2a; border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+
+#toasts-dom { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; }

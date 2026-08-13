@@ -1,0 +1,9 @@
+{
+  "name": "verdant-hollow",
+  "version": "0.1.0",
+  "description": "Verdant Hollow — open-world hunting/survival RPG (browser MVP)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
