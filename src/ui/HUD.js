@@ -38,9 +38,10 @@ export class HUD {
       }
     }
     tc.putImageData(img, 0, 0);
-    // fog (small, at minimap resolution)
+    // fog (small, at minimap resolution). Alpha is kept LOW (~140) so unexplored
+    // terrain stays clearly visible — otherwise the map looks like a black screen.
     this.fog = tc.createImageData(MM, MM);
-    for (let i = 3; i < this.fog.data.length; i += 4) this.fog.data[i] = 235;
+    for (let i = 3; i < this.fog.data.length; i += 4) this.fog.data[i] = 140;
     this._fogDirty = true;
   }
 
@@ -49,7 +50,7 @@ export class HUD {
     // reveal a radius around the player in minimap space (cheap, capped size)
     const mx = Math.floor((p.x / TILE) * (this.mm / WORLD_W));
     const my = Math.floor((p.y / TILE) * (this.mm / WORLD_H));
-    const R = 9;
+    const R = 16; // reveal a wider area so the map isn't mostly black
     for (let dy = -R; dy <= R; dy++) {
       for (let dx = -R; dx <= R; dx++) {
         if (dx * dx + dy * dy > R * R) continue;
@@ -113,7 +114,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v3.3', W - 12, H - 8);
+    ctx.fillText('v3.4', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -150,6 +151,8 @@ export class HUD {
 
     // ---- stealth / tracking status (top-center-left) ----
     let status = [];
+    if (p.hasStatus('stun')) status.push('💫 Stunned');
+    if (p.hasStatus('root')) status.push('🕸️ Rooted');
     if (p.flying) status.push(`✈️ Flying ${Math.round(p.altitude)}ft`);
     if (p.sprinting) status.push('🏃 Running');
     if (p.crouching) status.push('🕵️ Sneaking');

@@ -110,7 +110,7 @@ export class AbilitySystem {
     game.camera.addShake(6);
     if (monster.distTo(p) <= (params.range || 160)) {
       game.combat.damagePlayer(monster.damage * (params.damage || 0.2), monster, null);
-      p.addStatus('stun', 0.7, 1);
+      p.addStatus('stun', 0.35, 1);
     }
   }
   do_fire_breath(monster, params, game) {
@@ -156,7 +156,7 @@ export class AbilitySystem {
     game.audio.sfx('hit');
     if (monster.distTo(p) <= (params.radius || 160)) {
       game.combat.damagePlayer(monster.damage * (params.damage || 1.3), monster, null);
-      if (Math.random() < 0.4) p.addStatus('stun', 0.6, 1);
+      if (Math.random() < 0.25) p.addStatus('stun', 0.3, 1);
       game.addFloatText(p.x, p.y - 30, '⚡ Thunder!', '#c8a0ff');
     }
   }
