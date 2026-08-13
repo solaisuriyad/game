@@ -26,6 +26,7 @@ import { StealthSystem } from './systems/StealthSystem.js';
 import { GatheringSystem } from './systems/GatheringSystem.js';
 import { SurvivalSystem } from './systems/SurvivalSystem.js';
 import { SkillSystem } from './systems/SkillSystem.js';
+import { ActiveSkillSystem } from './systems/ActiveSkillSystem.js';
 import { CraftingSystem } from './systems/CraftingSystem.js';
 import { EconomySystem } from './systems/EconomySystem.js';
 import { GuildSystem } from './systems/GuildSystem.js';
@@ -84,6 +85,7 @@ class Game {
     this.gathering = new GatheringSystem(this);
     this.survival = new SurvivalSystem(this);
     this.skills = new SkillSystem(this);
+    this.activeSkills = new ActiveSkillSystem(this);
     this.crafting = new CraftingSystem(this);
     this.economy = new EconomySystem(this);
     this.guild = new GuildSystem(this);
@@ -225,6 +227,10 @@ class Game {
       const r = this.trapSystem.placeBait();
       this.toast(r.message);
     }
+    if (input.pressed('o') && !this.ui.open) this.ui.showSkillSelection();
+    if (input.pressed('1') && !this.ui.open) this.toast(this.activeSkills.use(0).message);
+    if (input.pressed('2') && !this.ui.open) this.toast(this.activeSkills.use(1).message);
+    if (input.pressed('3') && !this.ui.open) this.toast(this.activeSkills.use(2).message);
   }
 
   update(dt) {
@@ -236,6 +242,7 @@ class Game {
     this.weather.update(dt);
     this.player.update(dt, this);
     this.combat.update(dt);
+    this.activeSkills.update(dt);
     this.survival.update(dt);
     this.sim.update(dt);
     this.gathering.update(dt);

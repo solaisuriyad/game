@@ -24,6 +24,9 @@ export class SurvivalSystem {
     if (p.buffs.healthHold > 0) { p.buffs.healthHold -= dt; p.health = p.maxHealth; }
     if (p.buffs.staminaHold > 0) { p.buffs.staminaHold -= dt; p.stamina = p.maxStamina; }
     if (p.buffs.manaHold > 0) { p.buffs.manaHold -= dt; p.mp = p.maxMp; }
+    // active-skill buffs (Stone Guard armor, Swift Step speed)
+    if (p.buffs.armor > 0) p.buffs.armor = Math.max(0, p.buffs.armor - dt);
+    if (p.buffs.speed > 0) p.buffs.speed = Math.max(0, p.buffs.speed - dt);
 
     // ---- HUNGER: drains very slowly ----
     let hungerRate = 0.04;
@@ -41,9 +44,20 @@ export class SurvivalSystem {
     if (active) sDrain += 0.05;      // attacking/blocking/dodging (80x slower than 4/sec)
     this._resource(p, 'stamina', 'maxStamina', sDrain, 20, dt, { idle, busy });
 
-    // ---- MP (drains very slowly during any activity) ----
-    const mDrain = busy ? 0.03 : 0;
-    this._resource(p, 'mp', 'maxMp', mDrain, 10, dt, { idle, busy });
+    // ---- MP (skill resource): drains very slowly, ~95x slower while casting;
+    //      recovers 50% faster once it reaches 75% ----
+    let mDrain = busy ? 0.03 : 0;
+    if (p.castingSkill > 0) mDrain = 0.03 / 95; // 95x slower while using skills
+    const mfrac = p.mp / p.maxMp;
+    let mRegen = 0;
+    if (mfrac <= 0.25) mRegen = 10 * 0.95;
+    else if (mfrac <= 0.5) mRegen = 10 * 0.25;
+    else if (!busy) mRegen = 10;
+    if (mfrac >= 0.75) mRegen *= 1.5; // 50% faster regain at high MP
+    const mNet = mRegen - mDrain;
+    if (mNet > 0) p.mp = Math.min(p.maxMp, p.mp + mNet * dt);
+    else p.mp = Math.max(0, p.mp + mNet * dt);
+    p.castingSkill = Math.max(0, p.castingSkill - dt);
 
     // ---- HEALTH (only drops from damage/starvation/cold; regen when fed) ----
     this._resource(p, 'health', 'maxHealth', 0, 2, dt, { idle, busy, idleRequiresFed: true });

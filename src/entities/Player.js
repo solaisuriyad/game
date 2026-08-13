@@ -27,8 +27,9 @@ export class Player extends Entity {
     this.hunger = 100;
     this.temperature = 21;
     this.energy = 100;
-    // timed "hold full" buffs (from hidden drops)
-    this.buffs = { healthHold: 0, staminaHold: 0, manaHold: 0 };
+    // timed buffs (hold-full charms + active-skill buffs)
+    this.buffs = { healthHold: 0, staminaHold: 0, manaHold: 0, armor: 0, speed: 0 };
+    this.castingSkill = 0;
 
     // progression
     this.gold = 50;
@@ -72,11 +73,12 @@ export class Player extends Entity {
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
   get speed() {
     let s = 140;
+    if (this.buffs.speed > 0) s *= 1.6; // Swift Step
     if (this.hasStatus('slow')) s *= this.statusSlow;
     return s;
   }
   get totalDefense() {
-    let d = this.baseStats.defense;
+    let d = this.baseStats.defense + (this.buffs.armor || 0); // Stone Guard
     for (const slot of ['head', 'body', 'legs', 'feet']) {
       if (this.armor[slot]) d += this.armor[slot].defense;
     }

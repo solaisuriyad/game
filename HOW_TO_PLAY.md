@@ -72,6 +72,16 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 | **Shift (hold)** | Sneak — quieter, harder to detect, but slower |
 | **Tab** | Toggle tracking ON/OFF (shows footprints + blood trails) |
 
+### ✨ Active skills (your 3 chosen powers)
+| Key | What it does |
+|---|---|
+| **1 / 2 / 3** | Cast the skill in that slot (costs **MP**) |
+| **O** | Open the skill screen to change your 3 skills |
+
+When you start a game you **choose up to 3 skills**. Skills cost **MP** (the purple bar) and have a cooldown. The 8 skills are:
+- **Power Strike** — massive melee hit · **Arrow Storm** — 3 arrows · **Fire Blast** — burning projectile · **Frost Nova** — freeze/slow nearby enemies
+- **Healing Light** — +80 health · **Second Wind** — +120 stamina · **Stone Guard** — +10 defense · **Swift Step** — +60% speed
+
 ### 🪤 Traps & bait
 | Key | What it does |
 |---|---|
@@ -105,7 +115,7 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 ### Top-left — your body's bars
 - **Red bar** = Health (max **200**). Drops only from monster hits / starving / freezing. Slowly heals on its own when you're calm and fed.
 - **Green bar** = Stamina (max **200**). Drains **very slowly** while running/attacking/gathering. Refills fast when you stand still.
-- **Purple bar** = MP (max **200**). A third energy resource that drains slowly during activity and recovers when you rest.
+- **Purple bar** = MP (max **200**). Powers your **active skills**. Drains very slowly, and **~95× slower while you're casting** a skill. When MP reaches **75%**, it recovers **50% faster**.
 - **Orange bar** = Hunger. Drains **very slowly**. Eating refills it.
 - **Blue bar** = Temperature. Drops at night and in rain.
 

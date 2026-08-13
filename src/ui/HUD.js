@@ -139,6 +139,9 @@ export class HUD {
       ctx.textAlign = 'left';
     }
 
+    // ---- active skills (bottom-left, above quest tracker) ----
+    this._drawSkills(ctx, W, H);
+
     // ---- bottom-center: weapon + weight ----
     const wpn = p.weapon ? p.weapon.name : 'Fists';
     const wt = g.inventory.weight().toFixed(1);
@@ -176,6 +179,42 @@ export class HUD {
     }
 
     ctx.restore();
+  }
+
+  _drawSkills(ctx, W, H) {
+    const g = this.game;
+    const p = g.player;
+    const as = g.activeSkills;
+    const y = H - 152;
+    for (let i = 0; i < 3; i++) {
+      const x = 12 + i * 82;
+      const skill = as.skillAt(i);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(x, y, 76, 40);
+      ctx.fillStyle = '#f5f0e0';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`${i + 1}`, x + 5, y + 4);
+      if (skill) {
+        const cd = as.cooldowns[skill.id] || 0;
+        const noMp = p.mp < skill.mpCost;
+        ctx.fillStyle = (cd > 0 || noMp) ? '#888' : skill.color;
+        ctx.fillText(skill.name.slice(0, 10), x + 16, y + 5);
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = noMp ? '#ff8a8a' : '#c8c0a8';
+        ctx.fillText(noMp ? 'no MP' : (cd > 0 ? cd.toFixed(1) + 's' : 'MP ' + skill.mpCost), x + 16, y + 20);
+        if (cd > 0) {
+          ctx.fillStyle = 'rgba(0,0,0,0.55)';
+          ctx.fillRect(x, y + 40 - (40 * cd / skill.cooldown), 76, 40 * cd / skill.cooldown);
+        }
+      } else {
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#888';
+        ctx.fillText('empty', x + 16, y + 18);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.strokeRect(x, y, 76, 40);
+    }
   }
 
   _bar(ctx, x, y, w, frac, color, label) {
