@@ -16,6 +16,25 @@ export class MenuManager {
       const el = e.target.closest('[data-act]');
       if (el) this.handleAction(el.dataset.act, el.dataset.arg);
     });
+    // map panning: mouse wheel (up/down) + Ctrl+arrow keys (all 4 directions)
+    window.addEventListener('wheel', (e) => {
+      if (!this._mapOpen) return;
+      e.preventDefault();
+      const step = 48;
+      if (e.deltaY > 0) this._mapPan.y += step; else this._mapPan.y -= step;
+      this._drawMapCanvas();
+    }, { passive: false });
+    window.addEventListener('keydown', (e) => {
+      if (!this._mapOpen || !e.ctrlKey) return;
+      const step = 48;
+      if (e.key === 'ArrowUp') this._mapPan.y -= step;
+      else if (e.key === 'ArrowDown') this._mapPan.y += step;
+      else if (e.key === 'ArrowLeft') this._mapPan.x -= step;
+      else if (e.key === 'ArrowRight') this._mapPan.x += step;
+      else return;
+      e.preventDefault();
+      this._drawMapCanvas();
+    });
     this.open = false;
     this.currentNPC = null;
   }
@@ -34,6 +53,7 @@ export class MenuManager {
     this.root.innerHTML = '';
     this.setOpen(false);
     this.currentNPC = null;
+    this._mapOpen = false;
   }
 
   // ---------- action dispatch ----------
@@ -58,6 +78,8 @@ export class MenuManager {
       case 'talk': this._chat(); break;
       case 'gift': this._showGiftPanel(); break;
       case 'giftgive': this._giveGift(arg); break;
+      case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
+      case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
       case 'sleep': g.survival.rest(); this.close(); break;
       case 'drink': g.player.hunger = Math.min(100, g.player.hunger + 6); g.toast('You drink cool water from the well.'); this.close(); break;
@@ -362,33 +384,59 @@ export class MenuManager {
 
   _renderMap() {
     const g = this.game;
-    this.show('World Map', '<canvas id="mapcanvas" class="map-canvas" width="720" height="720"></canvas>');
+    this._mapOpen = true;
+    this._mapScale = 4;           // px per tile (zoomed in so there's room to pan)
+    this._mapView = 720;          // viewport size in px
+    if (!this._mapPan) this._mapPan = { x: 0, y: 0 };
+    this.show('World Map — scroll wheel (up/down) · Ctrl + arrow keys (all directions)', '<canvas id="mapcanvas" class="map-canvas" width="720" height="720"></canvas>');
+    this._drawMapCanvas();
+  }
+
+  _drawMapCanvas() {
+    const g = this.game;
     const cv = document.getElementById('mapcanvas');
+    if (!cv) return;
     const ctx = cv.getContext('2d');
-    const s = cv.width / WORLD_W;
-    // terrain
+    const s = this._mapScale;
+    const content = WORLD_W * s;
+    // clamp pan so the view never leaves the map
+    this._mapPan.x = Math.max(0, Math.min(content - this._mapView, this._mapPan.x));
+    this._mapPan.y = Math.max(0, Math.min(content - this._mapView, this._mapPan.y));
+    const px = this._mapPan.x, py = this._mapPan.y;
+
+    ctx.fillStyle = '#10141a';
+    ctx.fillRect(0, 0, this._mapView, this._mapView);
+    ctx.save();
+    ctx.translate(-px, -py);
+    // terrain (scaled up) + fog
     const hud = g.hud;
-    ctx.drawImage(hud.terrain, 0, 0, cv.width, cv.height);
-    ctx.drawImage(hud._fogCanvas(), 0, 0, cv.width, cv.height);
+    ctx.drawImage(hud.terrain, 0, 0, content, content);
+    ctx.drawImage(hud._fogCanvas(), 0, 0, content, content);
     // zone rings
     ctx.strokeStyle = 'rgba(255,215,106,0.4)';
     for (const z of ZONES) {
       ctx.beginPath(); ctx.arc(VILLAGE_CX * s, VILLAGE_CY * s, z.to * s, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.fillStyle = 'rgba(255,215,106,0.5)';
-    ctx.font = '10px sans-serif';
+    ctx.font = '12px sans-serif';
     for (const z of ZONES) {
-      ctx.fillText(z.name, (VILLAGE_CX + z.to - 4) * s, (VILLAGE_CY + 2) * s);
+      ctx.fillText(z.name, (VILLAGE_CX + z.to - 6) * s, (VILLAGE_CY + 2) * s);
     }
     // buildings
     ctx.fillStyle = '#ffd76a';
     for (const b of g.world.buildings) {
       ctx.fillRect(b.x / TILE * s - 1, b.y / TILE * s - 1, b.w / TILE * s + 2, b.h / TILE * s + 2);
     }
+    // the Yggdrasil (if placed)
+    if (g.world.yggdrasil) {
+      ctx.fillStyle = '#ff7ae0';
+      ctx.beginPath(); ctx.arc(g.world.yggdrasil.x / TILE * s, g.world.yggdrasil.y / TILE * s, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
     // player
     const p = g.player;
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(p.x / TILE * s, p.y / TILE * s, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 
   _renderLore() {
@@ -587,22 +635,26 @@ export class MenuManager {
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
       hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
     });
-    this.close();
+    this.showSkillSelection();
   }
 
-  // Reference screen: every skill has its own unique key (1-8), shown with O
-  showSkillReference() {
+  // Select up to 3 active skills (hotkeys 1/2/3). Reachable anytime with O.
+  showSkillSelection() {
     const g = this.game;
-    let html = `<div class="muted">Every skill has its own hotkey. Press the key to cast it (costs MP).</div><div class="grid2">`;
-    for (let i = 0; i < ACTIVE_SKILLS.length; i++) {
-      const s = ACTIVE_SKILLS[i];
-      html += `<div class="item">
-        <div class="n"><kbd>${i + 1}</kbd> <span style="color:${s.color}">${s.name}</span></div>
+    const as = g.activeSkills;
+    let html = `<div class="muted">Choose up to <b>3 skills</b> (keys <b>1 / 2 / 3</b>). Change anytime with <b>O</b>.</div><div class="grid2">`;
+    for (const s of ACTIVE_SKILLS) {
+      const selected = as.isSelected(s.id);
+      const full = as.selected.length >= 3 && !selected;
+      html += `<div class="item rarity-${selected ? 'uncommon' : 'common'}">
+        <div class="n" style="color:${s.color}">${s.name}</div>
         <div class="d">${s.desc}<br><span class="muted">MP ${s.mpCost} · cooldown ${s.cooldown}s</span></div>
+        <div class="btns"><button class="btn ${selected ? 'red' : 'green'}" data-act="${selected ? 'unskill' : 'skill'}" data-arg="${s.id}" ${full ? 'disabled' : ''}>${selected ? 'Remove' : 'Select'}</button></div>
       </div>`;
     }
-    html += `</div>`;
-    this.show('Your Skills (hotkeys)', html);
+    html += `</div><div class="muted" style="margin-top:8px">Selected: ${as.selected.length}/3</div>`;
+    html += `<div class="row" style="margin-top:10px"><button class="btn gold big" data-act="starthunt">Enter the World</button></div>`;
+    this.show('Choose Your Skills', html);
   }
 
   _renderMainMenu() {

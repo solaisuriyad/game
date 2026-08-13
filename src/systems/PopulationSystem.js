@@ -192,6 +192,9 @@ export class PopulationSystem {
       { def: 'spider', count: 6 }, { def: 'treant', count: 3 }, { def: 'alpha_wolf', count: 1 },
       { def: 'skeleton', count: 6 }, { def: 'swamp_beast', count: 4 },
       { def: 'demon_beast', count: 5 }, { def: 'ancient_beast', count: 3 },
+      { def: 'dire_wolf', count: 5 }, { def: 'goblin_shaman', count: 4 }, { def: 'goblin_brute', count: 4 },
+      { def: 'thorn_beast', count: 4 }, { def: 'shadow_stalker', count: 4 }, { def: 'cave_troll', count: 3 },
+      { def: 'venom_wyrm', count: 4 }, { def: 'hell_hound', count: 4 }, { def: 'yggdrasil_spriggan', count: 3 },
       { def: 'ancient_bear', count: 1 }, { def: 'forest_guardian', count: 1 }, { def: 'ancient_dragon', count: 1 }
     ];
     for (const s of spawns) {
@@ -225,8 +228,16 @@ export class PopulationSystem {
     this.game.animals.push(new this.game.AAnimal(this.game, def, pos.x, pos.y));
   }
   _spawnMonster(def, w, pack) {
-    const [minD, maxD] = this.zoneRange(def);
-    const pos = w.randomPosition(minD, maxD);
+    let pos;
+    if (def.id === 'yggdrasil_spriggan' && w.yggdrasil) {
+      // spriggans gather around the Yggdrasil (its power source)
+      const a = this.rng.range(0, Math.PI * 2);
+      const d = this.rng.range(120, 260);
+      pos = { x: w.yggdrasil.x + Math.cos(a) * d, y: w.yggdrasil.y + Math.sin(a) * d };
+      if (w.circleBlocked(pos.x, pos.y, 14)) pos = w.randomPosition(...this.zoneRange(def));
+    } else {
+      pos = w.randomPosition(...this.zoneRange(def));
+    }
     const m = new this.game.AMonster(this.game, def, pos.x, pos.y);
     m.packId = pack || null;
     this.game.monsters.push(m);

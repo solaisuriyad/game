@@ -130,6 +130,142 @@ export const MONSTERS = [
     ]
   },
   {
+    id: 'dire_wolf', name: 'Dire Wolf', family: 'wolf', zones: [2], level: 7, hp: 130, damage: 20, defense: 2,
+    speed: 145, size: 19, xp: 95, color: '#4a4a5a',
+    aiProfile: { aggression: 0.9, pack: true, nocturnal: true, territorial: true, ambush: false, adaptive: true, courage: 0.8 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 44, knockback: 90 } },
+      { id: 'pounce', params: { damage: 1.5, cooldown: 5.0, range: 200, speed: 340 } },
+      { id: 'bleeding_bite', params: { damage: 1.1, cooldown: 6.0, range: 44, bleed: true } },
+      { id: 'howl', params: { cooldown: 10.0, range: 340 } }
+    ],
+    loot: [
+      { item: 'fang_wolf', chance: 0.85, min: 1, max: 2 },
+      { item: 'monster_hide', chance: 0.8, min: 1, max: 2 }
+    ]
+  },
+  {
+    id: 'goblin_shaman', name: 'Goblin Shaman', family: 'goblin', zones: [2], level: 8, hp: 90, damage: 18, defense: 1,
+    speed: 75, size: 15, xp: 120, color: '#6a5aa0',
+    aiProfile: { aggression: 0.85, pack: true, nocturnal: false, territorial: false, ambush: false, adaptive: false, courage: 0.6 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 0.8, cooldown: 1.4, range: 38, knockback: 60 } },
+      { id: 'fire_breath', params: { damage: 1.3, cooldown: 5.0, range: 220, speed: 280 } },
+      { id: 'summon', params: { summonId: 'goblin', count: 1, cooldown: 14.0, range: 0 } }
+    ],
+    loot: [
+      { item: 'goblin_ear', chance: 0.9, min: 1, max: 1 },
+      { item: 'magic_core', chance: 0.3, min: 1, max: 1 },
+      { item: 'herb', chance: 0.4, min: 1, max: 2 }
+    ]
+  },
+  {
+    id: 'goblin_brute', name: 'Goblin Brute', family: 'goblin', zones: [2], level: 9, hp: 180, damage: 26, defense: 3,
+    speed: 60, size: 21, xp: 150, color: '#5a7a3a',
+    aiProfile: { aggression: 0.95, pack: true, nocturnal: false, territorial: false, ambush: false, adaptive: false, courage: 0.85 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.5, range: 50, knockback: 120 } },
+      { id: 'ground_slam', params: { damage: 1.4, cooldown: 7.0, range: 100, radius: 100 } },
+      { id: 'roar', params: { damage: 0.3, cooldown: 9.0, range: 140 } }
+    ],
+    loot: [
+      { item: 'goblin_ear', chance: 0.9, min: 1, max: 2 },
+      { item: 'monster_bone', chance: 0.7, min: 1, max: 2 },
+      { item: 'iron_ore', chance: 0.4, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'thorn_beast', name: 'Thorn Beast', family: 'treant', zones: [2, 3], level: 10, hp: 210, damage: 22, defense: 4,
+    speed: 55, size: 24, xp: 170, color: '#4a7a30',
+    aiProfile: { aggression: 0.8, pack: false, nocturnal: false, territorial: true, ambush: true, adaptive: false, courage: 0.9 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.6, range: 58, knockback: 110 } },
+      { id: 'root_slam', params: { damage: 1.3, cooldown: 6.0, range: 120, radius: 100 } },
+      { id: 'regenerate', params: { heal: 45, cooldown: 12.0, range: 0 } }
+    ],
+    loot: [
+      { item: 'treant_bark', chance: 0.8, min: 1, max: 2 },
+      { item: 'rare_wood', chance: 0.7, min: 1, max: 2 },
+      { item: 'spider_silk', chance: 0.4, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'shadow_stalker', name: 'Shadow Stalker', family: 'wolf', zones: [3], level: 11, hp: 150, damage: 24, defense: 2,
+    speed: 165, size: 17, xp: 190, color: '#2a2a38',
+    aiProfile: { aggression: 0.95, pack: false, nocturnal: true, territorial: true, ambush: true, adaptive: true, courage: 0.9 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 0.9, range: 40, knockback: 70 } },
+      { id: 'lunge', params: { damage: 1.4, cooldown: 4.0, range: 200, speed: 380 } },
+      { id: 'bleeding_bite', params: { damage: 1.1, cooldown: 5.0, range: 40, bleed: true } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 0.8, min: 1, max: 2 },
+      { item: 'fang_wolf', chance: 0.7, min: 1, max: 1 },
+      { item: 'magic_core', chance: 0.25, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'cave_troll', name: 'Cave Troll', family: 'goblin', zones: [3], level: 12, hp: 320, damage: 32, defense: 5,
+    speed: 50, size: 28, xp: 260, color: '#6a5a4a',
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: true, territorial: true, ambush: false, adaptive: false, courage: 0.95 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.7, range: 64, knockback: 150 } },
+      { id: 'ground_slam', params: { damage: 1.5, cooldown: 7.0, range: 110, radius: 120 } },
+      { id: 'roar', params: { damage: 0.4, cooldown: 9.0, range: 160 } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 0.9, min: 1, max: 3 },
+      { item: 'monster_bone', chance: 0.8, min: 2, max: 3 },
+      { item: 'stone', chance: 0.6, min: 2, max: 4 }
+    ]
+  },
+  {
+    id: 'venom_wyrm', name: 'Venom Wyrm', family: 'beast', zones: [3], level: 11, hp: 170, damage: 26, defense: 2,
+    speed: 110, size: 20, xp: 200, color: '#4a8a40',
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: true, adaptive: false, courage: 0.8 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.3, range: 44, knockback: 70, poison: 0.6 } },
+      { id: 'web_shot', params: { damage: 0.7, cooldown: 4.0, range: 240, speed: 240 } },
+      { id: 'lunge', params: { damage: 1.3, cooldown: 5.0, range: 160, speed: 260 } }
+    ],
+    loot: [
+      { item: 'poison_gland', chance: 0.8, min: 1, max: 2 },
+      { item: 'monster_hide', chance: 0.7, min: 1, max: 2 },
+      { item: 'rare_herb', chance: 0.3, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'hell_hound', name: 'Hell Hound', family: 'wolf', zones: [3], level: 13, hp: 240, damage: 30, defense: 3,
+    speed: 150, size: 22, xp: 280, color: '#8a2a20',
+    aiProfile: { aggression: 0.95, pack: true, nocturnal: true, territorial: true, ambush: false, adaptive: true, courage: 0.9 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 46, knockback: 90 } },
+      { id: 'charge', params: { damage: 1.4, cooldown: 5.0, range: 240, speed: 420 } },
+      { id: 'fire_breath', params: { damage: 1.2, cooldown: 6.0, range: 200, speed: 300 } }
+    ],
+    loot: [
+      { item: 'monster_hide', chance: 0.85, min: 1, max: 2 },
+      { item: 'fang_wolf', chance: 0.7, min: 1, max: 2 },
+      { item: 'magic_core', chance: 0.3, min: 1, max: 1 }
+    ]
+  },
+  {
+    id: 'yggdrasil_spriggan', name: 'Yggdrasil Spriggan', family: 'treant', zones: [3], level: 14, hp: 260, damage: 30, defense: 5,
+    speed: 65, size: 26, xp: 340, color: '#3ac060',
+    aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: false, courage: 1.0 },
+    abilities: [
+      { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.5, range: 60, knockback: 120 } },
+      { id: 'root_slam', params: { damage: 1.4, cooldown: 6.0, range: 130, radius: 110 } },
+      { id: 'summon', params: { summonId: 'thorn_beast', count: 1, cooldown: 13.0, range: 0 } },
+      { id: 'regenerate', params: { heal: 55, cooldown: 11.0, range: 0 } }
+    ],
+    loot: [
+      { item: 'treant_bark', chance: 0.9, min: 1, max: 2 },
+      { item: 'magic_core', chance: 0.4, min: 1, max: 1 },
+      { item: 'rare_wood', chance: 0.7, min: 1, max: 2 }
+    ]
+  },
+  {
     id: 'ancient_bear', name: 'Ancient Bear', family: 'boss', zones: [3], level: 15, hp: 800, damage: 30, defense: 5,
     speed: 85, size: 30, xp: 700, color: '#4a3a2a', boss: true,
     aiProfile: { aggression: 0.9, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },

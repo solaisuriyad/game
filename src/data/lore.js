@@ -43,6 +43,10 @@ export const LORE = [
     text: 'Few have crossed into the forbidden forest and returned. It is the wound at the center of the world — the place where the old pact was shattered. The guild marks it SSS-rank, but the truth is worse than a rank: the forest itself keeps everyone out except those it has chosen to test.'
   },
   {
+    id: 'lore_yggdrasil', title: 'The Yggdrasil', unlock: 'yggdrasil',
+    text: 'At the heart of the dense forest stands the Yggdrasil — a colossal tree whose leaves shift through nine living colors. The First People believed it was the source of all the forest\'s power: its roots fed the soil, its boughs fed the beasts, and its pulse fed the monsters that guard the deep woods. As long as it stands, the forest cannot fall — and neither will the wild things that draw strength from it.'
+  },
+  {
     id: 'lore_dragon', title: 'The Last Guardian', unlock: 'ancient_dragon',
     text: 'The Ancient Dragon is what remains of the pact. The First People\'s spirit did not die — it was twisted when the pact broke, and it now sleeps beneath the forbidden forest, burning with a grief it can no longer remember. To face it is to stand at the end of the forest\'s long story.'
   },

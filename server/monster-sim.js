@@ -15,6 +15,9 @@ const SPAWN_PLAN = [
   { id: 'slime', count: 6 }, { id: 'goblin', count: 5 }, { id: 'wolf', count: 6 },
   { id: 'spider', count: 4 }, { id: 'treant', count: 3 }, { id: 'skeleton', count: 3 },
   { id: 'swamp_beast', count: 2 }, { id: 'demon_beast', count: 2 }, { id: 'ancient_beast', count: 1 },
+  { id: 'dire_wolf', count: 4 }, { id: 'goblin_shaman', count: 3 }, { id: 'goblin_brute', count: 3 },
+  { id: 'thorn_beast', count: 3 }, { id: 'shadow_stalker', count: 3 }, { id: 'cave_troll', count: 2 },
+  { id: 'venom_wyrm', count: 3 }, { id: 'hell_hound', count: 3 }, { id: 'yggdrasil_spriggan', count: 2 },
   { id: 'alpha_wolf', count: 1 }, { id: 'ancient_bear', count: 1 },
   { id: 'forest_guardian', count: 1 }, { id: 'ancient_dragon', count: 1 }
 ];

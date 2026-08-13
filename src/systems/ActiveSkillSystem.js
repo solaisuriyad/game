@@ -1,35 +1,50 @@
 import { ACTIVE_SKILLS, ACTIVE_SKILL_BY_ID } from '../data/activeSkills.js';
 
-// Active skill system: every skill has its own unique hotkey (1..8) and can be
-// used directly. Each costs MP and has a cooldown.
+// Active skill system: the player selects up to 3 skills, each bound to a
+// unique hotkey (1, 2, 3). Each costs MP and has a cooldown. Only the 3
+// selected skills are shown on the HUD and castable.
 export class ActiveSkillSystem {
   constructor(game) {
     this.game = game;
+    this.selected = [];
     this.cooldowns = {};
   }
 
   get all() { return ACTIVE_SKILLS; }
-  skillAt(index) { return ACTIVE_SKILLS[index] || null; }
-  // unique key for a skill: 1..8 (position in the list)
-  keyFor(id) { return ACTIVE_SKILLS.findIndex((s) => s.id === id) + 1; }
+  get maxSkills() { return 3; }
+
+  // skill in a hotkey slot (1..3 -> index 0..2), or null
+  skillAt(slot) { return ACTIVE_SKILL_BY_ID[this.selected[slot]] || null; }
+  isSelected(id) { return this.selected.includes(id); }
+
+  select(id) {
+    if (this.isSelected(id)) return false;
+    if (this.selected.length >= this.maxSkills) return false;
+    this.selected.push(id);
+    return true;
+  }
+  deselect(id) {
+    const i = this.selected.indexOf(id);
+    if (i >= 0) { this.selected.splice(i, 1); delete this.cooldowns[id]; }
+  }
 
   update(dt) {
     for (const k in this.cooldowns) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
   }
 
-  canUse(index) {
-    const skill = this.skillAt(index);
+  canUse(slot) {
+    const skill = this.skillAt(slot);
     if (!skill) return false;
     if ((this.cooldowns[skill.id] || 0) > 0) return false;
     if (this.game.player.mp < skill.mpCost) return false;
     return true;
   }
 
-  use(index) {
+  use(slot) {
     const g = this.game;
     const p = g.player;
-    const skill = this.skillAt(index);
-    if (!skill) return { ok: false, message: 'No skill bound to this key.' };
+    const skill = this.skillAt(slot);
+    if (!skill) return { ok: false, message: 'No skill in this slot.' };
     if ((this.cooldowns[skill.id] || 0) > 0) return { ok: false, message: `${skill.name} is cooling down.` };
     if (p.mp < skill.mpCost) return { ok: false, message: 'Not enough MP.' };
 
@@ -111,4 +126,7 @@ export class ActiveSkillSystem {
   cast_swift_step(p, skill, g) {
     p.buffs.speed = 6;
   }
+
+  serialize() { return this.selected.slice(); }
+  deserialize(list) { this.selected = (list || []).slice(0, this.maxSkills); }
 }

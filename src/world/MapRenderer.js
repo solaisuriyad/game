@@ -86,7 +86,9 @@ export class MapRenderer {
     for (const c of w.collidersNear(cam.x + cam.vw / 2, cam.y + cam.vh / 2, cam.vw / 2 + 60)) {
       const sx = c.x - cam.x, sy = c.y - cam.y;
       if (c.type === 'tree') {
-        this._drawTree(ctx, sx + 13, sy + 13, c.dark, c.depleted);
+        this._drawTree(ctx, sx + 13, sy + 13, c.dark, c.depleted, c.variant);
+      } else if (c.type === 'yggdrasil') {
+        this._drawYggdrasil(ctx, sx + c.w / 2, sy + c.h / 2, c);
       } else if (c.type === 'rock') {
         ctx.fillStyle = c.depleted ? '#5a5a55' : '#7a7a78';
         ctx.beginPath();
@@ -100,7 +102,7 @@ export class MapRenderer {
     }
   }
 
-  _drawTree(ctx, x, y, dark, depleted) {
+  _drawTree(ctx, x, y, dark, depleted, variant = 0) {
     if (depleted) {
       // a chopped stump — passable, will regrow
       ctx.fillStyle = '#8a6a3a';
@@ -109,13 +111,73 @@ export class MapRenderer {
       ctx.beginPath(); ctx.ellipse(x, y + 4, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
       return;
     }
+    // palette per variant: oak / pine / birch / autumn / willow
+    const LEAF = [
+      { canopy: '#3f7a35', highlight: '#5a9a4a', shape: 'round' },
+      { canopy: '#2a5a33', highlight: '#3a7a46', shape: 'pine' },
+      { canopy: '#7a9a3a', highlight: '#a8c46a', shape: 'round' },
+      { canopy: '#c0682a', highlight: '#e09a4a', shape: 'round' },
+      { canopy: '#4a8a4a', highlight: '#6aaa5a', shape: 'willow' }
+    ][variant] || { canopy: '#3f7a35', highlight: '#5a9a4a', shape: 'round' };
+    const col = dark ? this._darken(LEAF.canopy) : LEAF.canopy;
     ctx.fillStyle = '#4a3a26';
     ctx.fillRect(x - 2, y + 2, 4, 10);
-    const col = dark ? '#2a4a2a' : '#3f6b35';
-    ctx.fillStyle = col;
-    ctx.beginPath(); ctx.arc(x, y - 4, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.beginPath(); ctx.arc(x - 3, y - 7, 5, 0, Math.PI * 2); ctx.fill();
+    if (LEAF.shape === 'pine') {
+      ctx.fillStyle = col;
+      for (let i = 0; i < 3; i++) {
+        const w = 14 - i * 3, yy = y - 2 - i * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, yy - 8); ctx.lineTo(x - w, yy + 4); ctx.lineTo(x + w, yy + 4); ctx.closePath();
+        ctx.fill();
+      }
+    } else if (LEAF.shape === 'willow') {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y - 6, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(x + i * 4, y - 2); ctx.lineTo(x + i * 5, y + 10); ctx.stroke();
+      }
+    } else {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y - 4, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = LEAF.highlight;
+      ctx.beginPath(); ctx.arc(x - 3, y - 7, 5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  _darken(hex) {
+    if (!hex) return '#2a4a2a';
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, ((n >> 16) & 255) - 40);
+    const g = Math.max(0, ((n >> 8) & 255) - 40);
+    const b = Math.max(0, (n & 255) - 40);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // The Yggdrasil — a colossal 9-color world tree that powers the deep forest.
+  _drawYggdrasil(ctx, x, y, c) {
+    const t = this.game.time.timeOfDay;
+    const COLORS = ['#ff5040', '#ffa030', '#ffe040', '#7ae040', '#40e0a0', '#40c0e0', '#5070ff', '#a050ff', '#ff50c0'];
+    // massive trunk
+    ctx.fillStyle = '#5a4028';
+    ctx.fillRect(x - 22, y - 60, 44, 120);
+    ctx.fillStyle = '#7a5a38';
+    ctx.fillRect(x - 14, y - 60, 12, 120);
+    // layered canopy — each ring a different color, slowly pulsing
+    for (let i = 0; i < COLORS.length; i++) {
+      const r = 90 - i * 8;
+      const pulse = 1 + Math.sin(t * 60 + i) * 0.06;
+      ctx.fillStyle = COLORS[i];
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(x, y - 80, r * pulse, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // glow
+    const g = ctx.createRadialGradient(x, y - 80, 10, x, y - 80, 120);
+    g.addColorStop(0, 'rgba(255,255,255,0.5)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y - 80, 120, 0, Math.PI * 2); ctx.fill();
   }
 
   _drawNodes(ctx, game) {

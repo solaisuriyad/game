@@ -72,20 +72,15 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 | **Shift (hold)** | Sneak — quieter, harder to detect, but slower |
 | **Tab** | Toggle tracking ON/OFF (shows footprints + blood trails) |
 
-### ✨ Active skills (each has its own key)
+### ✨ Active skills (pick up to 3)
 | Key | What it does |
 |---|---|
-| **1** | Power Strike — massive melee hit |
-| **2** | Arrow Storm — 3 arrows in a fan |
-| **3** | Fire Blast — burning projectile |
-| **4** | Frost Nova — freeze + slow nearby enemies |
-| **5** | Healing Light — +80 health |
-| **6** | Second Wind — +120 stamina |
-| **7** | Stone Guard — +10 defense for 8s |
-| **8** | Swift Step — +60% speed for 6s |
-| **O** | Show the skill list (reference) |
+| **1 / 2 / 3** | Cast the skill in that slot (costs **MP**) |
+| **O** | Open the skill screen to pick / change your 3 skills |
 
-Every skill is usable anytime — each has its own unique key (1–8). Skills cost **MP** and have a cooldown.
+You **select up to 3 skills** — they appear on the bottom of the screen bound to keys **1, 2, 3**. The 8 skills to choose from:
+- **Power Strike** (big melee hit) · **Arrow Storm** (3 arrows) · **Fire Blast** (burning projectile) · **Frost Nova** (freeze/slow enemies)
+- **Healing Light** (+80 health) · **Second Wind** (+120 stamina) · **Stone Guard** (+10 defense) · **Swift Step** (+60% speed)
 
 ### 🪤 Traps & bait
 | Key | What it does |
@@ -106,7 +101,7 @@ Every skill is usable anytime — each has its own unique key (1–8). Skills co
 | **C** | Character | Your name, level, stats, records |
 | **K** | Skills | Skill tree (spend skill points) |
 | **J** | Quest Log | Your active quests (and co-op quests) |
-| **M** | World Map | The full map (hidden areas are foggy until you explore) |
+| **M** | World Map | The full map (hidden areas are foggy until you explore). **Scroll wheel** moves up/down, **Ctrl + arrow keys** pan all 4 directions. |
 | **B** | Crafting | Recipes you can craft |
 | **F** | Relationships | Villagers who know you + your reputation |
 | **L** | Codex | The forest's secret history (lore) |
@@ -182,7 +177,8 @@ Every skill is usable anytime — each has its own unique key (1–8). Skills co
   - 🌳 **Trees** → wood (press E on a tree). After chopping, you can **walk through that spot for 5 minutes**; the tree then regrows.
 
 ### 6. Fight monsters
-- Deeper in the forest you'll meet **slimes, goblins, wolves, giant spiders, treants, skeletons, swamp beasts, demon beasts, ancient beasts** — and bosses.
+- Deeper in the forest you'll meet **slimes, goblins, wolves, dire wolves, goblin shamans & brutes, giant spiders, treants, thorn beasts, shadow stalkers, cave trolls, venom wyrms, hell hounds, skeletons, swamp beasts, demon beasts, ancient beasts** — and bosses.
+- 🌳 In the dense forest stands the **Yggdrasil** — a colossal tree of 9 shifting colors that powers the forest and its monsters. Yggdrasil Spriggans guard it.
 - Light attack (click), heavy attack (hold + release), block (right-click), dodge (Space).
 - Different monsters have different moves — wolves pounce, spiders shoot webs, treants slam roots, bosses have multiple phases!
 

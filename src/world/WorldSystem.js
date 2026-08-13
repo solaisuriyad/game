@@ -63,6 +63,18 @@ export class WorldSystem {
     this._placeBuildings();
     // 6. forest trees + resource nodes
     this._placeForest();
+    // 7. the Yggdrasil (colossal world tree powering the deep forest)
+    this._placeYggdrasil();
+  }
+
+  _placeYggdrasil() {
+    // in the dark forest (dense), east of the village
+    const tx = VILLAGE_CX + 85, ty = VILLAGE_CY;
+    const px = tx * TILE, py = ty * TILE;
+    const size = 6 * TILE; // 192px collider (solid trunk footprint)
+    const obj = { type: 'yggdrasil', x: px, y: py, w: size, h: size };
+    this._addStatic(obj);
+    this.yggdrasil = { x: px + size / 2, y: py + size / 2 };
   }
 
   _carveRiver() {
@@ -154,7 +166,8 @@ export class WorldSystem {
 
   _addTree(tx, ty, dark = false) {
     const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
-    this._addStatic({ type: 'tree', x: px - 13, y: py - 13, w: 26, h: 26, dark });
+    const variant = this.rng.int(0, 4); // 0 oak, 1 pine, 2 birch, 3 autumn, 4 willow
+    this._addStatic({ type: 'tree', x: px - 13, y: py - 13, w: 26, h: 26, dark, variant });
   }
   _addStatic(obj) {
     const cx = Math.floor(obj.x / (this._cell * TILE)), cy = Math.floor(obj.y / (this._cell * TILE));
