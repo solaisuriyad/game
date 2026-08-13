@@ -11,7 +11,7 @@
 | 5 | Co-op networking foundation | ✅ WebSocket server, join/leave, replication, interest management |
 | 6 | Co-op player sync | ✅ positional sync + interpolation |
 | 7 | Co-op combat + monster scaling | ✅ server-authoritative monsters, combat, loot, boss scaling by party size |
-| 8 | Co-op quests, loot, world events | ⬜ partial (individual loot done; shared quests/events designed) |
+| 8 | Co-op quests, loot, world events | ✅ shared kill/boss quests, shared world events, NPC gossip sync |
 | 9 | 1000-NPC optimization | ⬜ designed (sim tiers already implemented) |
 | 10 | Multiplayer stress test | ⬜ |
 
@@ -47,6 +47,6 @@
 
 ## Next steps (recommended order)
 
-1. Co-op quests, shared world events, NPC sync (Phase 8).
+1. Server-authoritative animals/resources (to bring hunt/gather quests into co-op).
 2. 1000-NPC scale test + audio/music polish.
 3. Handcrafted quests & village story beats (the forest's history).

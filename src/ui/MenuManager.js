@@ -211,6 +211,17 @@ export class MenuManager {
       html += `<div class="d">${q.objectives.map((o) => `${o.kind}: ${Math.min(o.progress, o.count)}/${o.count}`).join(' · ')}</div></div>`;
     }
     html += `<div class="muted" style="margin-top:8px">Turn in quests at the Adventure Guild.</div>`;
+
+    if (g.multiplayer.connected) {
+      html += '<h3>Shared Quests (co-op)</h3>';
+      if (!g.multiplayer.sharedQuests.length) html += '<div class="muted">No active shared quest.</div>';
+      for (const q of g.multiplayer.sharedQuests) {
+        html += `<div class="item"><div class="n">⚔ ${q.title}</div><div class="d">${q.text}</div>`;
+        html += `<div class="d">${q.objectives.map((o) => `${o.kind}: ${Math.min(o.progress, o.count)}/${o.count}`).join(' · ')}</div>`;
+        html += `<div class="d gold">Rewards: ${q.rewards.gp} GP · ${q.rewards.gold}g · ${q.rewards.xp} XP (all hunters)</div></div>`;
+      }
+      html += '<div class="muted" style="margin-top:8px">Shared quests are progressed by the whole party and reward every connected hunter.</div>';
+    }
     this.show('Quest Log', html);
   }
 

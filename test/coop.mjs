@@ -134,6 +134,55 @@ const stateMsg = await waitFor(c, (m) => m.type === 'monsterState' && m.monsters
 console.log('Carol received monster state with', stateMsg.monsters.length, 'monsters; boss present:', stateMsg.monsters.some((m) => m.boss));
 if (!stateMsg.monsters.some((m) => m.boss)) throw new Error('boss not in replicated monster state');
 
+// ================= Phase 8: shared quests + world events =================
+
+// --- a shared quest is active for all clients ---
+const sharedMsg = await waitFor(d, (m) => m.type === 'sharedQuests' && m.quests.length > 0);
+console.log('Dan sees shared quests:', sharedMsg.quests.map((q) => `${q.title} [${q.objectives[0].id} ${q.objectives[0].progress}/${q.objectives[0].count}]`).join('; '));
+if (!sharedMsg.quests.length) throw new Error('no shared quest active');
+
+// --- killing wolves progresses the shared quest for everyone ---
+// move Alice next to a wolf and kill it (server-authoritative kill path)
+const killsNeeded = 3;
+for (let i = 0; i < killsNeeded; i++) {
+  const w = gs.sim.monsters.find((m) => m.defId === 'wolf' && !m.dead);
+  if (!w) break;
+  alicePlayer.x = w.x; alicePlayer.y = w.y;
+  gs.sim.applyPlayerAttack(aliceId, 99999, 0, 'melee', gs.players);
+}
+// check the shared quest progressed on the server
+const wolfQuest = gs.questState.active.find((q) => q.id === 'coop_wolves');
+console.log('server wolf quest progress:', wolfQuest ? wolfQuest.objectives[0].progress + '/' + wolfQuest.objectives[0].count : '(not active)');
+if (wolfQuest && wolfQuest.objectives[0].progress !== killsNeeded) throw new Error('shared quest did not track wolf kills');
+
+// a progress update reaches a remote client (with the updated count)
+const progMsg = await waitFor(c, (m) => m.type === 'sharedQuests' && m.quests.length && m.quests[0].objectives[0].progress >= 3);
+console.log('Carol got shared quest progress update:', progMsg.quests[0].objectives[0].progress + '/' + progMsg.quests[0].objectives[0].count);
+if (progMsg.quests[0].objectives[0].progress < 3) throw new Error('progress update did not reach client with updated count');
+
+// --- completing a shared quest rewards every connected player ---
+// force-complete the wolf quest via kills
+const remain = gs.questState.active.find((q) => q.id === 'coop_wolves');
+if (remain) {
+  while (remain.objectives[0].progress < remain.objectives[0].count) {
+    // spawn + kill a wolf to advance
+    const def = (await import('../src/data/monsters.js')).MONSTERS.find((m) => m.id === 'wolf');
+    const pos = gs.world.randomPosition(52, 76);
+    const w = gs.sim.spawn(def, pos.x, pos.y);
+    gs.sim.applyPlayerAttack(aliceId, 99999, 0, 'melee', gs.players);
+  }
+  const completeMsg = await waitFor(d, (m) => m.type === 'questComplete');
+  console.log('Dan received shared quest completion:', completeMsg.title, JSON.stringify(completeMsg.rewards));
+  if (!completeMsg.rewards || completeMsg.rewards.gp <= 0) throw new Error('no rewards on shared quest completion');
+}
+
+// --- world events are broadcast to everyone ---
+const before = gs.sim.monsters.length;
+gs.worldEvents.emit('worldEvent', { type: 'rareSighting', text: 'A rare creature appeared!' });
+const evMsg = await waitFor(c, (m) => m.type === 'worldEvent');
+console.log('Carol received world event:', evMsg.event.type, '-', evMsg.event.text);
+if (evMsg.event.type !== 'rareSighting') throw new Error('wrong world event received');
+
 a.close(); b.close(); c.close(); d.close();
 gs.stop();
 srv.close();

@@ -16,6 +16,7 @@ export class MultiplayerSystem {
     this._targets = new Map();   // remote player id -> snapshot
     this._monsters = new Map();  // remote monster id -> RemoteMonster
     this._inputTimer = 0;
+    this.sharedQuests = [];      // server-authoritative co-op quests
   }
 
   async connect(url, name) {
@@ -104,6 +105,24 @@ export class MultiplayerSystem {
       case 'loot':
         for (const it of msg.items) g.inventory.addItem(it.item, it.qty, { silent: true });
         g.toast(`You received loot: ${msg.items.map((i) => `${i.qty}x ${this._itemName(i.item)}`).join(', ')}`);
+        break;
+      case 'sharedQuests':
+        this.sharedQuests = msg.quests || [];
+        break;
+      case 'questComplete': {
+        const p = g.player;
+        p.gold += msg.rewards.gold;
+        p.guildPoints += msg.rewards.gp;
+        p.reputation = Math.min(100, p.reputation + 3);
+        g.addXP(msg.rewards.xp);
+        g.toast(`Shared quest complete: ${msg.title}! (+${msg.rewards.gp} GP)`);
+        g.events.recent.unshift({ type: 'monsterKilled', day: g.time.day });
+        break;
+      }
+      case 'worldEvent':
+        g.toast(`⚠ ${msg.event.text}`);
+        // feed the village so NPCs gossip about the same shared event
+        g.events.recent.unshift({ type: msg.event.type, day: g.time.day });
         break;
     }
   }

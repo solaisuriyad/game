@@ -46,6 +46,7 @@ export const EVENT_COMMENTS = {
   // world event -> NPC reactions
   monsterAttack: ['Did you see the monster?!', 'The guards drove it off, thank the gods.', 'I barely slept after that attack.'],
   rareSighting: ['A rare creature was spotted near the forest!', 'Hunters are talking about a strange sighting.'],
+  migration: ['A whole pack moved through the deep woods last night.', 'The wolves are on the move again — be careful out there.'],
   caravan: ['A caravan arrived with fine goods!', 'The caravan brought salt and cloth.'],
   monsterKilled: ['I heard a great beast was slain! The village sleeps easier.', 'Word travels fast — you\'re becoming a real hunter.'],
   injuredHunter: ['An injured hunter was carried back... the forest is dangerous.', 'Poor soul was found near the deep woods.']

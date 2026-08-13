@@ -5,6 +5,8 @@
 //          resolution, deaths, and loot, and scales bosses by party size.
 import { WorldSystem, PX_W, PX_H } from '../src/world/WorldSystem.js';
 import { MonsterSim } from './monster-sim.js';
+import { SharedQuestState } from './quest-state.js';
+import { WorldEvents } from './world-events.js';
 
 const SPEED = 140;
 const TICK_RATE = 20;
@@ -17,6 +19,10 @@ export class GameServer {
     this.players = new Map();
     this.sim = new MonsterSim(this.world);
     this.sim.emit = (type, data) => this._routeEvent(type, data);
+    this.questState = new SharedQuestState();
+    this.questState.emit = (type, data) => this._routeEvent(type, data);
+    this.worldEvents = new WorldEvents(this.world, this.sim);
+    this.worldEvents.emit = (type, data) => this._routeEvent(type, data);
     this.nextId = 1;
     this._timer = setInterval(() => this.tick(), 1000 / TICK_RATE);
     this._timer.unref?.();
@@ -52,8 +58,10 @@ export class GameServer {
         ws.playerId = id;
         this.players.set(id, player);
         this.sim.rescale(this.players.size);
+        this.questState.maybeActivate();
         const others = [...this.players.values()].filter((p) => p.id !== id).map((p) => this._serialize(p));
         ws.send(JSON.stringify({ type: 'welcome', id, spawn: { x: spawn.x, y: spawn.y }, players: others }));
+        ws.send(JSON.stringify({ type: 'sharedQuests', quests: this.questState.serialize() }));
         this._broadcast({ type: 'join', player: this._serialize(player) }, id);
         break;
       }
@@ -107,10 +115,20 @@ export class GameServer {
         this._broadcast({ type, ...data });
         break;
       case 'monsterDeath':
-        this._broadcast({ type, id: data.id, to: data.to });
+        this._broadcast({ type, id: data.id, to: data.to, defId: data.defId });
+        this.questState.onKill(data.defId);
         break;
       case 'loot':
         this._sendTo(data.to, { type: 'loot', items: data.items, name: data.name });
+        break;
+      case 'questState':
+        this._broadcast({ type: 'sharedQuests', quests: data });
+        break;
+      case 'questComplete':
+        this._broadcast({ type: 'questComplete', id: data.id, title: data.title, rewards: data.rewards });
+        break;
+      case 'worldEvent':
+        this._broadcast({ type: 'worldEvent', event: data });
         break;
     }
   }
@@ -128,6 +146,8 @@ export class GameServer {
     }
     // authoritative monster simulation (AI + combat + phases)
     this.sim.tick(dt, this.players);
+    // shared world events (raids, migrations, rare sightings)
+    this.worldEvents.tick(dt);
 
     // replicate players (interest management)
     for (const p of this.players.values()) {

@@ -125,10 +125,10 @@ MonsterBrain : idle | wander | patrol | investigate | detect | chase | attack |
 Both brains read an `aiProfile` (aggression, courage, territorial, pack, nocturnal,
 ambush, adaptive flags) so behavior differs per species without per-species code.
 
-## 6. Co-op architecture (Phases 5–7 implemented)
+## 6. Co-op architecture (Phases 5–8 implemented)
 
 - Authoritative Node server (WebSocket on `/ws`, `server/ws.js` + `server/game-server.js` +
-  `server/monster-sim.js`):
+  `server/monster-sim.js` + `server/quest-state.js` + `server/world-events.js`):
   - **Players** — owns positions (integrates client inputs, world-collision-clamped),
     replicates state snapshots at 20 Hz with interest management.
   - **Monsters** (Phase 7) — owns monster positions, AI (nearest-player targeting, chase,
@@ -137,10 +137,19 @@ ambush, adaptive flags) so behavior differs per species without per-species code
     damage, deaths, and individual loot (assigned to the killer).
   - **Boss scaling** (§61) — bosses scale by party size: +50% HP and +25% damage per extra
     player, and ability cooldowns tighten (more mechanics pressure), not just bigger numbers.
+  - **Shared quests** (Phase 8, `server/quest-state.js`) — server owns kill/boss objective
+    progress (monsters are authoritative); all connected players contribute and are all
+    rewarded on completion. Hunt/gather objectives remain client-side until animals and
+    resource nodes are server-authoritative (Phase 9 scope).
+  - **Shared world events** (Phase 8, `server/world-events.js`) — server-driven raids,
+    migrations, and rare sightings broadcast to every player; spawned monsters replicate
+    via the monster-state channel.
+- **NPC/world-state sync** — shared world events feed each client's village `events.recent`,
+  so every player's NPCs gossip about the same happenings (consistent shared world feel).
+  Individual NPC relationships remain client-owned (§62).
 - Client (`src/net/` + `entities/RemoteMonster.js`): client-side prediction for own movement,
   interpolated remote players/monsters; in co-op the client stops simulating local monsters
   and renders server-authoritative ones instead.
-- Individual progression (client/account) vs. shared world progression (server).
 
 ### Known limitation (documented)
 Monster→player damage is **server-authored** (amount + status), but mitigation (block/dodge/

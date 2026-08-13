@@ -91,10 +91,12 @@ export class HUD {
     }
     ctx.textAlign = 'left';
 
-    // ---- bottom-left: quest tracker ----
-    let qy = H - 80;
+    // ---- bottom-left: quest tracker (single-player + shared co-op) ----
+    let qy = H - 120;
+    const hasShared = g.multiplayer.connected && g.multiplayer.sharedQuests.length > 0;
+    const qCount = Math.min(2, g.quests.active.length) + (hasShared ? g.multiplayer.sharedQuests.length : 0);
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fillRect(12, qy, 240, 66);
+    ctx.fillRect(12, qy, 240, 12 + qCount * 22);
     ctx.fillStyle = '#ffd76a';
     ctx.font = 'bold 11px sans-serif';
     ctx.fillText('QUESTS', 20, qy + 6);
@@ -107,6 +109,15 @@ export class HUD {
       const parts = q.objectives.map((o) => `${Math.min(o.progress, o.count)}/${o.count}`);
       ctx.fillText(`${tpl.title}`, 20, qy + 22 + i * 22);
       ctx.fillStyle = '#b8d8b8';
+      ctx.fillText(parts.join('  '), 20, qy + 34 + i * 22);
+      ctx.fillStyle = '#f5f0e0';
+      i++;
+    }
+    for (const q of g.multiplayer.sharedQuests) {
+      const parts = q.objectives.map((o) => `${Math.min(o.progress, o.count)}/${o.count}`);
+      ctx.fillStyle = '#ffd76a';
+      ctx.fillText(`⚔ ${q.title}`, 20, qy + 22 + i * 22);
+      ctx.fillStyle = '#c8d0ff';
       ctx.fillText(parts.join('  '), 20, qy + 34 + i * 22);
       ctx.fillStyle = '#f5f0e0';
       i++;

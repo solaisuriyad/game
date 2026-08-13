@@ -297,7 +297,7 @@ export class MonsterSim {
     this.emit('monsterHit', { id: target.id, hp: target.hp, damage });
     if (target.hp <= 0) {
       target.dead = true;
-      this.emit('monsterDeath', { id: target.id, to: playerId });
+      this.emit('monsterDeath', { id: target.id, to: playerId, defId: target.defId });
       const items = this._rollLoot(target);
       if (items.length) this.emit('loot', { to: playerId, items, name: target.name });
     }
