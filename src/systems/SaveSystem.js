@@ -1,5 +1,5 @@
 import { getItem } from '../data/index.js';
-import { WORLD_W, WORLD_H } from '../world/WorldSystem.js';
+import { WORLD_W, WORLD_H, PX_W, PX_H, TILE, VILLAGE_CX, VILLAGE_CY } from '../world/WorldSystem.js';
 
 const PREFIX = 'verdant-hollow:';
 const SCHEMA = 1;
@@ -80,6 +80,14 @@ export class SaveSystem {
       gold: pl.gold, guildPoints: pl.guildPoints, reputation: pl.reputation,
       backpackLevel: pl.backpackLevel || 0, kills: pl.kills, animalsHunted: pl.animalsHunted
     });
+    // GUARD: old saves hold coordinates from a smaller/older map. If the saved
+    // position is out of bounds or blocked (inside a tree/building/water), snap
+    // the player to the village center so they never load in frozen.
+    if (pl.x == null || pl.x < 0 || pl.y < 0 || pl.x >= PX_W || pl.y >= PX_H ||
+        g.world.circleBlocked(pl.x, pl.y, 14)) {
+      p.x = VILLAGE_CX * TILE + 16;
+      p.y = VILLAGE_CY * TILE + 16;
+    }
     g.activeSkills.deserialize(pl.activeSkills);
     p.weapon = pl.weapon ? getItem(pl.weapon) : null;
     p.armor = {};

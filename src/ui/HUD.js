@@ -113,7 +113,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText('v3.1', W - 12, H - 8);
+    ctx.fillText('v3.2', W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
