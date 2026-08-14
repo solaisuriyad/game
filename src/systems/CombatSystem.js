@@ -185,6 +185,10 @@ export class CombatSystem {
 
   knockbackPlayer(source, force) {
     const p = this.game.player;
+    // no knockback while invulnerable (dodge i-frames, Yggdrasil blessing, or
+    // the brief post-respawn grace) — otherwise a monster can shove the player
+    // around even when its damage is being ignored
+    if (p.dodgeTimer > 0 || p.yggBlessing > 0 || this.game.nearYggdrasil() || p.spawnGrace > 0) return;
     const a = Math.atan2(p.y - source.y, p.x - source.x);
     for (let i = 0; i < 6; i++) {
       this.game.world.moveEntity(p, Math.cos(a) * force * 0.02, Math.sin(a) * force * 0.02);

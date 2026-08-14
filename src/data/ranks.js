@@ -32,5 +32,26 @@ export function essenceId(rank) {
   if (!rank) return null;
   return 'essence_' + String(rank).toLowerCase().replace('+', 'plus');
 }
+
+// distance rings (in tiles) from the YGGDRASIL where each rank lives.
+// The world tree is the heart of monster territory: A+ dragonoids guard the
+// trunk, S-rank dragons circle just outside, and each lower rank radiates
+// outward until F-rank forms the outermost edge (nearest the town).
+// Kept in one place so single-player (PopulationSystem) and co-op
+// (server/monster-sim) always stay in sync.
+export const RANK_RINGS = {
+  'A+': [45, 110],
+  'S': [110, 200],
+  'A': [200, 250],  // (no A-rank monsters currently)
+  'B': [200, 250],
+  'C': [250, 330],
+  'D': [330, 410],
+  'E': [410, 490],
+  'F': [490, 550]
+};
+// ring [minR, maxR] tiles from the tree for a monster's rank (falls back to C)
+export function rankRing(rank) {
+  return RANK_RINGS[rank] || RANK_RINGS['C'];
+}
 // bonus damage multiplier applied when the player holds the previous rank's essence
 export const RANK_BONUS = 0.35;

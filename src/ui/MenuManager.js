@@ -500,13 +500,21 @@ export class MenuManager {
       ctx.fillStyle = a.color || '#b08a5a';
       ctx.fillRect(ax * s - 1, ay * s - 1, 2, 2);
     }
-    // the Yggdrasil (big 9-color marker)
+    // the Yggdrasil (big 9-color marker) + the monster territory ring around it
     if (g.world.yggdrasil) {
       const yx = g.world.yggdrasil.x / TILE, yy = g.world.yggdrasil.y / TILE;
+      // dashed circle marking the outer edge of monster territory (F-rank ring)
+      ctx.strokeStyle = 'rgba(255,90,90,0.45)';
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.arc(yx * s, yy * s, 550 * s, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,122,224,0.9)';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('Monster Territory', (yx - 70) * s, (yy - 560) * s);
       ctx.fillStyle = '#ff7ae0';
-      ctx.beginPath(); ctx.arc(yx * s, yy * s, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(yx * s, yy * s, 8, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#fff';
-      ctx.beginPath(); ctx.arc(yx * s, yy * s, 8, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(yx * s, yy * s, 11, 0, Math.PI * 2); ctx.stroke();
     }
     // player — blinking bright light
     const p = g.player;
@@ -685,7 +693,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 4.9 — screen shake only from nearby monsters</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.0 — the Yggdrasil reigns · monsters radiate by rank · two-circle world</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

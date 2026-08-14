@@ -6,7 +6,8 @@ globalThis.window={innerWidth:800,innerHeight:600,addEventListener(){},removeEve
 globalThis.document={body:{appendChild(){}},getElementById(id){return id==="game"?canvas:fakeEl("div");},createElement(tag){return fakeEl(tag);},addEventListener(){}};
 globalThis.localStorage={_m:{},setItem(k,v){this._m[k]=String(v);},getItem(k){return this._m[k]??null;}};
 globalThis.requestAnimationFrame=()=>{};
-import("../src/main.js").then(()=>{
+import("../src/main.js").then(async ()=>{
+  const { VILLAGE_CX, VILLAGE_CY } = await import("../src/world/WorldSystem.js");
   const g=window.game; g.npcCount=10;
   g.newGame({name:"t",gender:"m",skinTone:"#e8c39a",hairColor:"#4a3624",clothColor:"#7a6a4a",hairStyle:0});
   const p=g.player;
@@ -30,7 +31,7 @@ import("../src/main.js").then(()=>{
   for(let i=0;i<240;i++) g.update(1/60);
   console.log("after death timer -> deathInfo cleared:", g.deathInfo===null, "| spawnGrace:", p.spawnGrace, "| health:", p.health);
   if(g.deathInfo) throw new Error("deathInfo not cleared after respawn");
-  const VX = 1500*32+16, VY = 1500*32+16;
+  const VX = VILLAGE_CX*32+16, VY = VILLAGE_CY*32+16;
   console.log("respawned at village center:", p.x===VX, p.y===VY);
   if(p.x!==VX || p.y!==VY) throw new Error("did not respawn at village center");
   if(p.health !== p.maxHealth) throw new Error("health not restored on respawn");

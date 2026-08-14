@@ -1,7 +1,8 @@
 import { RNG } from '../core/RNG.js';
-import { TILE, VILLAGE_CX, VILLAGE_CY } from '../world/WorldSystem.js';
+import { TILE, VILLAGE_CX, VILLAGE_CY, YGGDRASIL_CX, YGGDRASIL_CY } from '../world/WorldSystem.js';
 import { ANIMALS } from '../data/animals.js';
 import { MONSTERS } from '../data/monsters.js';
+import { rankForLevel, rankRing } from '../data/ranks.js';
 import { OCCUPATIONS, PERSONALITIES, HAIR_COLORS, SKIN_TONES, CLOTH_COLORS } from '../data/npcData.js';
 import { FIRST_NAMES, SURNAMES, CHILD_NAMES } from '../data/names.js';
 import { NPC } from '../entities/NPC.js';
@@ -15,10 +16,13 @@ const OCC_WEIGHTS = [
   ['blacksmith', 2]
 ];
 
-// distance rings (in tiles) for each forest zone. These now cover the FULL map
-// (1500-tile radius) so high-rank monsters spawn all the way to the deep edge
-// instead of leaving 850 tiles of empty space.
-const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 500], 5: [505, 1450] };
+// Stragglers: a handful of low-rank (F/E) monsters roam the safe forest just
+// outside the village, so brand-new hunters get a gentle first fight. The bulk
+// of monsters radiate outward from the Yggdrasil by rank instead.
+const STRAGGLERS = [
+  { id: 'slime', count: 10 }, { id: 'goblin', count: 8 },
+  { id: 'wolf', count: 6 }, { id: 'spider', count: 4 }
+];
 
 export class PopulationSystem {
   constructor(game) {
@@ -47,6 +51,7 @@ export class PopulationSystem {
     this._generateNPCs(npcCount);
     this._linkFamilies();
     this._spawnPopulation();
+    this._spawnStragglers();
   }
 
   findMonsterDef(id) { return MONSTERS.find((m) => m.id === id) || null; }
@@ -220,31 +225,40 @@ export class PopulationSystem {
     }
   }
 
-  zoneRange(def) {
-    // spawn in a random zone the creature is allowed in
-    const z = def.zones[Math.floor(Math.random() * def.zones.length)];
-    return ZONE_RINGS[z] || [30, 50];
+  // monsters live in rank rings radiating outward from the Yggdrasil
+  monsterRing(def) {
+    const rank = def.rank || rankForLevel(def.level);
+    return rankRing(rank);
   }
 
   _spawnAnimal(def, w) {
-    const [minD, maxD] = this.zoneRange(def);
-    const pos = w.randomPosition(minD, maxD);
+    // animals (hunting game) stay close to the village
+    const pos = w.randomPosition(30, 150);
     this.game.animals.push(new this.game.AAnimal(this.game, def, pos.x, pos.y));
   }
+
   _spawnMonster(def, w, pack) {
-    let pos;
-    if (def.id === 'yggdrasil_spriggan' && w.yggdrasil) {
-      // spriggans gather around the Yggdrasil (its power source)
-      const a = this.rng.range(0, Math.PI * 2);
-      const d = this.rng.range(120, 260);
-      pos = { x: w.yggdrasil.x + Math.cos(a) * d, y: w.yggdrasil.y + Math.sin(a) * d };
-      if (w.circleBlocked(pos.x, pos.y, 14)) pos = w.randomPosition(...this.zoneRange(def));
-    } else {
-      pos = w.randomPosition(...this.zoneRange(def));
-    }
+    const y = w.yggdrasil;
+    const [minR, maxR] = this.monsterRing(def);
+    const cx = y ? y.x / TILE : YGGDRASIL_CX;
+    const cy = y ? y.y / TILE : YGGDRASIL_CY;
+    const pos = w.randomRingPosition(cx, cy, minR, maxR);
     const m = new this.game.AMonster(this.game, def, pos.x, pos.y);
     m.packId = pack || null;
     this.game.monsters.push(m);
+  }
+
+  // a few low-rank monsters roam the safe forest near the village (early combat)
+  _spawnStragglers() {
+    const w = this.game.world;
+    for (const s of STRAGGLERS) {
+      const def = MONSTERS.find((m) => m.id === s.id);
+      if (!def) continue;
+      for (let i = 0; i < s.count; i++) {
+        const pos = w.randomPosition(55, 90);
+        this.game.monsters.push(new this.game.AMonster(this.game, def, pos.x, pos.y));
+      }
+    }
   }
 
   // clear + respawn transient creatures (animals/monsters), keeping NPCs

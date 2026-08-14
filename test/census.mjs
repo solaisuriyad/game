@@ -6,7 +6,8 @@ globalThis.window={innerWidth:800,innerHeight:600,addEventListener(){},removeEve
 globalThis.document={body:{appendChild(){}},getElementById(id){return id==="game"?canvas:fakeEl("div");},createElement(tag){return fakeEl(tag);},addEventListener(){}};
 globalThis.localStorage={_m:{},setItem(k,v){this._m[k]=String(v);},getItem(k){return this._m[k]??null;}};
 globalThis.requestAnimationFrame=()=>{};
-import("../src/main.js").then(()=>{
+import("../src/main.js").then(async ()=>{
+  const { VILLAGE_CX, VILLAGE_CY, YGGDRASIL_CX, YGGDRASIL_CY } = await import("../src/world/WorldSystem.js");
   const g=window.game; g.npcCount=10;
   const t0=Date.now();
   g.newGame({name:"t",gender:"m",skinTone:"#e8c39a",hairColor:"#4a3624",clothColor:"#7a6a4a",hairStyle:0});
@@ -15,9 +16,9 @@ import("../src/main.js").then(()=>{
   const ranks={};
   for(const m of g.monsters) ranks[m.rank]=(ranks[m.rank]||0)+1;
   console.log("RANK CENSUS:", JSON.stringify(ranks));
-  console.log("\nHIGH-TIER MONSTERS (S / A+):");
-  for(const m of g.monsters){ if(m.rank==="S"||m.rank==="A+"){ console.log("  "+m.name+" ("+m.rank+") at dist "+Math.hypot(m.x/32-1500,m.y/32-1500).toFixed(0)); } }
-  console.log("spawn tile:", g.player.x/32, g.player.y/32, "(expect 400,400)");
+  console.log("\nHIGH-TIER MONSTERS (S / A+) — distance from the YGGDRASIL:");
+  for(const m of g.monsters){ if(m.rank==="S"||m.rank==="A+"){ console.log("  "+m.name+" ("+m.rank+") at dist "+Math.hypot(m.x/32-YGGDRASIL_CX,m.y/32-YGGDRASIL_CY).toFixed(0)+" tiles from tree"); } }
+  console.log("spawn tile:", g.player.x/32, g.player.y/32, "(expect "+VILLAGE_CX+","+VILLAGE_CY+")");
   console.log("buildings:", g.world.buildings.length, "| resources:", g.world.nodes.length);
   console.log("Yggdrasil at:", g.world.yggdrasil ? Math.round(g.world.yggdrasil.x/32)+","+Math.round(g.world.yggdrasil.y/32) : "missing");
   process.exit(0);

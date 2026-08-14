@@ -112,7 +112,7 @@ class Game {
     this.deathInfo = null; // active death screen ({ killer, goldLost, dropped, timer })
 
     // optional NPC scale override: ?npcs=1000 (Phase 9 — 1000-NPC optimization)
-    this.npcCount = 500; // a living village (500 NPCs)
+    this.npcCount = 250; // a living village (250 NPCs — reduced 50% for a curated town)
     try {
       const q = new URLSearchParams(window.location.search).get('npcs');
       if (q) this.npcCount = Math.max(1, Math.min(2000, parseInt(q, 10) || 65));

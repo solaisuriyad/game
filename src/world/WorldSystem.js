@@ -2,12 +2,17 @@ import { RNG } from '../core/RNG.js';
 import { BUILDINGS } from '../data/buildings.js';
 
 export const TILE = 32;
-export const WORLD_W = 3000; // tiles — a colossal explorable world (~14x the previous area)
-export const WORLD_H = 3000;
+export const WORLD_W = 4000; // tiles — a colossal explorable world
+export const WORLD_H = 4000;
 export const PX_W = WORLD_W * TILE;
 export const PX_H = WORLD_H * TILE;
-export const VILLAGE_CX = 1500; // tile center
-export const VILLAGE_CY = 1500;
+export const VILLAGE_CX = 2000; // tile center (the "town circle" — NPCs + player residence)
+export const VILLAGE_CY = 2000;
+// The Yggdrasil — the heart of the monster territory. Monsters radiate outward
+// from here by rank (A+ innermost → F outermost), forming the "wild circle"
+// that is ~10× the town circle. These are the TILE CENTER of the tree.
+export const YGGDRASIL_CX = 2700;
+export const YGGDRASIL_CY = 2000;
 
 // ground tile types
 export const T = {
@@ -15,12 +20,12 @@ export const T = {
 };
 
 export const ZONES = [
-  { name: 'Village', from: 0, to: 30, danger: 0, minRank: 0, color: '#5a8a4a' },
-  { name: 'Safe Forest', from: 30, to: 80, danger: 1, minRank: 0, color: '#4a7a3a' },
-  { name: 'Deep Forest', from: 80, to: 160, danger: 2, minRank: 1, color: '#3a6a30' },
-  { name: 'Dark Forest', from: 160, to: 260, danger: 3, minRank: 3, color: '#2a5a28' },
-  { name: 'Ancient Forest', from: 260, to: 400, danger: 4, minRank: 5, color: '#1f4a2a' },
-  { name: 'Forbidden Forest', from: 400, to: 9999, danger: 5, minRank: 8, color: '#1a3428' }
+  { name: 'Village', from: 0, to: 50, danger: 0, minRank: 0, color: '#5a8a4a' },
+  { name: 'Safe Forest', from: 50, to: 90, danger: 1, minRank: 0, color: '#4a7a3a' },
+  { name: 'Deep Forest', from: 90, to: 150, danger: 2, minRank: 1, color: '#3a6a30' },
+  { name: 'Dark Forest', from: 150, to: 330, danger: 3, minRank: 3, color: '#2a5a28' },
+  { name: 'Ancient Forest', from: 330, to: 520, danger: 4, minRank: 5, color: '#1f4a2a' },
+  { name: 'Forbidden Forest', from: 520, to: 9999, danger: 5, minRank: 8, color: '#1a3428' }
 ];
 
 export function zoneIndexAt(px, py) {
@@ -62,21 +67,22 @@ export class WorldSystem {
     this._placePaths();
     // 5. buildings
     this._placeBuildings();
-    // 6. forest trees + resource nodes
-    this._placeForest();
-    // 7. the Yggdrasil (colossal world tree powering the deep forest)
+    // 6. the Yggdrasil FIRST (so the forest doesn't grow inside its grove)
     this._placeYggdrasil();
+    // 7. forest trees + resource nodes
+    this._placeForest();
   }
 
   _placeYggdrasil() {
-    // deep in the Forbidden Forest (zone 5) where the high-level monsters live —
-    // a colossal world tree that is the forest's source of power
-    const tx = VILLAGE_CX + 520, ty = VILLAGE_CY;
-    const px = tx * TILE, py = ty * TILE;
-    const size = 16 * TILE; // 512px footprint — truly massive
-    const obj = { type: 'yggdrasil', x: px, y: py, w: size, h: size };
+    // The heart of the monster territory — a colossal world tree whose rings of
+    // monsters (A+ innermost → F outermost) radiate outward from here.
+    const cx = YGGDRASIL_CX * TILE, cy = YGGDRASIL_CY * TILE; // center (px)
+    const size = 64 * TILE; // 2048px footprint — a massive, legendary world tree
+    const obj = { type: 'yggdrasil', x: cx - size / 2, y: cy - size / 2, w: size, h: size };
     this._addStatic(obj);
-    this.yggdrasil = { x: px + size / 2, y: py + size / 2, r: size / 2 };
+    // r = the blessing radius, sized so the player can trigger it while standing
+    // AT the edge of the solid trunk (r = half the footprint).
+    this.yggdrasil = { x: cx, y: cy, r: size / 2, w: size, h: size };
   }
 
   _carveRiver() {
@@ -116,8 +122,8 @@ export class WorldSystem {
     for (let ty = VILLAGE_CY - 24; ty <= VILLAGE_CY + 26; ty++) mark(VILLAGE_CX, ty);
     // lower road
     for (let tx = VILLAGE_CX - 24; tx <= VILLAGE_CX + 26; tx++) mark(tx, VILLAGE_CY + 16);
-    // east roads to the forest
-    for (let tx = VILLAGE_CX + 26; tx <= VILLAGE_CX + 44; tx++) mark(tx, VILLAGE_CY);
+    // east road through the dense forest, toward the world tree (monster territory)
+    for (let tx = VILLAGE_CX + 26; tx <= VILLAGE_CX + 180; tx++) mark(tx, VILLAGE_CY);
     for (let ty = VILLAGE_CY; ty <= VILLAGE_CY + 16; ty++) mark(VILLAGE_CX + 16, ty);
     // west farm road
     for (let tx = VILLAGE_CX - 28; tx <= VILLAGE_CX - 24; tx++) mark(tx, VILLAGE_CY + 10);
@@ -140,31 +146,36 @@ export class WorldSystem {
 
   _placeForest() {
     const rng = this.rng;
+    const yR = 40; // keep a clear grove around the world tree's trunk
     for (let ty = 0; ty < WORLD_H; ty++) {
       for (let tx = 0; tx < WORLD_W; tx++) {
         if (this.tiles[this.idx(tx, ty)] !== T.GRASS) continue;
         const d = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
+        if (Math.hypot(tx - YGGDRASIL_CX, ty - YGGDRASIL_CY) < yR) continue; // tree grove
         if (d < 34) {
           // occasional village tree / flower (slightly bigger clearing for the village)
           if (rng.chance(0.02)) this._addTree(tx, ty);
           else if (rng.chance(0.03)) this.tiles[this.idx(tx, ty)] = T.FLOWER;
           continue;
         }
-        // dense forest in the explorable zones, sparse frontier beyond 800 tiles
-        const density = d < 800 ? Math.min(0.15, 0.03 + d * 0.00015) : 0.02;
+        let density;
+        if (d < 60) density = 0.05;             // safe forest — light trees
+        else if (d < 150) density = 0.22;       // DENSE boundary forest (the wild frontier)
+        else if (d < 800) density = Math.min(0.15, 0.04 + d * 0.00012);
+        else density = 0.025;                    // sparse outer wilderness
         if (rng.chance(density)) {
-          this._addTree(tx, ty, d > 200);
+          this._addTree(tx, ty, d > 150);
         } else if (rng.chance(0.02)) {
           this.tiles[this.idx(tx, ty)] = T.FLOWER;
         }
       }
     }
     // resource nodes (scattered across the whole massive world)
-    this._scatterNodes('herb', 160, 30, 460);
-    this._scatterNodes('mushroom', 110, 30, 460);
-    this._scatterNodes('berry', 100, 28, 400);
-    this._scatterNodes('ore', 120, 40, 480);
-    this._scatterNodes('flower', 90, 24, 400);
+    this._scatterNodes('herb', 220, 30, 1500);
+    this._scatterNodes('mushroom', 150, 30, 1500);
+    this._scatterNodes('berry', 130, 28, 1400);
+    this._scatterNodes('ore', 170, 40, 1600);
+    this._scatterNodes('flower', 120, 24, 1400);
   }
 
   _addTree(tx, ty, dark = false) {
@@ -180,10 +191,18 @@ export class WorldSystem {
     this._addStatic({ type: 'tree', x: px - half, y: py - half, w: size * TILE, h: size * TILE, dark, variant, size });
   }
   _addStatic(obj) {
-    const cx = Math.floor(obj.x / (this._cell * TILE)), cy = Math.floor(obj.y / (this._cell * TILE));
-    const key = cx + ',' + cy;
-    if (!this.staticGrid.has(key)) this.staticGrid.set(key, []);
-    this.staticGrid.get(key).push(obj);
+    // register in EVERY cell the object overlaps, so huge colliders (the world
+    // tree) are found for collision/render even from their far side
+    const cellPx = this._cell * TILE;
+    const cx0 = Math.floor(obj.x / cellPx), cy0 = Math.floor(obj.y / cellPx);
+    const cx1 = Math.floor((obj.x + obj.w - 1) / cellPx), cy1 = Math.floor((obj.y + obj.h - 1) / cellPx);
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const key = cx + ',' + cy;
+        if (!this.staticGrid.has(key)) this.staticGrid.set(key, []);
+        this.staticGrid.get(key).push(obj);
+      }
+    }
   }
 
   _scatterNodes(kind, count, minD, maxD) {
@@ -213,9 +232,14 @@ export class WorldSystem {
     const minCy = Math.floor((py - margin) / (this._cell * TILE));
     const maxCy = Math.floor((py + margin) / (this._cell * TILE));
     const out = [];
+    const seen = new Set(); // large objects span many cells — dedupe them
     for (let cx = minCx; cx <= maxCx; cx++) {
       for (let cy = minCy; cy <= maxCy; cy++) {
-        for (const c of this._staticInCell(cx, cy)) out.push(c);
+        for (const c of this._staticInCell(cx, cy)) {
+          if (seen.has(c)) continue;
+          seen.add(c);
+          out.push(c);
+        }
       }
     }
     return out;
@@ -283,6 +307,20 @@ export class WorldSystem {
       if (!this.circleBlocked(px, py, 14)) return { x: px, y: py };
     }
     return { x: VILLAGE_CX * TILE, y: VILLAGE_CY * TILE };
+  }
+
+  // find a random walkable position in a ring around an ARBITRARY center (used
+  // for monsters radiating outward from the Yggdrasil)
+  randomRingPosition(cx, cy, minD, maxD, tries = 60) {
+    for (let i = 0; i < tries; i++) {
+      const ang = this.rng.range(0, Math.PI * 2);
+      const d = this.rng.range(minD, maxD);
+      const px = (cx + Math.cos(ang) * d) * TILE;
+      const py = (cy + Math.sin(ang) * d) * TILE;
+      if (px < 0 || py < 0 || px >= PX_W || py >= PX_H) continue;
+      if (!this.circleBlocked(px, py, 14)) return { x: px, y: py };
+    }
+    return { x: cx * TILE, y: cy * TILE };
   }
 
   randomVillagePosition(tries = 60) {

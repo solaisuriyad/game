@@ -147,7 +147,18 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 
 ---
 
-## PART 5 — HOW TO PLAY (the full journey)
+## PART 5 — THE TWO-CIRCLE WORLD
+
+The world is laid out as **two circles**:
+
+- **The town circle** (small) — your village. The 250 villagers, the shops, and your residence all live here.
+- **The wild circle** (about 10× bigger) — centered on the **Yggdrasil**, the colossal world tree deep in the forest. All monsters live around it.
+
+Monsters radiate outward from the Yggdrasil **by rank**: the **A+ dragonoids** guard the trunk, **S-rank dragons** circle just outside, and each lower rank sits farther out — B, C, D, E — until **F-rank** (slimes & goblins) forms the outermost edge, nearest the town. A dense forest separates the town from the monster territory, with a few low-rank stragglers roaming the safe forest for your first fights.
+
+So the journey is: leave town → cross the dense forest → fight F-rank at the edge → push inward through E, D, C, B, S → and finally face the A+ dragonoids at the tree itself. *(Press M to see it all — the map marks the monster territory around the tree.)*
+
+## PART 6 — HOW TO PLAY (the full journey)
 
 ### 1. Your first quest
 - Press **J** to read it: *"Hunt 3 rabbits and bring their meat to the Guild."*
@@ -198,7 +209,7 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 
 ---
 
-## PART 6 — THE VILLAGE BUILDINGS (what each one does)
+## PART 7 — THE VILLAGE BUILDINGS (what each one does)
 
 | Building | What it does |
 |---|---|
@@ -228,7 +239,7 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 
 ---
 
-## PART 7 — MONSTER RANKS & DRAGONS
+## PART 8 — MONSTER RANKS & DRAGONS
 
 Monsters have a **rank** shown above their head: **F → E → D → C → B → A → S → A+**.
 
@@ -244,7 +255,7 @@ Every monster drops **meat** + a **rank Essence** + weapon-crafting materials (b
 - You *can* beat a monster without its counter-essence, but it takes more time and effort.
 - High-rank materials forge powerful weapons at the **Blacksmith**: Fang Blade → Dragon Sword → Draconic Sword → the legendary **Dragonoid Blade**.
 
-## PART 7 — SURVIVAL (don't die!)
+## PART 9 — SURVIVAL (don't die!)
 
 - **Health** — **slowly heals on its own** when you're calm and well-fed. Drops from monster hits, and very slowly from starvation/cold. Potions and sleeping restore it instantly.
 - **Hunger** — drains **very slowly** (it lasts a long time). Eat food (press **I**, click **Use**). It drains a bit faster while running, fighting, or working.
@@ -259,7 +270,7 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 8 — WEATHER & DAY/NIGHT
+## PART 10 — WEATHER & DAY/NIGHT
 
 - **Day** — safer, villagers are out, normal animals.
 - **Night** — shops close, dangerous monsters appear, rare creatures spawn, vision is limited.
@@ -268,7 +279,7 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 9 — TALKING TO VILLAGERS & GIFTS
+## PART 11 — TALKING TO VILLAGERS & GIFTS
 
 - Walk up to a villager and press **E**.
 - Options: **Chat** (they gossip about events), **Give gift** (they like certain items — hunters like meat, healers like herbs, children like apples/berries), **Goodbye**.
@@ -277,7 +288,7 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 10 — THE ENDGAME (the secret history)
+## PART 12 — THE ENDGAME (the secret history)
 
 - Press **L** to open the **Codex** — it tracks the forest's hidden story (12 entries).
 - Discover lore by: exploring new forest zones, finding **hidden ruins & a watchtower**, studying the **Shrine**, and **defeating bosses**.
@@ -285,7 +296,7 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 11 — PLAYING WITH FRIENDS (co-op, optional)
+## PART 13 — PLAYING WITH FRIENDS (co-op, optional)
 
 - From the title screen press **"Play Online (co-op)"**.
 - Friends on the same server do the same.
@@ -294,7 +305,7 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 12 — TROUBLESHOOTING
+## PART 14 — TROUBLESHOOTING
 
 | Problem | Fix |
 |---|---|

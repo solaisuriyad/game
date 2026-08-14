@@ -47,6 +47,7 @@ globalThis.requestAnimationFrame = () => {};
 globalThis.performance = performance;
 
 const { default: _ } = await import('../src/main.js');
+const { VILLAGE_CX, VILLAGE_CY } = await import('../src/world/WorldSystem.js');
 const game = window.game;
 if (!game) throw new Error('window.game not set');
 
@@ -118,9 +119,9 @@ console.log('summon spawned', game.monsters.length - before, 'minions');
 const dt2 = 1 / 60;
 let sawSocializing = false;
 for (let i = 0; i < 3600; i++) {
-  if (i === 1500) { game.player.x = (1500 + 110) * 32; game.player.y = 1500 * 32; }  // Deep Forest
-  if (i === 2100) { game.player.x = (1500 + 175) * 32; game.player.y = 1500 * 32; }  // Dark Forest
-  if (i === 2700) { game.player.x = (1500 + 340) * 32; game.player.y = 1500 * 32; }  // Forbidden Forest
+  if (i === 1500) { game.player.x = (VILLAGE_CX + 110) * 32; game.player.y = VILLAGE_CY * 32; }  // Deep Forest
+  if (i === 2100) { game.player.x = (VILLAGE_CX + 175) * 32; game.player.y = VILLAGE_CY * 32; }  // Dark Forest
+  if (i === 2700) { game.player.x = (VILLAGE_CX + 340) * 32; game.player.y = VILLAGE_CY * 32; }  // Ancient Forest
   game.update(dt2);
   if (i < 1500 && game.npcs.some((n) => n.chatting > 0)) sawSocializing = true;
 }
@@ -188,7 +189,7 @@ console.log('resources: 200% capacity + orbs + charms OK');
 //  "attacking" forever and blocked all stamina/MP/health regen)
 const p2 = game.player;
 // isolate the player from combat: move to the safe village + clear monsters
-p2.x = 1500 * 32; p2.y = 1500 * 32;
+p2.x = VILLAGE_CX * 32; p2.y = VILLAGE_CY * 32;
 game.monsters = [];
 game.combat._recentCombat = 0;
 // reset to a clean idle state so earlier test steps don't interfere
@@ -203,7 +204,7 @@ if (p2.stamina <= 30) throw new Error('stamina not recovering after attack');
 console.log('regression: attack-then-recover OK (stamina ' + p2.stamina.toFixed(0) + ', mp ' + p2.mp.toFixed(0) + ')');
 
 // ---- lore / forest history ----
-game.player.x = 1500 * 32 + 16; game.player.y = 1500 * 32 + 16; // back in village
+game.player.x = VILLAGE_CX * 32 + 16; game.player.y = VILLAGE_CY * 32 + 16; // back in village
 game.lore.discover('lore_shrine');
 console.log('lore after shrine:', game.lore.count(), 'of', game.lore.total());
 if (!game.lore.has('lore_shrine')) throw new Error('shrine lore not discovered');

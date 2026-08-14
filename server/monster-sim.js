@@ -7,9 +7,8 @@
 // Boss scaling (§61): bosses scale by party size — health and damage increase,
 // and ability cooldowns tighten (more mechanics pressure) as more players join.
 import { MONSTERS } from '../src/data/monsters.js';
-import { rankForLevel, essenceId } from '../src/data/ranks.js';
-
-const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 500], 5: [505, 1450] };
+import { rankForLevel, essenceId, rankRing } from '../src/data/ranks.js';
+import { YGGDRASIL_CX, YGGDRASIL_CY } from '../src/world/WorldSystem.js';
 
 // spawn plan: how many of each monster the shared world keeps alive
 const SPAWN_PLAN = [
@@ -51,14 +50,21 @@ export class MonsterSim {
     }
   }
 
-  zoneRange(def) {
-    const z = def.zones[Math.floor(Math.random() * def.zones.length)];
-    return ZONE_RINGS[z] || [30, 50];
+  // monsters live in rank rings radiating outward from the Yggdrasil
+  monsterRing(def) {
+    const rank = def.rank || rankForLevel(def.level);
+    return rankRing(rank);
   }
 
   spawn(def, x, y) {
     let pos;
-    if (x == null) { const [minD, maxD] = this.zoneRange(def); pos = this.world.randomPosition(minD, maxD); }
+    if (x == null) {
+      const y2 = this.world.yggdrasil;
+      const cx = y2 ? y2.x / 32 : YGGDRASIL_CX;
+      const cy = y2 ? y2.y / 32 : YGGDRASIL_CY;
+      const [minR, maxR] = this.monsterRing(def);
+      pos = this.world.randomRingPosition(cx, cy, minR, maxR);
+    }
     else pos = { x, y };
     const m = this._makeMonster(def, pos.x, pos.y);
     this.monsters.push(m);

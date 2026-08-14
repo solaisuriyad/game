@@ -6,7 +6,8 @@ globalThis.window={innerWidth:800,innerHeight:600,addEventListener(){},removeEve
 globalThis.document={body:{appendChild(){}},getElementById(id){return id==="game"?canvas:fakeEl("div");},createElement(tag){return fakeEl(tag);},addEventListener(){}};
 globalThis.localStorage={_m:{},setItem(k,v){this._m[k]=String(v);},getItem(k){return this._m[k]??null;}};
 globalThis.requestAnimationFrame=()=>{};
-import("../src/main.js").then(()=>{
+import("../src/main.js").then(async ()=>{
+  const { VILLAGE_CX, VILLAGE_CY } = await import("../src/world/WorldSystem.js");
   const g=window.game; g.npcCount=10;
   g.newGame({name:"t",gender:"m",skinTone:"#e8c39a",hairColor:"#4a3624",clothColor:"#7a6a4a",hairStyle:0});
   const p=g.player;
@@ -36,11 +37,11 @@ import("../src/main.js").then(()=>{
 
   // 3. Yggdrasil: massive + deep + blessing
   const y = g.world.yggdrasil;
-  console.log("yggdrasil at", Math.round(y.x/32), Math.round(y.y/32), "radius", y.r, "px");
-  if(!y.r || y.r < 200) throw new Error("yggdrasil not massive");
-  const distFromVillage = Math.hypot(y.x/32 - 1500, y.y/32 - 1500);
-  console.log("yggdrasil distance from village:", distFromVillage.toFixed(0), "tiles (expect deep forest)");
-  if(distFromVillage < 200) throw new Error("yggdrasil not deep enough");
+  console.log("yggdrasil at", Math.round(y.x/32), Math.round(y.y/32), "footprint", y.w, "px · blessing r", y.r);
+  if(!y.w || y.w < 1024) throw new Error("yggdrasil not massive (footprint too small)");
+  const distFromVillage = Math.hypot(y.x/32 - VILLAGE_CX, y.y/32 - VILLAGE_CY);
+  console.log("yggdrasil distance from village:", distFromVillage.toFixed(0), "tiles (expect deep in the wild)");
+  if(distFromVillage < 400) throw new Error("yggdrasil not deep enough");
   // near Yggdrasil detection + blessing
   p.x = y.x; p.y = y.y;
   console.log("nearYggdrasil:", g.nearYggdrasil(), "(expect true)");
