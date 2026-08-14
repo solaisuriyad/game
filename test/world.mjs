@@ -47,6 +47,14 @@ import("../src/main.js").then(async ()=>{
   console.log("low-rank monsters near the village:", nearVillage, "(expect >= 20)");
   if(nearVillage < 20) throw new Error("no low-rank stragglers near the village");
 
+  // 5. all buildings are INSIDE the village (near its center), not stranded in
+  //    the forest — this caught the regression where the village moved but the
+  //    buildings' hardcoded coordinates did not
+  const bdists = g.world.buildings.map((b)=>Math.hypot((b.x+b.w/2)/32 - VILLAGE_CX, (b.y+b.h/2)/32 - VILLAGE_CY));
+  const maxBD = Math.max(...bdists);
+  console.log("buildings:", g.world.buildings.length, "| max distance from village center:", maxBD.toFixed(0), "tiles (expect <= 40)");
+  if(maxBD > 40) throw new Error("buildings are outside the village (placement regression)");
+
   console.log("WORLD LAYOUT TESTS PASSED");
   process.exit(0);
 });
