@@ -311,9 +311,12 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 ## PART 13 — PLAYING WITH FRIENDS (co-op, optional)
 
 - From the title screen press **"Play Online (co-op)"**.
+- **Server address** — leave the box empty to join the machine serving this page, or type a friend's server (e.g. `myserver.com:3000` or a full `ws://…` address). Your last address is remembered.
 - Friends on the same server do the same.
 - You'll see each other in the same world, fight together, share quests, and face tougher bosses (bosses scale with party size).
-- *(If it can't connect on your setup, that's a hosting thing — single-player always works.)*
+- **Chat** — press **Enter** to open the chat box, type a message, **Enter** to send, **Esc** to close. You'll see who joins and leaves.
+
+> **Hosting a shared world:** anyone can run `node server.js` and open port 3000; friends connect to that address. Easiest online option: deploy to a free Node host (Render / Railway / Fly.io). Single-player always works with no setup.
 
 ---
 

@@ -8,6 +8,8 @@ export const Input = {
   attach(canvas) {
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
+      // never register game keys while typing in a text field (chat, name input…)
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       const k = e.key.toLowerCase();
       KEYS.add(k);
       PRESSED.add(k);

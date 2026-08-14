@@ -130,10 +130,12 @@ export class HUD {
     if (g.multiplayer.connected) {
       ctx.fillStyle = '#7ae07a';
       ctx.fillText(`Online · ${g.remotePlayers.length + 1} hunters`, W - 12, 138);
+      ctx.fillStyle = '#9fe08a';
+      ctx.fillText('Enter — chat', W - 12, 154);
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v5.6 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v5.7 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----

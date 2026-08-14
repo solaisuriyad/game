@@ -28,6 +28,7 @@ export class GameServer {
     this.worldEvents.emit = (type, data) => this._routeEvent(type, data);
     this.nextId = 1;
     this.lastTickMs = 0;
+    this.chat = [];       // recent chat history (name, text, t) — sent to new joiners
     this._timer = setInterval(() => this.tick(), 1000 / TICK_RATE);
     this._timer.unref?.();
   }
@@ -44,9 +45,26 @@ export class GameServer {
       if (p) {
         this.players.delete(ws.playerId);
         this._broadcast({ type: 'leave', id: p.id });
+        this._systemChat(`${p.name} left the world.`);
+        this._broadcastOnline();
         this.sim.rescale(this.players.size);
       }
     };
+  }
+
+  _onlineList() {
+    return [...this.players.values()].map((p) => ({ id: p.id, name: p.name }));
+  }
+  _broadcastOnline(exceptId = null) {
+    this._broadcast({ type: 'online', players: this._onlineList() }, exceptId);
+  }
+  _systemChat(text, exceptId = null) {
+    this._pushChat({ name: '· system', text, system: true }, exceptId);
+  }
+  _pushChat(m, exceptId = null) {
+    this.chat.push({ name: m.name, text: m.text, system: !!m.system, t: Date.now() });
+    if (this.chat.length > 60) this.chat.shift();
+    this._broadcast({ type: 'chat', name: m.name, text: m.text, system: !!m.system }, exceptId);
   }
 
   _onMessage(ws, msg) {
@@ -66,6 +84,12 @@ export class GameServer {
         const others = [...this.players.values()].filter((p) => p.id !== id).map((p) => this._serialize(p));
         ws.send(JSON.stringify({ type: 'welcome', id, spawn: { x: spawn.x, y: spawn.y }, players: others }));
         ws.send(JSON.stringify({ type: 'sharedQuests', quests: this.questState.serialize() }));
+        // send recent chat history + the full online list to the new joiner
+        ws.send(JSON.stringify({ type: 'chatHistory', chat: this.chat }));
+        ws.send(JSON.stringify({ type: 'online', players: this._onlineList() }));
+        // tell the OTHERS that someone joined (not the joiner themselves)
+        this._systemChat(`${player.name} joined the world.`, id);
+        this._broadcastOnline(id);
         this._broadcast({ type: 'join', player: this._serialize(player) }, id);
         break;
       }
@@ -102,6 +126,14 @@ export class GameServer {
         const p = this.players.get(ws.playerId);
         if (!p) break;
         this.wildlife.gatherResource(p.id, Number(msg.resourceId), this.players);
+        break;
+      }
+      case 'chat': {
+        const p = this.players.get(ws.playerId);
+        if (!p) break;
+        const text = String(msg.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+        if (!text) break;
+        this._pushChat({ name: p.name, text });
         break;
       }
     }

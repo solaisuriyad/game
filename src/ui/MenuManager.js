@@ -713,7 +713,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 5.6 — fully furnished rooms · black temple · sleep in bed</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.7 — online lobby · server address · text chat</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
@@ -724,6 +724,10 @@ export class MenuManager {
         <div class="opt-row"><span class="muted">Hair color:</span><span id="haircolors"></span></div>
         <div class="opt-row"><span class="muted">Clothing:</span><span id="clothcolors"></span></div>
         <button class="btn gold big" data-act="newgame" style="margin-top:12px">Begin Adventure</button>
+        <div class="opt-row" style="margin-top:10px">
+          <span class="muted">Server:</span>
+          <input id="server-input" type="text" maxlength="120" placeholder="leave empty for this machine (e.g. myserver.com:3000)" />
+        </div>
         <button class="btn green" data-act="online" style="margin-top:8px">Play Online (co-op)</button>
         <button class="btn" data-act="continue" style="margin-top:8px">Continue</button>
       </div>
@@ -747,6 +751,11 @@ export class MenuManager {
     renderSwatches('skintones', SKIN_TONES, 'skin');
     renderSwatches('haircolors', HAIR_COLORS, 'hair');
     renderSwatches('clothcolors', CLOTH_COLORS, 'cloth');
+    // restore the last-used server address
+    try {
+      const saved = localStorage.getItem('verdant-hollow:server');
+      if (saved) { const el = document.getElementById('server-input'); if (el) el.value = saved; }
+    } catch (e) {}
     this._highlightGender();
   }
 
@@ -782,16 +791,29 @@ export class MenuManager {
     const err = this._validateCustomization();
     if (err) { this._showFieldError(err); return; }
     const c = this._cust;
+    const url = this._serverUrl();
+    try { localStorage.setItem('verdant-hollow:server', document.getElementById('server-input') ? document.getElementById('server-input').value.trim() : ''); } catch (e) {}
     this.game.newGame({
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
       hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
     });
-    const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
     this.game.toast('Connecting to the shared world...');
     this.game.multiplayer.connect(url, c.name).then((r) => {
       if (!r.ok) this.game.toast('Connection failed: ' + (r.message || 'unreachable'));
+      else this.game.toast('Connected! Press Enter to chat with other hunters.');
     });
     this.close();
+  }
+
+  // build the WebSocket URL from the server box (empty = this machine)
+  _serverUrl() {
+    let raw = '';
+    try { raw = document.getElementById('server-input') ? document.getElementById('server-input').value.trim() : ''; } catch (e) {}
+    if (!raw) return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    raw = raw.replace(/\/+$/, '');
+    if (/^wss?:\/\//.test(raw)) return raw;                       // full ws url given
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    return proto + raw + '/ws';
   }
 
   _disconnect() {

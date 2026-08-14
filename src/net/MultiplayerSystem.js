@@ -21,6 +21,8 @@ export class MultiplayerSystem {
     this._resources = new Map(); // remote resource id -> {id,kind,x,y,depleted}
     this._inputTimer = 0;
     this.sharedQuests = [];      // server-authoritative co-op quests
+    this.chatLog = [];           // [{ name, text, system }] — visible chat feed
+    this.online = [];            // [{ id, name }] — who's in the shared world
   }
 
   async connect(url, name) {
@@ -58,6 +60,15 @@ export class MultiplayerSystem {
   sendGather(resourceId) {
     if (!this.connected) return;
     this.client.send({ type: 'gather', resourceId });
+  }
+  sendChat(text) {
+    if (!this.connected) return;
+    this.client.send({ type: 'chat', text });
+  }
+  // append a chat message to the visible feed (capped length)
+  _pushChat(m) {
+    this.chatLog.push({ name: m.name, text: m.text, system: !!m.system });
+    if (this.chatLog.length > 100) this.chatLog.shift();
   }
 
   _onMessage(msg) {
@@ -161,6 +172,17 @@ export class MultiplayerSystem {
         // feed the village so NPCs gossip about the same shared event
         g.events.recent.unshift({ type: msg.event.type, day: g.time.day });
         break;
+      case 'chat':
+        this._pushChat({ name: msg.name, text: msg.text, system: msg.system });
+        if (g.chat) g.chat.onMessage(msg);
+        break;
+      case 'chatHistory':
+        for (const m of (msg.chat || [])) this._pushChat(m);
+        break;
+      case 'online':
+        this.online = msg.players || [];
+        if (g.chat) g.chat.onOnline(this.online);
+        break;
     }
   }
 
@@ -219,6 +241,7 @@ export class MultiplayerSystem {
   _onClose() {
     const g = this.game;
     this.connected = false;
+    this.online = [];
     this._targets.clear();
     this._monsters.clear();
     this._animals.clear();

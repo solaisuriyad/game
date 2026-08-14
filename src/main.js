@@ -43,6 +43,7 @@ import { RemotePlayer } from './entities/RemotePlayer.js';
 import { HUD } from './ui/HUD.js';
 import { MenuManager } from './ui/MenuManager.js';
 import { BuildingInterior } from './ui/BuildingInterior.js';
+import { ChatUI } from './ui/ChatUI.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
 import { RANKS } from './data/quests.js';
@@ -107,6 +108,7 @@ class Game {
     this.hud = new HUD(this);
     this.ui = new MenuManager(this);
     this.buildingInterior = new BuildingInterior(this);
+    this.chat = new ChatUI(this);
 
     this.player = null;
     this.state = 'title';
@@ -257,6 +259,11 @@ class Game {
     const input = this.input;
     if (input.pressed('escape')) {
       if (this.ui.open) this.ui.close(); else this.ui._renderMainMenu();
+      return;
+    }
+    // Enter opens the chat box (only when free, and online)
+    if (input.pressed('enter') && !this.ui.open && !this.buildingInterior.active && this.multiplayer.connected) {
+      this.chat.open();
       return;
     }
     const menus = { i: 'inventory', c: 'character', k: 'skills', j: 'quests', m: 'map', b: 'crafting', f: 'relationships', l: 'lore', h: 'help' };
