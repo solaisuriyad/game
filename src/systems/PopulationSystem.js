@@ -190,16 +190,16 @@ export class PopulationSystem {
       { def: 'rabbit', count: 14 }, { def: 'deer', count: 10 }, { def: 'fox', count: 6 },
       { def: 'boar', count: 8 }, { def: 'goat', count: 6 }, { def: 'bear', count: 4 },
       { def: 'bird', count: 12 },
-      { def: 'slime', count: 40 }, { def: 'goblin', count: 40 }, { def: 'wolf', count: 50 },
-      { def: 'spider', count: 35 }, { def: 'treant', count: 25 }, { def: 'alpha_wolf', count: 3 },
-      { def: 'skeleton', count: 35 }, { def: 'swamp_beast', count: 25 },
-      { def: 'demon_beast', count: 30 }, { def: 'ancient_beast', count: 25 },
-      { def: 'dire_wolf', count: 35 }, { def: 'goblin_shaman', count: 30 }, { def: 'goblin_brute', count: 30 },
-      { def: 'thorn_beast', count: 30 }, { def: 'shadow_stalker', count: 30 }, { def: 'cave_troll', count: 22 },
-      { def: 'venom_wyrm', count: 30 }, { def: 'hell_hound', count: 30 }, { def: 'yggdrasil_spriggan', count: 22 },
-      { def: 'ancient_bear', count: 10 }, { def: 'forest_guardian', count: 8 }, { def: 'ancient_dragon', count: 10 },
-      { def: 'fire_dragon', count: 40 }, { def: 'ice_dragon', count: 40 }, { def: 'earth_dragon', count: 36 },
-      { def: 'dragonoid_fire', count: 12 }, { def: 'dragonoid_ice', count: 12 }, { def: 'dragonoid_earth', count: 12 }
+      { def: 'slime', count: 60 }, { def: 'goblin', count: 60 }, { def: 'wolf', count: 80 },
+      { def: 'spider', count: 60 }, { def: 'treant', count: 40 }, { def: 'alpha_wolf', count: 5 },
+      { def: 'skeleton', count: 60 }, { def: 'swamp_beast', count: 40 },
+      { def: 'demon_beast', count: 50 }, { def: 'ancient_beast', count: 40 },
+      { def: 'dire_wolf', count: 60 }, { def: 'goblin_shaman', count: 50 }, { def: 'goblin_brute', count: 50 },
+      { def: 'thorn_beast', count: 50 }, { def: 'shadow_stalker', count: 50 }, { def: 'cave_troll', count: 40 },
+      { def: 'venom_wyrm', count: 50 }, { def: 'hell_hound', count: 50 }, { def: 'yggdrasil_spriggan', count: 40 },
+      { def: 'ancient_bear', count: 15 }, { def: 'forest_guardian', count: 12 }, { def: 'ancient_dragon', count: 20 },
+      { def: 'fire_dragon', count: 100 }, { def: 'ice_dragon', count: 100 }, { def: 'earth_dragon', count: 100 },
+      { def: 'dragonoid_fire', count: 30 }, { def: 'dragonoid_ice', count: 30 }, { def: 'dragonoid_earth', count: 30 }
     ];
     for (const s of spawns) {
       const animal = ANIMALS.find((a) => a.id === s.def);

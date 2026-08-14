@@ -101,6 +101,9 @@ export class HUD {
     // ---- monster status panel (nearest monster currently engaged with you) ----
     this._drawMonsterStatus(ctx, W, H);
 
+    // ---- monster finder (compass arrow to the nearest monster) ----
+    this._drawMonsterFinder(ctx, W, H);
+
     // ---- loot feed (recent drops) ----
     this._drawLootFeed(ctx, W, H);
 
@@ -127,7 +130,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v4.5 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v4.6 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -291,6 +294,43 @@ export class HUD {
       line = line ? line + ' · ' + n : n;
     }
     if (line) ctx.fillText(line, x + 10, sy);
+    ctx.textAlign = 'left';
+  }
+
+  // direction + distance to the nearest monster (so players can actually find them)
+  _drawMonsterFinder(ctx, W, H) {
+    const g = this.game;
+    const p = g.player;
+    const list = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
+    let best = null, bd = Infinity;
+    for (const m of list) {
+      if (m.dead) continue;
+      const d = Math.hypot(m.x - p.x, m.y - p.y);
+      if (d < bd) { bd = d; best = m; }
+    }
+    if (!best) return;
+    const distTiles = Math.round(bd / 32);
+    // arrow pointing toward the monster, placed above the player
+    const px = W / 2, py = H / 2;
+    const ang = Math.atan2(best.y - p.y, best.x - p.x);
+    const r = 46;
+    const ax = px + Math.cos(ang) * r;
+    const ay = py + Math.sin(ang) * r;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(ang);
+    ctx.fillStyle = '#ff6a5a';
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // name + distance
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    const label = `${best.name} · ${distTiles}t`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillRect(px - tw / 2 - 6, py - 20, tw + 12, 15);
+    ctx.fillStyle = '#ffb0a0';
+    ctx.fillText(label, px, py - 8);
     ctx.textAlign = 'left';
   }
 

@@ -13,16 +13,16 @@ const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 500], 5:
 
 // spawn plan: how many of each monster the shared world keeps alive
 const SPAWN_PLAN = [
-  { id: 'slime', count: 25 }, { id: 'goblin', count: 25 }, { id: 'wolf', count: 30 },
-  { id: 'spider', count: 20 }, { id: 'treant', count: 14 }, { id: 'skeleton', count: 20 },
-  { id: 'swamp_beast', count: 14 }, { id: 'demon_beast', count: 18 }, { id: 'ancient_beast', count: 14 },
-  { id: 'dire_wolf', count: 20 }, { id: 'goblin_shaman', count: 16 }, { id: 'goblin_brute', count: 16 },
-  { id: 'thorn_beast', count: 16 }, { id: 'shadow_stalker', count: 16 }, { id: 'cave_troll', count: 12 },
-  { id: 'venom_wyrm', count: 16 }, { id: 'hell_hound', count: 16 }, { id: 'yggdrasil_spriggan', count: 12 },
-  { id: 'alpha_wolf', count: 2 }, { id: 'ancient_bear', count: 5 },
-  { id: 'forest_guardian', count: 4 }, { id: 'ancient_dragon', count: 5 },
-  { id: 'fire_dragon', count: 22 }, { id: 'ice_dragon', count: 22 }, { id: 'earth_dragon', count: 20 },
-  { id: 'dragonoid_fire', count: 7 }, { id: 'dragonoid_ice', count: 7 }, { id: 'dragonoid_earth', count: 7 }
+  { id: 'slime', count: 40 }, { id: 'goblin', count: 40 }, { id: 'wolf', count: 55 },
+  { id: 'spider', count: 40 }, { id: 'treant', count: 28 }, { id: 'skeleton', count: 40 },
+  { id: 'swamp_beast', count: 28 }, { id: 'demon_beast', count: 35 }, { id: 'ancient_beast', count: 28 },
+  { id: 'dire_wolf', count: 40 }, { id: 'goblin_shaman', count: 34 }, { id: 'goblin_brute', count: 34 },
+  { id: 'thorn_beast', count: 34 }, { id: 'shadow_stalker', count: 34 }, { id: 'cave_troll', count: 26 },
+  { id: 'venom_wyrm', count: 34 }, { id: 'hell_hound', count: 34 }, { id: 'yggdrasil_spriggan', count: 26 },
+  { id: 'alpha_wolf', count: 3 }, { id: 'ancient_bear', count: 10 },
+  { id: 'forest_guardian', count: 8 }, { id: 'ancient_dragon', count: 12 },
+  { id: 'fire_dragon', count: 60 }, { id: 'ice_dragon', count: 60 }, { id: 'earth_dragon', count: 60 },
+  { id: 'dragonoid_fire', count: 18 }, { id: 'dragonoid_ice', count: 18 }, { id: 'dragonoid_earth', count: 18 }
 ];
 
 const SELF_ABILITIES = new Set(['regenerate', 'rage', 'howl', 'summon', 'roar']);
