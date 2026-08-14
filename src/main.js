@@ -44,6 +44,7 @@ import { HUD } from './ui/HUD.js';
 import { MenuManager } from './ui/MenuManager.js';
 import { BuildingInterior } from './ui/BuildingInterior.js';
 import { ChatUI } from './ui/ChatUI.js';
+import { World3DRenderer } from './world/World3DRenderer.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
 import { RANKS } from './data/quests.js';
@@ -109,6 +110,15 @@ class Game {
     this.ui = new MenuManager(this);
     this.buildingInterior = new BuildingInterior(this);
     this.chat = new ChatUI(this);
+
+    // experimental 3D view (opt-in via ?3d=1). The normal 2D renderer stays the
+    // default; 3D reuses the same world/entities and is gated so it can't break
+    // the base game.
+    this.mode3d = false;
+    try { this.mode3d = new URLSearchParams(window.location.search).get('3d') === '1'; } catch (e) {}
+    if (this.mode3d) {
+      try { this.renderer3d = new World3DRenderer(this); } catch (e) { this.mode3d = false; }
+    }
 
     this.player = null;
     this.state = 'title';
@@ -422,6 +432,12 @@ class Game {
     }
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // experimental 3D mode: render the world in Three.js instead of 2D canvas.
+    // Game logic (update) is unchanged; only the drawing swaps.
+    if (this.mode3d && this.renderer3d && this.state === 'playing' && this.player && !this.buildingInterior.active) {
+      try { this.renderer3d.render(); } catch (e) {}
+      return;
+    }
     if (this.buildingInterior.active) {
       this.buildingInterior.render(ctx);
       return;

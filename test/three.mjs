@@ -1,0 +1,49 @@
+// Headless test for the 3D renderer: builds the THREE scene graph from the real
+// game state (no WebGL needed — we assert on scene contents, not pixels).
+const gradient={addColorStop(){}};
+function fakeCtx(){return new Proxy({},{get(t,k){if(k==="createImageData")return(w,h)=>({data:new Uint8ClampedArray((w||1)*(h||1)*4),width:w||1,height:h||1});if(k==="createRadialGradient"||k==="createLinearGradient")return()=>gradient;if(k==="measureText")return()=>({width:10});return()=>{};},set(t,k,v){t[k]=v;return true;}});}
+function fakeEl(tag){const el={tagName:(tag||"div").toUpperCase(),children:[],style:{},_html:"",value:"",width:0,height:0,className:"",dataset:{},classList:{toggle(){},add(){},remove(){}},appendChild(c){el.children.push(c);return c;},addEventListener(){},removeEventListener(){},querySelectorAll(){return[];},querySelector(){return null;},getContext(){return fakeCtx();},getBoundingClientRect(){return{left:0,top:0,width:800,height:600};},setAttribute(){}};Object.defineProperty(el,"innerHTML",{get(){return el._html;},set(v){el._html=v;}});return el;}
+const canvas=fakeEl("canvas");canvas.width=800;canvas.height=600;
+globalThis.window={innerWidth:800,innerHeight:600,addEventListener(){},removeEventListener(){},location:{search:""}};
+globalThis.document={body:{appendChild(){}},getElementById(id){return id==="game"?canvas:fakeEl("div");},createElement(tag){return fakeEl(tag);},addEventListener(){}};
+globalThis.localStorage={_m:{},setItem(k,v){this._m[k]=String(v);},getItem(k){return this._m[k]??null;}};
+globalThis.requestAnimationFrame=()=>{};
+
+const { World3DRenderer } = await import('../src/world/World3DRenderer.js');
+const { default: _ } = await import('../src/main.js');
+const game = window.game;
+game.npcCount = 30;
+game.newGame({ name: 'T', gender: 'm', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a', hairStyle: 0 });
+
+const r3 = new World3DRenderer(game);
+r3.sync();
+
+// terrain group exists: ground + river + pond + 2 instanced tree meshes + buildings
+const terrainCount = r3._terrain.children.length;
+console.log('terrain children (ground + water + instanced trees + buildings):', terrainCount);
+if (terrainCount < 40) throw new Error('terrain looks too empty: ' + terrainCount);
+// the instanced tree meshes hold hundreds of thousands of trees in 2 draw calls
+const trees = r3._terrain.children.filter((c) => c.isInstancedMesh);
+const treeCount = trees.reduce((s, m) => s + m.count, 0);
+console.log('trees via instancing (2 meshes):', treeCount);
+if (treeCount < 100000) throw new Error('expected many instanced trees, got ' + treeCount);
+
+// entity meshes: player + npcs + (some) monsters + animals near spawn
+const ents = r3.entityRoot.children.length;
+console.log('entity meshes near player:', ents);
+if (ents < 10) throw new Error('expected NPCs + monsters + player in 3D scene, got ' + ents);
+
+// camera should follow the player (finite, near player)
+const c = r3.camera.position;
+console.log('camera pos:', c.x.toFixed(0), c.y.toFixed(0), c.z.toFixed(0));
+if (!Number.isFinite(c.x) || !Number.isFinite(c.y) || !Number.isFinite(c.z)) throw new Error('camera has NaN position');
+
+// moving the player far away should rebuild the nearby entity set
+game.player.x = (2000 + 600) * 32; game.player.y = 2000 * 32;
+r3.sync();
+const ents2 = r3.entityRoot.children.length;
+console.log('entity meshes after moving far:', ents2, '(expect fewer, since far from town)');
+if (ents2 > ents) throw new Error('expected fewer nearby entities after moving away');
+
+console.log('3D RENDERER TESTS PASSED');
+process.exit(0);

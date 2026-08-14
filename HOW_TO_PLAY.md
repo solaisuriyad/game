@@ -332,4 +332,16 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
+---
+
+## EXPERIMENTAL 3D VIEW
+
+The game is being upgraded to **full 3D** step by step. To preview the current 3D world, open the game with **`?3d=1`** in the address bar, e.g.:
+
+```
+http://localhost:3000/?3d=1
+```
+
+This shows the same world and characters in 3D (low-poly, built in code) while the normal 2D game stays the default. It's a work in progress — movement, menus and HUD are still 2D.
+
 **Good luck, hunter — the forest is waiting!** 🌲🏹
