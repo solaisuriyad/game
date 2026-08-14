@@ -189,20 +189,35 @@ export class Player extends Entity {
     const bob = this.attackAnim > 0 ? Math.sin(this.attackAnim * 40) * 1.5 : 0;
     ctx.save();
     ctx.translate(x, y);
-    // flying: draw a ground shadow and lift the body up
-    const lift = this.flying ? -this.altitude * 0.5 : 0;
     if (this.flying) {
-      ctx.fillStyle = 'rgba(0,0,0,0.30)';
-      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.7, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      // ---- clear, obvious flight: big lift + separated ground shadow + glow ----
+      const lift = -this.altitude * 3.0; // 50 feet -> ~150px up (clearly visible)
+      // ground shadow (stays low and small = height cue)
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * (0.7 - this.altitude * 0.008), s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      // lift the body up
       ctx.translate(0, lift);
-      // wing aura
-      ctx.fillStyle = 'rgba(200,230,255,0.25)';
-      ctx.beginPath(); ctx.ellipse(-s * 1.1, -s * 0.2, s * 0.5, s * 0.25, -0.4, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(s * 1.1, -s * 0.2, s * 0.5, s * 0.25, 0.4, 0, Math.PI * 2); ctx.fill();
+      // floating bob so it never looks static
+      const hbob = Math.sin(game.time.timeOfDay * 400 + this.x * 0.1) * 4;
+      ctx.translate(0, hbob);
+      // glow aura
+      const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 2.2);
+      glow.addColorStop(0, 'rgba(255,255,255,0.35)');
+      glow.addColorStop(1, 'rgba(200,230,255,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
+      // wing aura (flapping)
+      const flap = Math.sin(game.time.timeOfDay * 500) * 0.4;
+      ctx.fillStyle = 'rgba(200,230,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(-s * 1.2, -s * 0.2, s * 0.55, s * 0.3, -0.5 - flap, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 1.2, -s * 0.2, s * 0.55, s * 0.3, 0.5 + flap, 0, Math.PI * 2); ctx.fill();
     }
     if (this.crouching) ctx.scale(1, 0.8);
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+    // body shadow (only when NOT flying; when flying the ground shadow above is used)
+    if (!this.flying) {
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+    }
 
     if (this.dodgeTimer > 0) ctx.globalAlpha = 0.6;
 
