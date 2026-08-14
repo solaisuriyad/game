@@ -100,7 +100,7 @@ export const MONSTERS = [
     ]
   },
   {
-    id: 'demon_beast', name: 'Demon Beast', family: 'beast', zones: [4], level: 12, hp: 180, damage: 28, defense: 3,
+    id: 'demon_beast', name: 'Demon Beast', family: 'beast', zones: [3], level: 12, hp: 180, damage: 28, defense: 3,
     speed: 120, size: 24, xp: 220, color: '#7a2a2a',
     aiProfile: { aggression: 0.95, pack: false, nocturnal: true, territorial: true, ambush: false, adaptive: true, courage: 0.9 },
     abilities: [
@@ -160,7 +160,7 @@ export const MONSTERS = [
     ]
   },
   {
-    id: 'goblin_brute', name: 'Goblin Brute', family: 'goblin', zones: [2], level: 9, hp: 180, damage: 26, defense: 3,
+    id: 'goblin_brute', name: 'Goblin Brute', family: 'goblin', zones: [3], level: 9, hp: 180, damage: 26, defense: 3,
     speed: 60, size: 21, xp: 150, color: '#5a7a3a',
     aiProfile: { aggression: 0.95, pack: true, nocturnal: false, territorial: false, ambush: false, adaptive: false, courage: 0.85 },
     abilities: [
@@ -444,7 +444,7 @@ export const MONSTERS = [
     ]
   },
   {
-    id: 'ancient_dragon', name: 'Ancient Dragon', family: 'boss', zones: [5], level: 24, hp: 3000, damage: 40, defense: 8,
+    id: 'ancient_dragon', name: 'Ancient Dragon', family: 'boss', zones: [5], level: 24, hp: 3000, damage: 40, defense: 8, rank: 'S',
     speed: 120, size: 40, xp: 4000, color: '#3a3a5a', boss: true,
     aiProfile: { aggression: 1.0, pack: false, nocturnal: false, territorial: true, ambush: false, adaptive: true, courage: 1.0 },
     abilities: [

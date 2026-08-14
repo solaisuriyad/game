@@ -37,27 +37,39 @@ export class GatheringSystem {
 
   chopTree(tree) {
     const g = this.game;
+    // big trees (size > 1) need 4-5 chops; small trees fall in one chop
+    const required = tree.size > 1 ? 4 + Math.floor(Math.random() * 2) : 1;
+    tree.chopHits = (tree.chopHits || 0) + 1;
+    if (tree.chopHits < required) {
+      g.player.working = 1;
+      g.audio.sfx('gather');
+      g.addFloatText(tree.x + tree.w / 2, tree.y - 12, `Chop ${tree.chopHits}/${required}`, '#d8b06a');
+      return { ok: true, message: `Chopping the tree... (${tree.chopHits}/${required})` };
+    }
+
     const yieldBonus = g.skills.getEffect('gatherYield') || 0;
     let itemId = 'wood';
     if (tree.dark && Math.random() < 0.3) itemId = 'rare_wood';
     let qty = 1 + (Math.random() < 0.4 ? 1 : 0);
+    if (tree.size > 1) qty += 2; // big trees yield more wood
     if (Math.random() < yieldBonus) qty++;
     g.player.working = 3; // chopping wood is work
     const res = g.inventory.addItem(itemId, qty);
-    if (!res.ok) return res;
+    if (!res.ok) { tree.chopHits = required; return res; }
     g.quests.onGather(itemId, qty);
     g.player.gatheredCount++;
     tree.depleted = true;
+    tree.chopHits = 0;
     tree.respawn = 300; // chopped tree stays passable for 5 minutes, then regrows
     if (!g.world.depletedTrees.includes(tree)) g.world.depletedTrees.push(tree);
     // chopping trees sometimes reveals a restorative orb
     if (Math.random() < 0.15) {
       const orb = Math.random() < 0.5 ? 'stamina_orb' : (Math.random() < 0.5 ? 'health_orb' : 'mana_orb');
-      g.drops.push(new g.DDrop(tree.x + 13, tree.y + 13, orb, 1));
-      g.addFloatText(tree.x + 13, tree.y - 24, '✨ orb!', '#c8a0ff');
+      g.drops.push(new g.DDrop(tree.x + tree.w / 2, tree.y + tree.h / 2, orb, 1));
+      g.addFloatText(tree.x + tree.w / 2, tree.y - 24, '✨ orb!', '#c8a0ff');
     }
     g.audio.sfx('gather');
-    g.addFloatText(tree.x + 13, tree.y - 12, '+' + qty + ' ' + this.itemName(itemId), '#d8b06a');
+    g.addFloatText(tree.x + tree.w / 2, tree.y - 12, '+' + qty + ' ' + this.itemName(itemId), '#d8b06a');
     return { ok: true, message: `Chopped ${qty}x ${this.itemName(itemId)}.` };
   }
 

@@ -27,7 +27,8 @@ export class MenuManager {
       const my = e.clientY - rect.top;
       const zoom = e.deltaY < 0 ? 1.2 : 1 / 1.2;
       const oldScale = this._mapScale;
-      const newScale = Math.max(3, Math.min(16, oldScale * zoom));
+      // min 0.24 lets you zoom all the way out to see the ENTIRE map at once
+      const newScale = Math.max(0.24, Math.min(16, oldScale * zoom));
       if (newScale === oldScale) return;
       // zoom toward the cursor so it feels anchored
       const wx = (mx + this._mapPan.x) / oldScale;
@@ -684,7 +685,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 4.3 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
+      <div class="muted" style="margin-bottom:10px">Version 4.4 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
