@@ -253,7 +253,9 @@ Every monster drops **meat** + a **rank Essence** + weapon-crafting materials (b
 - **Weight** — your backpack has a limit (20 kg → up to 100 kg with upgrades). If you're over, you can't pick up more. Drop things (**I** → **Drop**) or sell them.
 
 ### Death
-If you reach 0 health: you **wake up back in the village**. You lose some gold and some carried materials (and a little equipment durability), but you **keep your level, skills, guild rank, and progress**. It's a setback, not the end.
+If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what killed you** and what you lost. After a moment you **wake up back in the village**. You lose some gold and some carried materials (and a little equipment durability), but you **keep your level, skills, guild rank, and progress**. It's a setback, not the end.
+
+> **Note:** the screen shake right before the death screen is just the hit + death effect — you're being defeated by a monster or aggressive animal, not teleported by a bug.
 
 ---
 

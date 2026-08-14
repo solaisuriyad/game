@@ -130,7 +130,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v4.6 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v4.7 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -233,6 +233,47 @@ export class HUD {
       ty += 26;
     }
 
+    ctx.restore();
+  }
+
+  // Clear, unmissable death screen — explains what killed you and that you're
+  // respawning, so death never looks like a random teleport back to town.
+  renderDeathScreen(ctx) {
+    const g = this.game;
+    const info = g.deathInfo;
+    if (!info) return;
+    const W = g.camera.screenW, H = g.camera.screenH;
+    ctx.save();
+    // dim the whole screen
+    ctx.fillStyle = 'rgba(8,4,4,0.68)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // title
+    ctx.font = 'bold 46px sans-serif';
+    ctx.fillStyle = '#ff4a3a';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 12;
+    ctx.fillText('💀 YOU DIED', W / 2, H / 2 - 84);
+    ctx.shadowBlur = 0;
+    // killer
+    ctx.font = 'bold 19px sans-serif';
+    ctx.fillStyle = '#f5e8d0';
+    ctx.fillText(`Killed by ${info.killer}`, W / 2, H / 2 - 40);
+    // what was lost
+    ctx.font = '15px sans-serif';
+    ctx.fillStyle = '#d8c48a';
+    const loss = info.dropped > 0
+      ? `You lost ${info.goldLost}g and ${info.dropped} materials (equipment took some wear).`
+      : `You lost ${info.goldLost}g (equipment took some wear).`;
+    ctx.fillText(loss, W / 2, H / 2 - 4);
+    // reassurance + countdown
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = '#9fd8a0';
+    ctx.fillText('Your level, skills and rank are safe.', W / 2, H / 2 + 30);
+    ctx.fillText(`Respawning at the village in ${Math.max(0, Math.ceil(info.timer))}…`, W / 2, H / 2 + 58);
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
     ctx.restore();
   }
 

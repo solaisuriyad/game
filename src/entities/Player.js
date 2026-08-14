@@ -80,6 +80,7 @@ export class Player extends Entity {
     this.flyTimer = 0;      // remaining flight time (30s, then 5s descend, then land)
     this.flyCd = 0;         // landing cooldown (10s)
     this.yggBlessing = 0;   // invulnerability aura near the Yggdrasil (seconds)
+    this.spawnGrace = 0;    // brief invulnerability right after respawning
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }

@@ -153,8 +153,9 @@ export class CombatSystem {
   damagePlayer(amount, source, status) {
     const p = this.game.player;
     if (p.dodgeTimer > 0) return; // i-frames
-    // invulnerable while blessed by the Yggdrasil or standing within its aura
-    if (p.yggBlessing > 0 || this.game.nearYggdrasil()) return;
+    // invulnerable while blessed by the Yggdrasil, standing within its aura,
+    // or during the brief post-respawn grace period
+    if (p.yggBlessing > 0 || this.game.nearYggdrasil() || p.spawnGrace > 0) return;
     let dmg = amount;
     if (p.blocking) { dmg *= 0.25; p.stamina = Math.max(0, p.stamina - 12); }
     dmg -= p.totalDefense * 0.5;

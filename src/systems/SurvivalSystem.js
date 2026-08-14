@@ -32,6 +32,8 @@ export class SurvivalSystem {
     if (p.buffs.speed > 0) p.buffs.speed = Math.max(0, p.buffs.speed - dt);
     // Yggdrasil blessing invulnerability timer
     if (p.yggBlessing > 0) p.yggBlessing = Math.max(0, p.yggBlessing - dt);
+    // post-respawn grace invulnerability
+    if (p.spawnGrace > 0) p.spawnGrace = Math.max(0, p.spawnGrace - dt);
     // while standing within the Yggdrasil's aura, the tree sustains you fully
     const nearYgg = g.nearYggdrasil();
     if (nearYgg) {

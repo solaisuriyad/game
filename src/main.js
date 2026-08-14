@@ -109,6 +109,7 @@ class Game {
     this.player = null;
     this.state = 'title';
     this.paused = false;
+    this.deathInfo = null; // active death screen ({ killer, goldLost, dropped, timer })
 
     // optional NPC scale override: ?npcs=1000 (Phase 9 — 1000-NPC optimization)
     this.npcCount = 500; // a living village (500 NPCs)
@@ -181,6 +182,7 @@ class Game {
 
   onPlayerDeath(source) {
     const p = this.player;
+    if (this.deathInfo) return; // already dead — ignore extra hits
     const lostGold = Math.round(p.gold * 0.2);
     p.gold -= lostGold;
     // drop half of each material stack at the death spot
@@ -198,13 +200,31 @@ class Game {
     // durability loss
     if (p.weapon) p.weapon.durability = Math.max(1, p.weapon.durability - 20);
     for (const k in p.armor) if (p.armor[k]) p.armor[k].durability = Math.max(1, p.armor[k].durability - 15);
-    // respawn on the village path
-    p.x = VILLAGE_CX * TILE + 16; p.y = VILLAGE_CY * TILE + 16;
-    p.health = p.maxHealth; p.stamina = p.maxStamina; p.hunger = Math.max(20, p.hunger);
-    p.energy = 60;
+    // clear status effects and freeze the player at their death spot — a clear
+    // death screen explains what happened BEFORE the respawn, so it never feels
+    // like a random teleport back to town.
+    p.statuses.length = 0;
+    p.health = 0;
+    p.stamina = 0;
+    p.flying = false; p.flyLevel = 0; p.altitude = 0; p.targetAlt = 0; p.flyTimer = 0;
+    const killer = source ? (source.name || (source.def && source.def.name) || 'a creature') : 'the wild';
+    this.deathInfo = { killer, goldLost: lostGold, dropped, timer: 3.5 };
     this.audio.sfx('death');
     this.camera.addShake(10);
-    this.toast(`You were defeated! Lost ${lostGold}g and some materials. Your progression is safe.`);
+  }
+
+  // actually respawn the player (called when the death-screen timer runs out)
+  _respawnPlayer() {
+    const p = this.player;
+    const info = this.deathInfo;
+    this.deathInfo = null;
+    p.x = VILLAGE_CX * TILE + 16; p.y = VILLAGE_CY * TILE + 16;
+    p.health = p.maxHealth; p.stamina = p.maxStamina; p.mp = p.maxMp;
+    p.hunger = Math.max(20, p.hunger);
+    p.energy = 60;
+    p.spawnGrace = 3; // brief invulnerability so you aren't instantly re-killed
+    const mat = info.dropped > 0 ? ` and ${info.dropped} materials` : '';
+    this.toast(`💀 You were defeated by ${info.killer}. Lost ${info.goldLost}g${mat}. Your progression is safe.`);
   }
 
   addXP(n) { this.skills.addXP(n); }
@@ -231,6 +251,7 @@ class Game {
 
   _handleGlobalInput() {
     if (this.state !== 'playing') return;
+    if (this.deathInfo) return; // no menus/actions while the death screen is up
     const input = this.input;
     if (input.pressed('escape')) {
       if (this.ui.open) this.ui.close(); else this.ui._renderMainMenu();
@@ -284,6 +305,12 @@ class Game {
   update(dt) {
     this._handleGlobalInput();
     if (this.state !== 'playing' || !this.player) return;
+    // death screen: freeze the action for a moment, explain, then respawn
+    if (this.deathInfo) {
+      this.deathInfo.timer -= dt;
+      if (this.deathInfo.timer <= 0) this._respawnPlayer();
+      return;
+    }
     if (this.paused) return;
 
     this.time.update(dt);
@@ -383,6 +410,7 @@ class Game {
     if (this.state === 'playing' && this.player) {
       this.renderer.render(ctx, this);
       this.hud.render(ctx);
+      if (this.deathInfo) this.hud.renderDeathScreen(ctx);
     }
   }
 }
