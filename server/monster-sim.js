@@ -9,20 +9,20 @@
 import { MONSTERS } from '../src/data/monsters.js';
 import { rankForLevel, essenceId } from '../src/data/ranks.js';
 
-const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 395], 5: [405, 650] };
+const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 500], 5: [505, 1450] };
 
 // spawn plan: how many of each monster the shared world keeps alive
 const SPAWN_PLAN = [
-  { id: 'slime', count: 30 }, { id: 'goblin', count: 30 }, { id: 'wolf', count: 35 },
-  { id: 'spider', count: 22 }, { id: 'treant', count: 12 }, { id: 'skeleton', count: 22 },
-  { id: 'swamp_beast', count: 12 }, { id: 'demon_beast', count: 14 }, { id: 'ancient_beast', count: 8 },
-  { id: 'dire_wolf', count: 18 }, { id: 'goblin_shaman', count: 14 }, { id: 'goblin_brute', count: 14 },
-  { id: 'thorn_beast', count: 14 }, { id: 'shadow_stalker', count: 14 }, { id: 'cave_troll', count: 10 },
-  { id: 'venom_wyrm', count: 14 }, { id: 'hell_hound', count: 14 }, { id: 'yggdrasil_spriggan', count: 8 },
-  { id: 'alpha_wolf', count: 2 }, { id: 'ancient_bear', count: 4 },
-  { id: 'forest_guardian', count: 3 }, { id: 'ancient_dragon', count: 3 },
-  { id: 'fire_dragon', count: 8 }, { id: 'ice_dragon', count: 8 }, { id: 'earth_dragon', count: 6 },
-  { id: 'dragonoid_fire', count: 2 }, { id: 'dragonoid_ice', count: 2 }, { id: 'dragonoid_earth', count: 2 }
+  { id: 'slime', count: 25 }, { id: 'goblin', count: 25 }, { id: 'wolf', count: 30 },
+  { id: 'spider', count: 20 }, { id: 'treant', count: 14 }, { id: 'skeleton', count: 20 },
+  { id: 'swamp_beast', count: 14 }, { id: 'demon_beast', count: 18 }, { id: 'ancient_beast', count: 14 },
+  { id: 'dire_wolf', count: 20 }, { id: 'goblin_shaman', count: 16 }, { id: 'goblin_brute', count: 16 },
+  { id: 'thorn_beast', count: 16 }, { id: 'shadow_stalker', count: 16 }, { id: 'cave_troll', count: 12 },
+  { id: 'venom_wyrm', count: 16 }, { id: 'hell_hound', count: 16 }, { id: 'yggdrasil_spriggan', count: 12 },
+  { id: 'alpha_wolf', count: 2 }, { id: 'ancient_bear', count: 5 },
+  { id: 'forest_guardian', count: 4 }, { id: 'ancient_dragon', count: 5 },
+  { id: 'fire_dragon', count: 22 }, { id: 'ice_dragon', count: 22 }, { id: 'earth_dragon', count: 20 },
+  { id: 'dragonoid_fire', count: 7 }, { id: 'dragonoid_ice', count: 7 }, { id: 'dragonoid_earth', count: 7 }
 ];
 
 const SELF_ABILITIES = new Set(['regenerate', 'rage', 'howl', 'summon', 'roar']);

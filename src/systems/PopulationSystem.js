@@ -15,8 +15,10 @@ const OCC_WEIGHTS = [
   ['blacksmith', 2]
 ];
 
-// distance rings (in tiles) for each forest zone number used in data/zone defs
-const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 395], 5: [405, 650] };
+// distance rings (in tiles) for each forest zone. These now cover the FULL map
+// (1500-tile radius) so high-rank monsters spawn all the way to the deep edge
+// instead of leaving 850 tiles of empty space.
+const ZONE_RINGS = { 1: [30, 75], 2: [85, 155], 3: [165, 255], 4: [265, 500], 5: [505, 1450] };
 
 export class PopulationSystem {
   constructor(game) {
@@ -188,16 +190,16 @@ export class PopulationSystem {
       { def: 'rabbit', count: 14 }, { def: 'deer', count: 10 }, { def: 'fox', count: 6 },
       { def: 'boar', count: 8 }, { def: 'goat', count: 6 }, { def: 'bear', count: 4 },
       { def: 'bird', count: 12 },
-      { def: 'slime', count: 60 }, { def: 'goblin', count: 55 }, { def: 'wolf', count: 60 },
-      { def: 'spider', count: 40 }, { def: 'treant', count: 20 }, { def: 'alpha_wolf', count: 3 },
-      { def: 'skeleton', count: 40 }, { def: 'swamp_beast', count: 20 },
-      { def: 'demon_beast', count: 22 }, { def: 'ancient_beast', count: 14 },
-      { def: 'dire_wolf', count: 30 }, { def: 'goblin_shaman', count: 22 }, { def: 'goblin_brute', count: 22 },
-      { def: 'thorn_beast', count: 22 }, { def: 'shadow_stalker', count: 22 }, { def: 'cave_troll', count: 16 },
-      { def: 'venom_wyrm', count: 22 }, { def: 'hell_hound', count: 22 }, { def: 'yggdrasil_spriggan', count: 14 },
-      { def: 'ancient_bear', count: 8 }, { def: 'forest_guardian', count: 6 }, { def: 'ancient_dragon', count: 6 },
-      { def: 'fire_dragon', count: 14 }, { def: 'ice_dragon', count: 14 }, { def: 'earth_dragon', count: 12 },
-      { def: 'dragonoid_fire', count: 3 }, { def: 'dragonoid_ice', count: 3 }, { def: 'dragonoid_earth', count: 3 }
+      { def: 'slime', count: 40 }, { def: 'goblin', count: 40 }, { def: 'wolf', count: 50 },
+      { def: 'spider', count: 35 }, { def: 'treant', count: 25 }, { def: 'alpha_wolf', count: 3 },
+      { def: 'skeleton', count: 35 }, { def: 'swamp_beast', count: 25 },
+      { def: 'demon_beast', count: 30 }, { def: 'ancient_beast', count: 25 },
+      { def: 'dire_wolf', count: 35 }, { def: 'goblin_shaman', count: 30 }, { def: 'goblin_brute', count: 30 },
+      { def: 'thorn_beast', count: 30 }, { def: 'shadow_stalker', count: 30 }, { def: 'cave_troll', count: 22 },
+      { def: 'venom_wyrm', count: 30 }, { def: 'hell_hound', count: 30 }, { def: 'yggdrasil_spriggan', count: 22 },
+      { def: 'ancient_bear', count: 10 }, { def: 'forest_guardian', count: 8 }, { def: 'ancient_dragon', count: 10 },
+      { def: 'fire_dragon', count: 40 }, { def: 'ice_dragon', count: 40 }, { def: 'earth_dragon', count: 36 },
+      { def: 'dragonoid_fire', count: 12 }, { def: 'dragonoid_ice', count: 12 }, { def: 'dragonoid_earth', count: 12 }
     ];
     for (const s of spawns) {
       const animal = ANIMALS.find((a) => a.id === s.def);
