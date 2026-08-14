@@ -93,7 +93,9 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 ### 👋 Interacting
 | Key | What it does |
 |---|---|
-| **E** | Interact with whatever is nearest (talk to villager, gather plant, harvest a dead animal, open a building, use a shrine) |
+| **E** | Interact with whatever is nearest (talk to villager, gather plant, harvest a dead animal, **step inside a building**, use a shrine) |
+
+> **Step inside buildings** — press **E** on any building to enter its furnished interior: you'll see the room, the NPCs who work there, and a greeter who points you to the right counter. **Click a counter** to buy/sell, craft, take a job at the quest board, or rest. Press **Esc** (or **E**) to step back outside.
 
 ### 📖 Menus (each opens a full screen)
 | Key | Menu | What it shows |

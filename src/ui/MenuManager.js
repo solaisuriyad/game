@@ -106,7 +106,7 @@ export class MenuManager {
       case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
       case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
-      case 'sleep': g.survival.rest(); this.close(); break;
+      case 'sleep': g.survival.rest(); this.close(); if (g.buildingInterior.active) g.buildingInterior.exit(); break;
       case 'drink': g.player.hunger = Math.min(100, g.player.hunger + 6); g.toast('You drink cool water from the well.'); this.close(); break;
       case 'save': g.save.save(+arg); this._renderMainMenu(); break;
       case 'load': g.save.load(+arg); this.close(); g.toast('Game loaded.'); break;
@@ -693,7 +693,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 5.1 — dragons no longer vanish · skeletons visible</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.2 — step inside every building</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

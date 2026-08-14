@@ -42,6 +42,7 @@ import { MultiplayerSystem } from './net/MultiplayerSystem.js';
 import { RemotePlayer } from './entities/RemotePlayer.js';
 import { HUD } from './ui/HUD.js';
 import { MenuManager } from './ui/MenuManager.js';
+import { BuildingInterior } from './ui/BuildingInterior.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
 import { RANKS } from './data/quests.js';
@@ -105,6 +106,7 @@ class Game {
     this.renderer = new MapRenderer(this);
     this.hud = new HUD(this);
     this.ui = new MenuManager(this);
+    this.buildingInterior = new BuildingInterior(this);
 
     this.player = null;
     this.state = 'title';
@@ -303,6 +305,12 @@ class Game {
   }
 
   update(dt) {
+    // inside a building: the interior view handles its own input (and freezes
+    // the outside world while the player is indoors)
+    if (this.buildingInterior.active) {
+      this.buildingInterior.update(dt);
+      return;
+    }
     this._handleGlobalInput();
     if (this.state !== 'playing' || !this.player) return;
     // death screen: freeze the action for a moment, explain, then respawn
@@ -407,6 +415,10 @@ class Game {
     }
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.buildingInterior.active) {
+      this.buildingInterior.render(ctx);
+      return;
+    }
     if (this.state === 'playing' && this.player) {
       this.renderer.render(ctx, this);
       this.hud.render(ctx);

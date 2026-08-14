@@ -58,7 +58,7 @@ export class InteractSystem {
     const npc = this.nearestNPC();
     if (npc) return `E — Talk to ${npc.name}`;
     const b = g.world.nearestBuilding(this.p.x, this.p.y, 56);
-    if (b) return `E — ${b.building.name}`;
+    if (b) return `E — Enter ${b.building.name}`;
     return null;
   }
 
@@ -73,6 +73,6 @@ export class InteractSystem {
     const npc = this.nearestNPC();
     if (npc) { g.ui.openDialogue(npc); return; }
     const b = g.world.nearestBuilding(this.p.x, this.p.y, 56);
-    if (b) { g.ui.openBuilding(b.building); return; }
+    if (b) { g.buildingInterior.open(b.building); return; }
   }
 }
