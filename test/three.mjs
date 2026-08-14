@@ -45,5 +45,31 @@ const ents2 = r3.entityRoot.children.length;
 console.log('entity meshes after moving far:', ents2, '(expect fewer, since far from town)');
 if (ents2 > ents) throw new Error('expected fewer nearby entities after moving away');
 
+// ---- camera-relative movement math ----
+// yaw=0 -> camera due south, looking north. W should move NORTH (world -y),
+// D should move EAST (world +x).
+r3.yaw = 0; r3.pitch = 0.95; r3.distance = 440;
+game.input.dirVector = () => ({ x: 0, y: -1 }); // W
+let d = r3.cameraDirVector();
+console.log('W (yaw=0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈-1)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - (-1)) > 0.01) throw new Error('W not mapped to forward');
+
+game.input.dirVector = () => ({ x: 1, y: 0 }); // D
+d = r3.cameraDirVector();
+console.log('D (yaw=0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0)');
+if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('D not mapped to camera-right');
+
+// rotate 180°: camera north of player looking south -> W should move SOUTH (+y)
+r3.yaw = Math.PI;
+game.input.dirVector = () => ({ x: 0, y: -1 }); // W
+d = r3.cameraDirVector();
+console.log('W (yaw=π) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈+1)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with camera yaw');
+
+// facing angle should be finite
+const fa = r3.facingAngle();
+console.log('facingAngle finite:', Number.isFinite(fa));
+if (!Number.isFinite(fa)) throw new Error('facing angle is NaN');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

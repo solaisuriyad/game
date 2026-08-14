@@ -150,7 +150,7 @@ export class Player extends Entity {
     const wx = cam.x + ms.x, wy = cam.y + ms.y;
     this.facing = Math.atan2(wy - this.y, wx - this.x);
 
-    const dir = game.input.dirVector();
+    const dir = game._dirFn ? game._dirFn() : game.input.dirVector();
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
     this.crouching = game.input.held('shift');

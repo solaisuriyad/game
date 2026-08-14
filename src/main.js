@@ -117,7 +117,12 @@ class Game {
     this.mode3d = false;
     try { this.mode3d = new URLSearchParams(window.location.search).get('3d') === '1'; } catch (e) {}
     if (this.mode3d) {
-      try { this.renderer3d = new World3DRenderer(this); } catch (e) { this.mode3d = false; }
+      try {
+        this.renderer3d = new World3DRenderer(this);
+        // 3D: movement is camera-relative (W = away from camera), and the player
+        // faces where the camera looks. This replaces the 2D top-down dirVector.
+        this._dirFn = () => this.renderer3d.cameraDirVector();
+      } catch (e) { this.mode3d = false; }
     }
 
     this.player = null;
@@ -140,6 +145,7 @@ class Game {
 
     // mouse wheel: zoom the main game camera toward the cursor (not on the map)
     window.addEventListener('wheel', (e) => {
+      if (this.mode3d) return; // 3D mode handles zoom via the orbit camera
       if (this.state !== 'playing' || this.ui.open || this.ui._mapOpen) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
@@ -341,6 +347,8 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     this.player.update(dt, this);
+    // 3D mode: the player faces the camera direction (movement dir when moving)
+    if (this.mode3d && this.renderer3d) this.player.facing = this.renderer3d.facingAngle();
     this.combat.update(dt);
     this.activeSkills.update(dt);
     this.survival.update(dt);

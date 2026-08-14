@@ -41,6 +41,13 @@ export class World3DRenderer {
     this.scene.background = new THREE.Color(0x87b5d8); // sky blue
     this.scene.fog = new THREE.Fog(0x87b5d8, 4000, 20000);
 
+    // orbit camera state (third-person, mouse-controlled)
+    this.yaw = 0;        // horizontal angle around the player
+    this.pitch = 0.95;   // downward tilt (radians)
+    this.distance = 440; // zoom distance
+    this._dragging = false;
+    this._last = { x: 0, y: 0 };
+
     this.camera = new THREE.PerspectiveCamera(60, 1, 4, 120000);
 
     // lights
@@ -254,8 +261,84 @@ export class World3DRenderer {
 
     // camera follows the player at a comfortable third-person angle
     const pp = this._worldToLocal(px, py);
-    this.camera.position.set(pp.x + 160, 380, pp.z + 260);
-    this.camera.lookAt(pp.x, 0, pp.z);
+    const camX = pp.x + Math.sin(this.yaw) * this.distance;
+    const camZ = pp.z + Math.cos(this.yaw) * this.distance;
+    const camY = Math.sin(this.pitch) * this.distance;
+    this.camera.position.set(camX, camY, camZ);
+    this.camera.lookAt(pp.x, 14, pp.z);
+  }
+
+  // ---- 3D controls: camera-relative movement + facing ----
+  // unit vector pointing AWAY from the camera (on the ground plane), in 2D world
+  // coords { x: worldX, y: worldY }. Used to rotate WASD into camera space.
+  cameraForward() {
+    const pp = this._worldToLocal(this.game.player.x, this.game.player.y);
+    const camX = pp.x + Math.sin(this.yaw) * this.distance;
+    const camZ = pp.z + Math.cos(this.yaw) * this.distance;
+    const fx = pp.x - camX, fz = pp.z - camZ;
+    const len = Math.hypot(fx, fz) || 1;
+    return { x: fx / len, y: fz / len };
+  }
+
+  // WASD direction, rotated into camera space: W = away from camera,
+  // S = toward camera, A/D = strafe. Returns { x: worldX, y: worldY } (or 0,0).
+  cameraDirVector() {
+    const raw = this.game.input.dirVector(); // { x: ±1 (right), y: ±1 (down/south) }
+    const F = this.cameraForward();
+    const R = { x: -F.y, y: F.x }; // camera-right
+    let dx = F.x * -raw.y + R.x * raw.x;
+    let dy = F.y * -raw.y + R.y * raw.x;
+    const mag = Math.hypot(dx, dy);
+    if (mag > 1) { dx /= mag; dy /= mag; }
+    return { x: dx, y: dy };
+  }
+
+  // the direction the player should FACE (movement dir when moving, else forward)
+  facingAngle() {
+    const d = this.cameraDirVector();
+    if (d.x !== 0 || d.y !== 0) return Math.atan2(d.y, d.x);
+    const f = this.cameraForward();
+    return Math.atan2(f.y, f.x);
+  }
+
+  // browser-only: mouse orbit + wheel zoom (right-drag to orbit, wheel to zoom)
+  attachControls() {
+    if (this._controlsAttached) return;
+    this._controlsAttached = true;
+    const el = this.renderer ? this.renderer.domElement : null;
+    if (!el || typeof window === 'undefined') return;
+
+    const onDown = (e) => {
+      if (e.button === 2 || e.button === 1) { // right / middle drag = orbit
+        this._dragging = true;
+        this._last = { x: e.clientX, y: e.clientY };
+        e.preventDefault();
+      }
+    };
+    const onMove = (e) => {
+      if (!this._dragging) return;
+      const dx = e.clientX - this._last.x;
+      const dy = e.clientY - this._last.y;
+      this._last = { x: e.clientX, y: e.clientY };
+      this.yaw -= dx * 0.005;
+      this.pitch = Math.max(0.15, Math.min(1.35, this.pitch + dy * 0.004));
+    };
+    const onUp = () => { this._dragging = false; };
+    const onWheel = (e) => {
+      this.distance = Math.max(180, Math.min(900, this.distance * (1 + e.deltaY * 0.001)));
+      e.preventDefault();
+    };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    this._detachControls = () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('wheel', onWheel);
+    };
   }
 
   // browser-only: create the WebGL renderer + canvas
@@ -274,6 +357,14 @@ export class World3DRenderer {
     };
     this._resize();
     window.addEventListener('resize', this._resize);
+    this.attachControls();
+    // small on-screen hint
+    try {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,8,6,0.7);color:#e8e0c8;font:12px sans-serif;padding:4px 12px;border-radius:6px;pointer-events:none;';
+      hint.textContent = '3D preview · WASD move · right-drag orbit · wheel zoom · Esc menu';
+      document.body.appendChild(hint);
+    } catch (e) {}
   }
 
   render() {
