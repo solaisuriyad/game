@@ -339,6 +339,26 @@ export class MenuManager {
     this.show('Crafting', html);
   }
 
+  // The Guild's Jobs counter — an NPC greets you (noting your level) and offers
+  // the jobs you qualify for. Accepting a job = accepting the quest.
+  _renderJobs() {
+    const g = this.game, p = g.player;
+    const clerk = g.npcs.find((n) => n.occupation === 'guildclerk');
+    const name = clerk ? clerk.name : 'the Guild Clerk';
+    const title = PLAYER_TITLES[Math.min(PLAYER_TITLES.length - 1, Math.floor(p.level / 4))];
+    let html = `<div class="item"><div class="n">${name} <span class="muted">Guild Clerk</span></div>
+      <div class="d">"Ah, a <b>Level ${p.level}</b> ${title}! The guild always has work for a hunter like you. Here's what's available — pick a job and I'll mark it in your ledger."</div></div>`;
+    html += '<h3>Available Jobs</h3><div class="grid2">';
+    const avail = g.quests.availableTemplates();
+    if (!avail.length) html += '<div class="muted">No jobs at your rank right now — come back after you rank up.</div>';
+    for (const q of avail) {
+      html += `<div class="item"><div class="n">${q.title} <span class="muted">(rank ${RANKS[q.rank]}+)</span></div><div class="d">${q.text}</div>
+        <div class="btns"><button class="btn green" data-act="accept" data-arg="${q.id}">Accept job</button></div></div>`;
+    }
+    html += '</div>';
+    this.show('Guild Jobs', html);
+  }
+
   _renderRelationships() {
     const g = this.game;
     const sorted = g.npcs.slice().filter((n) => n.metPlayer || n.relationship !== 0).sort((a, b) => b.relationship - a.relationship);
@@ -693,7 +713,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 5.2 — step inside every building</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.4 — walk around inside buildings</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

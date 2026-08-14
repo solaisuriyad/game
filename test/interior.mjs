@@ -11,36 +11,49 @@ import("../src/main.js").then(()=>{
   g.newGame({name:"t",gender:"m",skinTone:"#e8c39a",hairColor:"#4a3624",clothColor:"#7a6a4a",hairStyle:0});
   const ctx=fakeCtx();
 
+  // 1. every building opens a walkable interior with at least one station
   const funcs = [...new Set(g.world.buildings.map(b=>b.building.func))];
-  console.log("building funcs:", funcs.length);
-  let bad=0, noSpots=0;
+  let bad=0;
   for(const f of funcs){
     const b = g.world.buildings.find(x=>x.building.func===f).building;
     g.buildingInterior.open(b);
     if(!g.buildingInterior.active){ console.log("FAIL open", f); bad++; continue; }
-    // render the interior
-    g.render(ctx);
-    // exercise hotspot actions exist (call render which iterates hotspots)
-    const spots = g.buildingInterior._hotspots();
-    if(!spots.length){ console.log("NO HOTSPOTS:", f); noSpots++; }
-    // simulate a click at the first hotspot center to exercise action wiring
-    if(spots.length){
-      const s = spots[0];
-      g.buildingInterior._mouse = { x: (s.fx+s.fw/2)*800, y: (s.fy+s.fh/2)*600 };
-      g.render(ctx); // re-render to trigger hover resolution (no crash)
-    }
+    const st = g.buildingInterior.stations;
+    if(!st.length){ console.log("NO STATIONS:", f); bad++; }
+    g.render(ctx); // render the interior
     g.buildingInterior.exit();
   }
-  console.log("rendered", funcs.length, "interiors |", bad, "failed |", noSpots, "without hotspots");
-  if(bad>0) throw new Error(bad + " interiors failed to open/render");
-  if(noSpots>0) throw new Error(noSpots + " buildings have no hotspots");
+  console.log("opened", funcs.length, "walkable interiors |", bad, "failed");
+  if(bad>0) throw new Error(bad + " interiors failed");
 
-  // specific: guild greeter + workers exist
+  // 2. walk up to the guild "Jobs" counter and press E -> jobs menu opens
   const guild = g.world.buildings.find(b=>b.building.func==="guild").building;
   g.buildingInterior.open(guild);
-  g.render(ctx);
-  console.log("guild interior opened + rendered OK");
+  const jobs = g.buildingInterior.stations.find(s=>s.id==="jobs");
+  g.buildingInterior.px = jobs.ix; g.buildingInterior.py = jobs.iy; // stand at the counter
+  g.input.pressed = (k)=>k==="e";
+  g.buildingInterior.update(1/60);
+  console.log("jobs counter -> ui.open:", g.ui.open);
+  if(!g.ui.open) throw new Error("jobs counter did not open a menu");
+  g.ui.close();
+
+  // 3. walk to the door and press E -> exit, player placed outside
+  g.buildingInterior.px = g.buildingInterior.door.x; g.buildingInterior.py = g.buildingInterior.door.y;
+  g.input.pressed = (k)=>k==="e";
+  g.buildingInterior.update(1/60);
+  console.log("door exit -> active:", g.buildingInterior.active, "| player placed near building:", Math.abs(g.player.x/32 - 2000) < 10 || Math.abs(g.player.y/32 - 2000) < 10);
+  if(g.buildingInterior.active) throw new Error("door did not exit the interior");
+
+  // 4. walls block movement (player can't walk through the top wall)
+  g.buildingInterior.open(guild);
+  g.buildingInterior.px = 600; g.buildingInterior.py = 100;
+  g.input.dirVector = ()=>({x:0,y:-1});
+  g.input.pressed = ()=>false;
+  for(let i=0;i<60;i++) g.buildingInterior.update(1/60);
+  console.log("wall blocks movement: py=", g.buildingInterior.py.toFixed(0), "(should stay >= 56)");
+  if(g.buildingInterior.py < 56) throw new Error("player walked through a wall");
   g.buildingInterior.exit();
+
   console.log("INTERIOR TESTS PASSED");
   process.exit(0);
 });

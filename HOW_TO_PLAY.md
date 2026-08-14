@@ -95,7 +95,7 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 |---|---|
 | **E** | Interact with whatever is nearest (talk to villager, gather plant, harvest a dead animal, **step inside a building**, use a shrine) |
 
-> **Step inside buildings** — press **E** on any building to enter its furnished interior: you'll see the room, the NPCs who work there, and a greeter who points you to the right counter. **Click a counter** to buy/sell, craft, take a job at the quest board, or rest. Press **Esc** (or **E**) to step back outside.
+> **Step inside buildings** — press **E** on any building to walk inside. You now move around the room with **WASD** like anywhere else. **Walk up to a counter** (where the NPC works) and press **E** to interact — buy/sell at a shop, craft at the forge, take a job at the Guild, rest at the inn, or drink from the well. Each counter has its own NPC and action. **Walk back to the door** and press **E** (or press **Esc**) to step outside. The Guild even has a **Jobs counter** where the clerk greets you by level and assigns you work.
 
 ### 📖 Menus (each opens a full screen)
 | Key | Menu | What it shows |
