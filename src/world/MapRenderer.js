@@ -292,16 +292,16 @@ export class MapRenderer {
     ctx.fillText('Watchtower', sx + w / 2, sy + h + 10);
   }
 
-  // the temple — a saffron shrine with a tall gopuram-style spire
+  // the temple — a black shrine with a tall gopuram-style spire
   _drawTemple(ctx, sx, sy, b) {
     const w = b.w, h = b.h;
-    // body
-    ctx.fillStyle = '#c88840';
+    // black stone body
+    ctx.fillStyle = '#181820';
     ctx.fillRect(sx, sy, w, h);
-    ctx.fillStyle = '#a06a30';
+    ctx.fillStyle = '#10101a';
     ctx.fillRect(sx, sy + h - 8, w, 8);
-    // tiered spire
-    ctx.fillStyle = '#d0903a';
+    // tiered black spire with a faint golden trim
+    ctx.fillStyle = '#14141c';
     for (let i = 0; i < 3; i++) {
       const tierW = w * (0.7 - i * 0.16);
       const tierY = sy - (i + 1) * 12 - i * 4;
@@ -311,12 +311,21 @@ export class MapRenderer {
       ctx.lineTo(sx + w / 2 + tierW / 2, tierY + 12);
       ctx.closePath(); ctx.fill();
     }
-    // kalasha (finial)
+    // kalasha (gold finial)
     ctx.fillStyle = '#ffd76a';
     ctx.beginPath(); ctx.arc(sx + w / 2, sy - 46, 5, 0, Math.PI * 2); ctx.fill();
-    // door (dark, arched)
-    ctx.fillStyle = '#3a2410';
+    // a thin saffron band (trim) around the base of each tier
+    ctx.fillStyle = '#c08030';
+    for (let i = 0; i < 3; i++) {
+      const tierW = w * (0.7 - i * 0.16);
+      const tierY = sy - (i + 1) * 12 - i * 4;
+      ctx.fillRect(sx + w / 2 - tierW / 2, tierY + 9, tierW, 2);
+    }
+    // door (deep black, arched with a gold sill)
+    ctx.fillStyle = '#000000';
     ctx.fillRect(sx + w / 2 - 8, sy + h - 20, 16, 20);
+    ctx.fillStyle = '#c08030';
+    ctx.fillRect(sx + w / 2 - 8, sy + h - 2, 16, 2);
     // label
     ctx.fillStyle = '#ffd76a';
     ctx.font = '9px sans-serif';

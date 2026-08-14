@@ -49,8 +49,8 @@ export const BUILDINGS = [
   { id: 'playground', name: 'Playground', func: 'playground', x: 1968, y: 2006, w: 6, h: 4, color: '#7a8a4a' },
   // healing center (a larger infirmary than the corner healer)
   { id: 'healing', name: 'Healing Center', func: 'healing', x: 2028, y: 2004, w: 5, h: 4, color: '#4a8a6a' },
-  // the temple of the forest god, with a Shiva Lingam inside
-  { id: 'temple', name: 'Temple of the Forest God', func: 'temple', x: 2028, y: 2012, w: 5, h: 5, color: '#d0903a' },
+  // the temple of the forest god — a black shrine with a Shiva Lingam inside
+  { id: 'temple', name: 'Temple of the Forest God', func: 'temple', x: 2028, y: 2012, w: 5, h: 5, color: '#1a1a20' },
   // adventure gear shop (armor, potions, safety gear)
   { id: 'gearshop', name: 'Adventure Gear Shop', func: 'gearshop', x: 1998, y: 2022, w: 4, h: 4, color: '#8a5a3a' }
 ];

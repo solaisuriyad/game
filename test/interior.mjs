@@ -9,6 +9,7 @@ globalThis.requestAnimationFrame=()=>{};
 import("../src/main.js").then(()=>{
   const g=window.game; g.npcCount=250; // real NPC count so workers exist
   g.newGame({name:"t",gender:"m",skinTone:"#e8c39a",hairColor:"#4a3624",clothColor:"#7a6a4a",hairStyle:0});
+  g.ui.close(); // simulate "Enter the World" (title menu is open in headless mode)
   const ctx=fakeCtx();
 
   // 1. every building opens a walkable interior with at least one station

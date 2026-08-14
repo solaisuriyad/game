@@ -95,7 +95,11 @@ You **select up to 3 skills** — they appear on the bottom of the screen bound 
 |---|---|
 | **E** | Interact with whatever is nearest (talk to villager, gather plant, harvest a dead animal, **step inside a building**, use a shrine) |
 
-> **Step inside buildings** — press **E** on any building to walk inside. You now move around the room with **WASD** like anywhere else. **Walk up to a counter** (where the NPC works) and press **E** to interact — buy/sell at a shop, craft at the forge, take a job at the Guild, rest at the inn, or drink from the well. Each counter has its own NPC and action. **Walk back to the door** and press **E** (or press **Esc**) to step outside. The Guild even has a **Jobs counter** where the clerk greets you by level and assigns you work.
+> **Step inside buildings** — press **E** on any building to walk inside. You now move around the room with **WASD** like anywhere else. Each room is **fully furnished** (tables, chairs, sofas, beds, shelves, fireplaces, rugs, curtains) and **walk up to a counter** (where the NPC works) and press **E** to interact — buy/sell at a shop, craft at the forge, take a job at the Guild, or drink from the well. **Walk back to the door** and press **E** (or press **Esc**) to step outside. The Guild even has a **Jobs counter** where the clerk greets you by level and assigns you work.
+
+> **Sleeping** — at the **Inn**, walk to a bed and press **E**: you lie down and sleep, then wake at dawn fully rested. Your **Player Residence** bed works the same way.
+
+> **The Temple** — a black shrine holding only the **Shiva Lingam**, lit by oil lamps. Walk up and press **E** to **pray** — the forest god fully restores your health, stamina and MP.
 
 ### 📖 Menus (each opens a full screen)
 | Key | Menu | What it shows |

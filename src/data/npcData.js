@@ -27,7 +27,6 @@ export const OCCUPATIONS = [
   { id: 'homemaker', label: 'Villager', work: 'house', skills: {}, wealth: [10, 60], schedule: 'homemaker' },
   { id: 'laborer', label: 'Laborer', work: 'community', outdoor: true, skills: {}, wealth: [5, 40], schedule: 'worker' },
   { id: 'innkeep', label: 'Inn Keeper', work: 'inn', skills: {}, wealth: [40, 120], schedule: 'worker' },
-  { id: 'priest', label: 'Priest', work: 'temple', skills: { crafting: 1 }, wealth: [20, 70], schedule: 'worker' },
   { id: 'nurse', label: 'Nurse', work: 'healing', skills: { crafting: 2 }, wealth: [30, 90], schedule: 'worker' },
   { id: 'gearmerchant', label: 'Gear Merchant', work: 'gearshop', skills: {}, wealth: [50, 160], schedule: 'worker' }
 ];

@@ -51,10 +51,10 @@ import("../src/main.js").then(async ()=>{
   }
   console.log("gear + safety items ✓");
 
-  // 4. temple has a priest occupation
-  if(!g.npcs.some(n=>n.occupation==='priest')) throw new Error("no priest NPC spawned");
+  // 4. the temple has no priest (only the Shiva Lingam + oil lamps); nurse spawns for healing
+  if(g.npcs.some(n=>n.occupation==='priest')) throw new Error("priest should have been removed from the temple");
   if(!g.npcs.some(n=>n.occupation==='nurse')) throw new Error("no nurse NPC spawned");
-  console.log("priest + nurse NPCs ✓");
+  console.log("no priest (temple) + nurse NPC ✓");
 
   // 5. compass use effect works
   g.inventory.addItem('compass', 1, { silent: true });
