@@ -149,6 +149,39 @@ export class Monster extends Entity {
       ctx.fillStyle = '#ffd76a';
       ctx.beginPath(); ctx.arc(-s * 0.25, -s * 0.7, 2.5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(s * 0.25, -s * 0.7, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (this.family === 'undead') {
+      // skeleton: bone-white body, skull head with hollow eyes, exposed ribs
+      const bone = c || '#d8d0c0';
+      // body (ribcage)
+      ctx.fillStyle = bone;
+      ctx.beginPath(); ctx.ellipse(0, s * 0.1, s * 0.55, s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      // ribs
+      ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath(); ctx.moveTo(-s * 0.5, s * 0.2 + i * s * 0.16); ctx.lineTo(s * 0.5, s * 0.2 + i * s * 0.16); ctx.stroke();
+      }
+      // pelvis / legs
+      ctx.fillStyle = bone;
+      ctx.fillRect(-s * 0.2, s * 0.6, s * 0.14, s * 0.35);
+      ctx.fillRect(s * 0.06, s * 0.6, s * 0.14, s * 0.35);
+      // arms (bony)
+      ctx.strokeStyle = bone; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-s * 0.45, s * 0.0); ctx.lineTo(-s * 0.7, s * 0.45); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * 0.45, s * 0.0); ctx.lineTo(s * 0.7, s * 0.45); ctx.stroke();
+      // skull
+      ctx.fillStyle = bone;
+      ctx.beginPath(); ctx.arc(0, -s * 0.5, s * 0.5, 0, Math.PI * 2); ctx.fill();
+      // hollow eye sockets (dark, clearly a skull)
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(-s * 0.18, -s * 0.55, s * 0.14, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s * 0.18, -s * 0.55, s * 0.14, 0, Math.PI * 2); ctx.fill();
+      // jaw / teeth
+      ctx.fillStyle = bone;
+      ctx.fillRect(-s * 0.16, -s * 0.18, s * 0.32, s * 0.1);
+      ctx.fillStyle = '#4a4a4a';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(-s * 0.14 + i * s * 0.09, -s * 0.18, s * 0.04, s * 0.12);
+      }
     } else {
       // wolf / goblin / bear-ish quadruped or biped
       if (this.family === 'goblin') {

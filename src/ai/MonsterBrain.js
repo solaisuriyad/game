@@ -1,6 +1,8 @@
 // Monster AI state machine: idle/wander/patrol/investigate/chase/attack/
 // useAbility/flee/callAllies/returnHome/enrage. Behavior depends on health,
 // distance, time of day, weather, territory, allies, and (adaptive) player style.
+import { PX_W, PX_H } from '../world/WorldSystem.js';
+
 export function monsterBrain(m, dt, game) {
   const p = game.player;
   const prof = m.aiProfile;
@@ -11,7 +13,8 @@ export function monsterBrain(m, dt, game) {
   // dash (lunge/pounce) movement
   if (m.dash) {
     m.dash.t -= dt;
-    game.world.moveEntity(m, m.dash.dx * (m.dash.speed || 300) * dt, m.dash.dy * (m.dash.speed || 300) * dt);
+    if (m.flying) soarMove(m, m.dash.dx * (m.dash.speed || 300) * dt, m.dash.dy * (m.dash.speed || 300) * dt);
+    else game.world.moveEntity(m, m.dash.dx * (m.dash.speed || 300) * dt, m.dash.dy * (m.dash.speed || 300) * dt);
     if (m.distTo(p) < m.radius + p.radius + 6) {
       game.combat.damagePlayer(m.dash.damage, m, m.dash.status);
       m.dash = null;
@@ -147,13 +150,15 @@ function moveToward(m, target, speed, dt, game) {
   const a = Math.atan2(target.y - m.y, target.x - m.x);
   m.facing = a;
   const dx = Math.cos(a) * speed * dt, dy = Math.sin(a) * speed * dt;
-  if (m.flying) {
-    // aerial monsters soar over water, trees and buildings
-    m.x = Math.max(24, Math.min(game.world.PX_W - 24, m.x + dx));
-    m.y = Math.max(24, Math.min(game.world.PX_H - 24, m.y + dy));
-  } else {
-    game.world.moveEntity(m, dx, dy);
-  }
+  if (m.flying) soarMove(m, dx, dy);
+  else game.world.moveEntity(m, dx, dy);
+}
+
+// aerial monsters soar over water, trees and buildings — clamp to world bounds
+// (guards against NaN: the world is a fixed, known size)
+function soarMove(m, dx, dy) {
+  m.x = Math.max(24, Math.min(PX_W - 24, m.x + dx));
+  m.y = Math.max(24, Math.min(PX_H - 24, m.y + dy));
 }
 
 function fleeFrom(m, p, dt, game) {

@@ -693,7 +693,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 5.0 — the Yggdrasil reigns · monsters radiate by rank · two-circle world</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.1 — dragons no longer vanish · skeletons visible</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
