@@ -28,10 +28,12 @@ export class SaveSystem {
     return out;
   }
 
-  save(slot) {
+  // build a full serializable snapshot of the game state (used for both local
+  // saves and the server-side account save)
+  serialize() {
     const g = this.game;
     const p = g.player;
-    const data = {
+    return {
       schema: SCHEMA,
       ts: Date.now(),
       player: {
@@ -58,6 +60,10 @@ export class SaveSystem {
         id: n.id, relationship: n.relationship, met: n.metPlayer, memory: n.memory
       }))
     };
+  }
+
+  save(slot) {
+    const data = this.serialize();
     this._ls.setItem(PREFIX + slot, JSON.stringify(data));
     return { ok: true, message: `Saved to slot ${slot + 1}.` };
   }
@@ -66,6 +72,12 @@ export class SaveSystem {
     const raw = this._ls.getItem(PREFIX + slot);
     if (!raw) return { ok: false, message: 'No save in this slot.' };
     const d = JSON.parse(raw);
+    this._apply(d);
+    return { ok: true, message: `Loaded save slot ${slot + 1}.` };
+  }
+
+  // restore the game from a serialized snapshot (shared by local load + server save)
+  _apply(d) {
     const g = this.game;
     const p = g.player;
     const pl = d.player;
@@ -118,7 +130,12 @@ export class SaveSystem {
     g.bus.emit('load');
     g.state = 'playing';
     g.paused = false;
-    return { ok: true, message: `Loaded save slot ${slot + 1}.` };
+  }
+
+  // apply a save received from the server (account login) — same as a local load
+  applyServerSave(data) {
+    if (!data || !data.player) return;
+    this._apply(data);
   }
 
   hasSlot(slot) { return !!this._ls.getItem(PREFIX + slot); }

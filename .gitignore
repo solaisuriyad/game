@@ -1,0 +1,4 @@
+# server-side save data (accounts) — never commit player data
+data/
+node_modules/
+*.log

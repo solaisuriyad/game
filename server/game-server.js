@@ -8,6 +8,7 @@ import { MonsterSim } from './monster-sim.js';
 import { WildlifeSim } from './wildlife-sim.js';
 import { SharedQuestState } from './quest-state.js';
 import { WorldEvents } from './world-events.js';
+import { AccountStore } from './accounts.js';
 
 const SPEED = 140;
 const TICK_RATE = 20;
@@ -29,6 +30,7 @@ export class GameServer {
     this.nextId = 1;
     this.lastTickMs = 0;
     this.chat = [];       // recent chat history (name, text, t) — sent to new joiners
+    this.accounts = new AccountStore();
     this._timer = setInterval(() => this.tick(), 1000 / TICK_RATE);
     this._timer.unref?.();
   }
@@ -69,28 +71,37 @@ export class GameServer {
 
   _onMessage(ws, msg) {
     switch (msg.type) {
+      case 'login': {
+        const name = String(msg.name || 'Hunter').trim().slice(0, 20) || 'Hunter';
+        const password = String(msg.password || '');
+        let saveData = null;
+        if (password) {
+          // account login (or first-time registration with a password)
+          const existing = this.accounts.get(name);
+          if (existing == null) {
+            const r = this.accounts.register(name, password);
+            if (!r.ok) { ws.send(JSON.stringify({ type: 'loginError', error: r.error })); return; }
+            saveData = null; // new account starts fresh
+          } else {
+            const r = this.accounts.login(name, password);
+            if (!r.ok) { ws.send(JSON.stringify({ type: 'loginError', error: r.error })); return; }
+            saveData = r.data;
+          }
+        }
+        this._admit(ws, { ...msg, name }, saveData);
+        break;
+      }
       case 'join': {
-        const id = this.nextId++;
-        const spawn = this.world.randomVillagePosition();
-        const player = {
-          id, name: (msg.name || 'Hunter').slice(0, 20),
-          x: spawn.x, y: spawn.y, facing: 0,
-          dir: { x: 0, y: 0 }, colors: msg.colors || {}, ws
-        };
-        ws.playerId = id;
-        this.players.set(id, player);
-        this.sim.rescale(this.players.size);
-        this.questState.maybeActivate();
-        const others = [...this.players.values()].filter((p) => p.id !== id).map((p) => this._serialize(p));
-        ws.send(JSON.stringify({ type: 'welcome', id, spawn: { x: spawn.x, y: spawn.y }, players: others }));
-        ws.send(JSON.stringify({ type: 'sharedQuests', quests: this.questState.serialize() }));
-        // send recent chat history + the full online list to the new joiner
-        ws.send(JSON.stringify({ type: 'chatHistory', chat: this.chat }));
-        ws.send(JSON.stringify({ type: 'online', players: this._onlineList() }));
-        // tell the OTHERS that someone joined (not the joiner themselves)
-        this._systemChat(`${player.name} joined the world.`, id);
-        this._broadcastOnline(id);
-        this._broadcast({ type: 'join', player: this._serialize(player) }, id);
+        // guest (no account) — backward compatible
+        const name = String(msg.name || 'Hunter').trim().slice(0, 20) || 'Hunter';
+        this._admit(ws, { ...msg, name }, null);
+        break;
+      }
+      case 'save': {
+        const p = this.players.get(ws.playerId);
+        if (!p || !p.password) break; // only persisted accounts save
+        if (!msg.data) break;
+        this.accounts.save(p.name, msg.data);
         break;
       }
       case 'input': {
@@ -141,6 +152,38 @@ export class GameServer {
 
   _serialize(p) {
     return { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), facing: p.facing, colors: p.colors };
+  }
+
+  // admit a player into the world (common path for login + guest join)
+  _admit(ws, msg, saveData) {
+    const id = this.nextId++;
+    // if the account has a saved position, spawn there; else village center
+    const sx = saveData && saveData.player && Number.isFinite(saveData.player.x) ? saveData.player.x : null;
+    const sy = saveData && saveData.player && Number.isFinite(saveData.player.y) ? saveData.player.y : null;
+    let spawn;
+    if (sx != null && sy != null && sx >= 24 && sy >= 24 && sx <= PX_W - 24 && sy <= PX_H - 24 && !this.world.circleBlocked(sx, sy, 12)) {
+      spawn = { x: sx, y: sy };
+    } else {
+      spawn = this.world.randomVillagePosition();
+    }
+    const player = {
+      id, name: msg.name,
+      x: spawn.x, y: spawn.y, facing: 0,
+      dir: { x: 0, y: 0 }, colors: msg.colors || {}, ws,
+      password: !!msg.password // accounts persist; guests don't
+    };
+    ws.playerId = id;
+    this.players.set(id, player);
+    this.sim.rescale(this.players.size);
+    this.questState.maybeActivate();
+    const others = [...this.players.values()].filter((p) => p.id !== id).map((p) => this._serialize(p));
+    ws.send(JSON.stringify({ type: 'welcome', id, spawn: { x: spawn.x, y: spawn.y }, saveData: saveData || null, players: others }));
+    ws.send(JSON.stringify({ type: 'sharedQuests', quests: this.questState.serialize() }));
+    ws.send(JSON.stringify({ type: 'chatHistory', chat: this.chat }));
+    ws.send(JSON.stringify({ type: 'online', players: this._onlineList() }));
+    this._systemChat(`${player.name} joined the world.`, id);
+    this._broadcastOnline(id);
+    this._broadcast({ type: 'join', player: this._serialize(player) }, id);
   }
 
   _broadcast(msg, exceptId = null) {

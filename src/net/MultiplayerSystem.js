@@ -23,9 +23,11 @@ export class MultiplayerSystem {
     this.sharedQuests = [];      // server-authoritative co-op quests
     this.chatLog = [];           // [{ name, text, system }] — visible chat feed
     this.online = [];            // [{ id, name }] — who's in the shared world
+    this.account = false;        // true when logged in with a password (persisted)
+    this._saveTimer = 0;         // autosave countdown
   }
 
-  async connect(url, name) {
+  async connect(url, name, password = '') {
     const g = this.game;
     const p = g.player;
     this.connecting = true;
@@ -38,11 +40,12 @@ export class MultiplayerSystem {
     }
     this.connecting = false;
     this.connected = true;
+    this.account = !!password;
     this.myId = null;
     this.client.onMessage = (msg) => this._onMessage(msg);
     this.client.onClose = () => this._onClose();
     this.client.send({
-      type: 'join', name,
+      type: 'login', name, password,
       colors: { skinTone: p.skinTone, hairColor: p.hairColor, clothColor: p.clothColor }
     });
     g.toast('Connected to the shared world.');
@@ -77,10 +80,21 @@ export class MultiplayerSystem {
       case 'welcome':
         this.myId = msg.id;
         if (msg.spawn) { g.player.x = msg.spawn.x; g.player.y = msg.spawn.y; }
+        // if this account has a server save, restore it (overrides the spawn)
+        if (msg.saveData && msg.saveData.player) {
+          g.save.applyServerSave(msg.saveData);
+          // the server also places us at our saved position
+          g.player.x = msg.spawn.x; g.player.y = msg.spawn.y;
+          g.toast(`Welcome back, ${g.player.name}! Your progress was loaded.`);
+        }
         for (const p of msg.players) this._targets.set(p.id, p);
         // switch to server-authoritative monsters + wildlife
         g.monsters.length = 0;
         g.animals.length = 0;
+        break;
+      case 'loginError':
+        this._onClose();
+        g.toast('Login failed: ' + (msg.error || 'unknown error'));
         break;
       case 'join':
         this._targets.set(msg.player.id, msg.player);
@@ -258,6 +272,14 @@ export class MultiplayerSystem {
     if (!this.connected || !this.game.player) return;
     const g = this.game;
     const p = g.player;
+    // periodic autosave to the server (accounts only)
+    if (this.account) {
+      this._saveTimer -= dt;
+      if (this._saveTimer <= 0) {
+        this._saveTimer = 10;
+        this.client.send({ type: 'save', data: g.save.serialize() });
+      }
+    }
     this._inputTimer -= dt;
     if (this._inputTimer <= 0) {
       this._inputTimer = 1 / 30;
@@ -278,9 +300,14 @@ export class MultiplayerSystem {
   }
 
   disconnect() {
+    // final save before leaving (accounts only)
+    if (this.connected && this.account && this.game.player) {
+      this.client.send({ type: 'save', data: this.game.save.serialize() });
+    }
     this.client.close();
     this.connected = false;
     this.connecting = false;
+    this.account = false;
     this._targets.clear();
     this._monsters.clear();
     this._animals.clear();

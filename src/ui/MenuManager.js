@@ -713,7 +713,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 5.7 — online lobby · server address · text chat</div>
+      <div class="muted" style="margin-bottom:10px">Version 5.8 — accounts & online saves</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
@@ -727,6 +727,10 @@ export class MenuManager {
         <div class="opt-row" style="margin-top:10px">
           <span class="muted">Server:</span>
           <input id="server-input" type="text" maxlength="120" placeholder="leave empty for this machine (e.g. myserver.com:3000)" />
+        </div>
+        <div class="opt-row">
+          <span class="muted">Password:</span>
+          <input id="password-input" type="password" maxlength="60" placeholder="optional — set one to save your progress online" />
         </div>
         <button class="btn green" data-act="online" style="margin-top:8px">Play Online (co-op)</button>
         <button class="btn" data-act="continue" style="margin-top:8px">Continue</button>
@@ -792,15 +796,20 @@ export class MenuManager {
     if (err) { this._showFieldError(err); return; }
     const c = this._cust;
     const url = this._serverUrl();
-    try { localStorage.setItem('verdant-hollow:server', document.getElementById('server-input') ? document.getElementById('server-input').value.trim() : ''); } catch (e) {}
+    let password = '';
+    try {
+      const pwEl = document.getElementById('password-input');
+      if (pwEl) password = pwEl.value;
+      localStorage.setItem('verdant-hollow:server', document.getElementById('server-input') ? document.getElementById('server-input').value.trim() : '');
+    } catch (e) {}
     this.game.newGame({
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
       hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
     });
     this.game.toast('Connecting to the shared world...');
-    this.game.multiplayer.connect(url, c.name).then((r) => {
+    this.game.multiplayer.connect(url, c.name, password).then((r) => {
       if (!r.ok) this.game.toast('Connection failed: ' + (r.message || 'unreachable'));
-      else this.game.toast('Connected! Press Enter to chat with other hunters.');
+      else this.game.toast(password ? 'Connected — your progress will be saved online. Press Enter to chat.' : 'Connected as a guest (no password = no online save). Press Enter to chat.');
     });
     this.close();
   }
