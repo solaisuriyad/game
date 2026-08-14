@@ -223,18 +223,15 @@ export class CombatSystem {
         loot.push({ item: ['holy_health', 'holy_stamina', 'holy_mana'][Math.floor(Math.random() * 3)], qty: 1 });
       }
       // collect into inventory (fall back to a visible ground drop if over weight)
-      const got = [];
       for (const l of loot) {
         const res = g.inventory.addItem(l.item, l.qty);
         if (res.ok) {
-          const name = g.items.get(l.item)?.name || l.item;
-          got.push(`${l.qty}× ${name}`);
+          g.addLoot(l.item, l.qty); // record in the visible loot feed
         } else {
           // backpack full — drop on the ground as a visible pickup
           g.drops.push(new g.DDrop(e.x + (Math.random() - 0.5) * 24, e.y + (Math.random() - 0.5) * 24, l.item, l.qty));
         }
       }
-      if (got.length) g.toast(`⬇ ${e.name} dropped: ${got.join(', ')}`);
       g.addXP(e.xp);
       g.player.kills++;
       g.quests.onKill(e.def.id);

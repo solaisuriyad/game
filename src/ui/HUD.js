@@ -91,6 +91,9 @@ export class HUD {
     // ---- monster status panel (nearest monster currently engaged with you) ----
     this._drawMonsterStatus(ctx, W, H);
 
+    // ---- loot feed (recent drops) ----
+    this._drawLootFeed(ctx, W, H);
+
     // ---- top-right: clock / weather / gold / rank (shifted down for the settings gear) ----
     ctx.textAlign = 'right';
     ctx.fillStyle = '#f5f0e0';
@@ -114,7 +117,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v3.8 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v3.9 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -279,6 +282,29 @@ export class HUD {
     }
     if (line) ctx.fillText(line, x + 10, sy);
     ctx.textAlign = 'left';
+  }
+
+  // recent loot feed (top-right, under the monster panel / top-right info)
+  _drawLootFeed(ctx, W, H) {
+    const g = this.game;
+    if (!g.recentLoot || !g.recentLoot.length) return;
+    const x = W - 240, y = 172;
+    let yy = y;
+    ctx.textAlign = 'left';
+    for (const l of g.recentLoot) {
+      if (l.t <= 0) continue;
+      const alpha = Math.min(1, l.t); // fade out at the end
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(10,12,18,0.7)';
+      const label = `+ ${l.qty}× ${l.name}`;
+      ctx.font = 'bold 11px sans-serif';
+      const tw = ctx.measureText(label).width;
+      ctx.fillRect(x, yy, tw + 16, 16);
+      ctx.fillStyle = l.color;
+      ctx.fillText(label, x + 8, yy + 12);
+      yy += 19;
+    }
+    ctx.globalAlpha = 1;
   }
 
   _statBar(ctx, x, y, w, frac, color, label) {

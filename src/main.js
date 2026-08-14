@@ -67,6 +67,7 @@ class Game {
     this.remoteMonsters = [];
     this.remoteAnimals = [];
     this.remoteResources = [];
+    this.recentLoot = []; // { name, qty, color, t } — visible loot feed
 
     // entity classes exposed for systems that spawn
     this.AAnimal = Animal; this.AMonster = Monster; this.DDrop = Drop; this.PProjectile = Projectile;
@@ -122,14 +123,24 @@ class Game {
     canvas.addEventListener('mousedown', () => this.audio.resume());
     window.addEventListener('keydown', () => this.audio.resume(), { once: true });
 
+    // mouse wheel: zoom the main game camera toward the cursor (not on the map)
+    window.addEventListener('wheel', (e) => {
+      if (this.state !== 'playing' || this.ui.open || this.ui._mapOpen) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      this.camera.zoomAt(sx, sy, factor);
+    }, { passive: false });
+
     this.ui.renderTitle();
   }
 
   _resize() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    this.camera.vw = this.canvas.width;
-    this.camera.vh = this.canvas.height;
+    this.camera.setScreen(this.canvas.width, this.canvas.height);
   }
 
   newGame(cust) {
@@ -201,6 +212,21 @@ class Game {
   toast(text) {
     this.toasts.push({ text, t: 4 });
     if (this.toasts.length > 4) this.toasts.shift();
+  }
+  // record a loot pickup for the visible loot feed
+  addLoot(itemId, qty) {
+    const item = this.items.get(itemId);
+    if (!item) return;
+    const colors = { common: '#b8b8b8', uncommon: '#4ac84a', rare: '#4a8ac8', epic: '#c84ac8', legendary: '#ffd76a' };
+    // merge with the most recent identical entry
+    const last = this.recentLoot[0];
+    if (last && last.itemId === itemId && last.t > 6.5) {
+      last.qty += qty;
+      last.t = 8;
+    } else {
+      this.recentLoot.unshift({ itemId, name: item.name, qty, color: colors[item.rarity] || '#b8b8b8', t: 8 });
+    }
+    if (this.recentLoot.length > 8) this.recentLoot.length = 8;
   }
 
   _handleGlobalInput() {
@@ -295,6 +321,8 @@ class Game {
     this.floatTexts = this.floatTexts.filter((f) => f.t > 0);
     for (const t of this.toasts) t.t -= dt;
     this.toasts = this.toasts.filter((t) => t.t > 0);
+    for (const l of this.recentLoot) l.t -= dt;
+    this.recentLoot = this.recentLoot.filter((l) => l.t > 0);
 
     // quest explore tracking (zone enter)
     const zoneName = this.world.getZoneName(this.player.x, this.player.y);

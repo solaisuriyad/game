@@ -15,6 +15,7 @@ export class MapRenderer {
     const off = cam.getOffset();
     ctx.save();
     ctx.translate(off.x, off.y);
+    ctx.scale(cam.zoom, cam.zoom); // camera zoom (mouse wheel)
     this._drawTiles(ctx, game);
     this._drawNodes(ctx, game);
     this._drawBuildings(ctx, game);
@@ -370,44 +371,65 @@ export class MapRenderer {
   // visible loot pickups on the ground (overflow drops, death penalties)
   _drawDrops(ctx, game) {
     const cam = game.camera;
+    const RARITY_COLORS = { common: '#b8b8b8', uncommon: '#4ac84a', rare: '#4a8ac8', epic: '#c84ac8', legendary: '#ffd76a' };
     for (const d of game.drops) {
       const x = cam.sx(d.x), y = cam.sy(d.y);
-      if (x < -20 || y < -20 || x > cam.vw + 20 || y > cam.vh + 20) continue;
-      const bob = Math.sin(game.time.timeOfDay * 40 + d.x) * 2;
-      // glow
-      ctx.fillStyle = 'rgba(255,220,120,0.35)';
-      ctx.beginPath(); ctx.arc(x, y + bob, 8, 0, Math.PI * 2); ctx.fill();
+      if (x < -30 || y < -50 || x > cam.vw + 30 || y > cam.vh + 50) continue;
+      const bob = Math.sin(game.time.timeOfDay * 40 + d.x * 0.3) * 3;
+      const item = game.items.get(d.itemId);
+      const color = RARITY_COLORS[item ? item.rarity : 'common'] || '#b8b8b8';
+      const pulse = 1 + Math.sin(game.time.timeOfDay * 60 + d.x) * 0.15;
+      // large pulsing glow (rarity colored) so drops are impossible to miss
+      const glow = ctx.createRadialGradient(x, y + bob, 1, x, y + bob, 16 * pulse);
+      glow.addColorStop(0, color + 'cc');
+      glow.addColorStop(0.5, color + '44');
+      glow.addColorStop(1, color + '00');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(x, y + bob, 16 * pulse, 0, Math.PI * 2); ctx.fill();
       // orb
-      ctx.fillStyle = '#ffe98a';
-      ctx.strokeStyle = '#b8903a';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(x, y + bob, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#8a6a20';
-      ctx.beginPath(); ctx.arc(x - 1.5, y + bob - 1.5, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, y + bob, 7 * pulse, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x - 2, y + bob - 2, 2, 0, Math.PI * 2); ctx.fill();
+      // floating item name label above the drop
+      if (item) {
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        const label = `${item.name}${d.qty > 1 ? ' ×' + d.qty : ''}`;
+        const tw = ctx.measureText(label).width;
+        ctx.fillRect(x - tw / 2 - 4, y + bob - 26, tw + 8, 14);
+        ctx.fillStyle = color;
+        ctx.fillText(label, x, y + bob - 16);
+        ctx.textAlign = 'left';
+      }
     }
   }
 
   _drawWeatherAndLight(ctx, game, off) {
     const w = game.weather;
     const darkness = game.time.darkness;
+    const SW = game.camera.screenW, SH = game.camera.screenH; // full-screen overlay
     // rain
     if (w.raining && w.intensity > 0.2) {
       ctx.fillStyle = `rgba(120,150,200,${0.18 * w.intensity})`;
-      ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
+      ctx.fillRect(0, 0, SW, SH);
       ctx.strokeStyle = `rgba(180,200,230,${0.4 * w.intensity})`;
       ctx.lineWidth = 1;
       const n = 80 + (w.isStorm ? 60 : 0);
       const t = game.time.timeOfDay * 2000;
       for (let i = 0; i < n; i++) {
-        const x = (i * 97 + t * 3) % (game.camera.vw + 40) - 20;
-        const y = (i * 53 + t * 7) % (game.camera.vh + 40) - 20;
+        const x = (i * 97 + t * 3) % (SW + 40) - 20;
+        const y = (i * 53 + t * 7) % (SH + 40) - 20;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 2, y + 12); ctx.stroke();
       }
     }
     // fog
     if (w.state === 'fog' && w.intensity > 0.2) {
       ctx.fillStyle = `rgba(200,205,210,${0.28 * w.intensity})`;
-      ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
+      ctx.fillRect(0, 0, SW, SH);
     }
     // zone ambience tint (deeper forest feels distinct & foreboding)
     if (game.player) {
@@ -415,20 +437,21 @@ export class MapRenderer {
       if (zi >= 4) {
         const tint = zi === 5 ? 'rgba(70,20,30,0.22)' : 'rgba(25,55,38,0.18)';
         ctx.fillStyle = tint;
-        ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
+        ctx.fillRect(0, 0, SW, SH);
       }
     }
-    // night lighting
+    // night lighting (a radial light around the player's SCREEN position)
     if (darkness > 0.08) {
       const p = game.player;
-      const px = game.camera.sx(p.x), py = game.camera.sy(p.y);
+      const px = (p.x - game.camera.x) * game.camera.zoom;
+      const py = (p.y - game.camera.y) * game.camera.zoom;
       const g = ctx.createRadialGradient(px, py, 40, px, py, 300);
       const a = Math.min(0.66, darkness * 0.66);
       g.addColorStop(0, 'rgba(8,10,24,0)');
       g.addColorStop(0.6, `rgba(8,10,24,${a * 0.4})`);
       g.addColorStop(1, `rgba(8,10,24,${a})`);
       ctx.fillStyle = g;
-      ctx.fillRect(0, 0, game.camera.vw, game.camera.vh);
+      ctx.fillRect(0, 0, SW, SH);
     }
   }
 }

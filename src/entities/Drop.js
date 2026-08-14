@@ -21,7 +21,7 @@ export class Drop extends Entity {
       game.world.moveEntity(this, Math.cos(a) * spd * dt, Math.sin(a) * spd * dt);
       if (d < 20) {
         if (game.inventory.addItem(this.itemId, this.qty, { silent: true }).ok) {
-          game.toast(`+${this.qty}× ${game.items.get(this.itemId)?.name || this.itemId}`);
+          game.addLoot(this.itemId, this.qty);
           game.audio.sfx('pickup');
           this.dead = true;
         }

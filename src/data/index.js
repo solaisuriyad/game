@@ -12,3 +12,9 @@ export function getItem(id) {
 export function itemWeight(id) { const i = getItem(id); return i ? i.weight : 0; }
 export function itemName(id) { const i = getItem(id); return i ? i.name : id; }
 export function itemRarity(id) { const i = getItem(id); return i ? i.rarity : 'common'; }
+
+// color per rarity (used for loot drops, nameplates, etc.)
+export const RARITY_COLORS = {
+  common: '#b8b8b8', uncommon: '#4ac84a', rare: '#4a8ac8', epic: '#c84ac8', legendary: '#ffd76a'
+};
+export function rarityColor(id) { return RARITY_COLORS[itemRarity(id)] || RARITY_COLORS.common; }
