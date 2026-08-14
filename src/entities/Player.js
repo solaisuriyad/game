@@ -71,13 +71,15 @@ export class Player extends Entity {
     this.working = 0;
     this.idleTime = 0;
     this.recovering = false;
-    // flying: X takes off at 75ft for 30s -> 50ft for 5s -> land + 10s cooldown
+    // flying: X cycles 50ft -> 75ft -> 50ft -> land, with an auto-timer at 75ft
+    // (30s at 75ft -> 5s at 50ft -> land + 10s cooldown)
     this.flying = false;
-    this.flyPhase = null;   // 'high' (75ft) | 'low' (50ft)
-    this.flyPhaseTimer = 0;
-    this.flyCd = 0;         // landing cooldown (seconds)
+    this.flyLevel = 0;      // 0=ground, 1=50ft, 2=75ft, 3=50ft(2nd press)
     this.targetAlt = 0;
     this.altitude = 0;      // current altitude in feet (0..75)
+    this.auto75Timer = 0;   // counts down while at 75ft (30s)
+    this.auto50Timer = 0;   // counts down while auto-descending at 50ft (5s)
+    this.flyCd = 0;         // landing cooldown (10s)
     this.yggBlessing = 0;   // invulnerability aura near the Yggdrasil (seconds)
   }
 
@@ -135,42 +137,68 @@ export class Player extends Entity {
     this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
-    // ---- flying: X takes off at 75ft for 30s, descends to 50ft for 5s,
-    //      then lands + 10s cooldown ----
+    // ---- flying: X cycles 50ft -> 75ft -> 50ft -> land; auto-timer at 75ft ----
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
-    if (game.input.pressed('x') && !this.flying && this.flyCd <= 0) {
-      // take off
-      this.flying = true;
-      this.flyPhase = 'high';      // 75ft
-      this.flyPhaseTimer = 30;     // 30 seconds at 75ft
-      this.targetAlt = 75;
-      game.audio.sfx('levelup');
-      game.toast('✈️ You take flight at 75 feet!');
-    }
-    if (this.flying) {
-      // advance the flight phases
-      this.flyPhaseTimer -= dt;
-      if (this.flyPhase === 'high' && this.flyPhaseTimer <= 0) {
-        this.flyPhase = 'low';      // descend to 50ft
-        this.flyPhaseTimer = 5;     // 5 seconds at 50ft
+
+    if (game.input.pressed('x') && this.flyCd <= 0) {
+      this.flyLevel++;
+      if (this.flyLevel === 1) {
+        this.flying = true;
         this.targetAlt = 50;
-        game.toast('↘️ Descending to 50 feet.');
-      } else if (this.flyPhase === 'low' && this.flyPhaseTimer <= 0) {
-        // land + cooldown
+        game.toast('✈️ You take flight at 50 feet.');
+      } else if (this.flyLevel === 2) {
+        this.flying = true;
+        this.targetAlt = 75;
+        this.auto75Timer = 30; // 30s at 75ft before auto-descend
+        game.toast('✈️ You fly higher at 75 feet!');
+      } else if (this.flyLevel === 3) {
+        this.flying = true;
+        this.targetAlt = 50;
+        game.toast('✈️ Descending back to 50 feet.');
+      } else { // flyLevel === 4 -> land
+        this.flyLevel = 0;
         this.flying = false;
-        this.flyCd = 10;            // 10 second cooldown
         this.targetAlt = 0;
         this.altitude = 0;
+        this.auto75Timer = 0;
+        this.auto50Timer = 0;
         this.land(game);
+        this.flyCd = 10;
         game.toast('🛬 You land. Flying cools down for 10s.');
       }
-      // smoothly glide to the target altitude
-      if (this.flying) {
-        const diff = this.targetAlt - this.altitude;
-        const step = 90 * dt; // 90 ft/s glide
-        if (Math.abs(diff) <= step) this.altitude = this.targetAlt;
-        else this.altitude += Math.sign(diff) * step;
+      game.audio.sfx('levelup');
+    }
+
+    // auto-timer: after 30s at 75ft, descend to 50ft
+    if (this.flying && this.flyLevel === 2 && this.auto75Timer > 0) {
+      this.auto75Timer -= dt;
+      if (this.auto75Timer <= 0) {
+        this.targetAlt = 50;
+        this.auto50Timer = 5; // 5s at 50ft
+        game.toast('↘️ Flight time up — descending to 50 feet.');
       }
+    }
+    // after 5s at 50ft, land + cooldown
+    if (this.flying && this.auto50Timer > 0) {
+      this.auto50Timer -= dt;
+      if (this.auto50Timer <= 0) {
+        this.flyLevel = 0;
+        this.flying = false;
+        this.targetAlt = 0;
+        this.altitude = 0;
+        this.auto75Timer = 0;
+        this.land(game);
+        this.flyCd = 10;
+        game.toast('🛬 You land. Flying cools down for 10s.');
+      }
+    }
+
+    // smoothly glide to the target altitude
+    if (this.flying) {
+      const diff = this.targetAlt - this.altitude;
+      const step = 90 * dt; // 90 ft/s glide
+      if (Math.abs(diff) <= step) this.altitude = this.targetAlt;
+      else this.altitude += Math.sign(diff) * step;
     }
 
     let spd = this.sprinting ? 230 : this.speed;

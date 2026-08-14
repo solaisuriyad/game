@@ -23,16 +23,16 @@ import("../src/main.js").then(()=>{
   if(meatAfter <= meatBefore) throw new Error("meat not auto-collected on kill");
   if(essence < 1) throw new Error("rank essence not collected on kill");
 
-  // 2. flying (timed cycle: X -> 75ft for 30s -> 50ft for 5s -> land)
-  p.flying=false; p.flyCd=0; p.altitude=0; p.targetAlt=0; p.flyPhase=null;
+  // 2. flying (X cycle: 50ft -> 75ft -> 50ft -> land)
+  p.flying=false; p.flyCd=0; p.altitude=0; p.targetAlt=0; p.flyLevel=0;
   g.input.pressed = (k) => k === 'x'; // simulate pressing X
   p.update(1/60, g);
   g.input.pressed = () => false;
-  console.log("flying after X:", p.flying, "phase:", p.flyPhase, "(expect true, high)");
-  if(!p.flying || p.flyPhase !== 'high') throw new Error("flying did not start");
+  console.log("flying after X:", p.flying, "level:", p.flyLevel, "(expect true, 1)");
+  if(!p.flying || p.flyLevel !== 1) throw new Error("flying did not start");
   for(let i=0;i<120;i++) p.update(1/60, g);
-  console.log("altitude:", p.altitude.toFixed(0), "(expect ~75)");
-  if(p.altitude < 60) throw new Error("altitude not rising");
+  console.log("altitude:", p.altitude.toFixed(0), "(expect ~50)");
+  if(p.altitude < 30) throw new Error("altitude not rising");
 
   // 3. Yggdrasil: massive + deep + blessing
   const y = g.world.yggdrasil;
