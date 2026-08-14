@@ -65,7 +65,9 @@ export class HUD {
   render(ctx) {
     const g = this.game;
     const p = g.player;
-    const W = g.camera.vw, H = g.camera.vh;
+    // HUD is drawn in fixed SCREEN space, independent of camera zoom (vw/vh are
+    // world-visible size and shrink/grow with zoom, which pushed UI off-screen).
+    const W = g.camera.screenW, H = g.camera.screenH;
     ctx.save();
     ctx.textBaseline = 'top';
     ctx.font = '11px sans-serif';
@@ -117,7 +119,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v4.0 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v4.1 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
