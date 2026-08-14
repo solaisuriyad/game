@@ -88,6 +88,23 @@ export class InventorySystem {
       this.removeItem(id, 1);
       return { ok: true, message: `Backpack upgraded to ${CAPACITIES[p.backpackLevel]} kg!` };
     }
+    if (item.category === 'tool' && item.id === 'compass') {
+      // the compass points to the nearest monster (a handy safety tool)
+      const g = this.game;
+      const list = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
+      let best = null, bd = Infinity;
+      for (const m of list) {
+        if (m.dead) continue;
+        const d = Math.hypot(m.x - p.x, m.y - p.y);
+        if (d < bd) { bd = d; best = m; }
+      }
+      if (best) {
+        const dir = Math.round((Math.atan2(best.y - p.y, best.x - p.x) * 180 / Math.PI + 360) % 360);
+        const tiles = Math.round(bd / 32);
+        return { ok: true, message: `🧭 Nearest monster: ${best.name} is ${tiles} tiles away (bearing ${dir}°).` };
+      }
+      return { ok: true, message: '🧭 The compass is still — no monsters in range.' };
+    }
     return { ok: false, message: 'That item cannot be used.' };
   }
 }

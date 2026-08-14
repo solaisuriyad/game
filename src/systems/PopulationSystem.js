@@ -13,7 +13,7 @@ const OCC_WEIGHTS = [
   ['cook', 2], ['healer', 2], ['herbalist', 2], ['miner', 3], ['woodcutter', 3],
   ['stablehand', 2], ['teacher', 1], ['child', 8], ['elder', 5], ['tavernkeep', 1],
   ['guildclerk', 2], ['adventurer', 3], ['traveler', 2], ['craftsman', 2], ['innkeep', 1],
-  ['blacksmith', 2]
+  ['blacksmith', 2], ['priest', 2], ['nurse', 2], ['gearmerchant', 1]
 ];
 
 // Stragglers: a handful of low-rank (F/E) monsters roam the safe forest just

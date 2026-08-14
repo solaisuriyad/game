@@ -6,7 +6,15 @@ const SHOP_STOCK = {
   foodshop: { label: 'Food Shop', stock: ['bread', 'apple', 'meat_cooked', 'cooked_fish'] },
   weaponshop: { label: 'Weapon Shop', stock: ['sword_wood', 'sword_stone', 'sword_iron', 'bow_wood', 'bow_iron', 'spear_wood', 'spear_iron', 'axe_iron', 'dagger_iron'] },
   armorshop: { label: 'Armor Shop', stock: ['cloth_shirt', 'cloth_pants', 'leather_vest', 'leather_legs', 'hood', 'iron_chest', 'iron_legs', 'boots_leather', 'boots_iron'] },
-  healer: { label: 'Healer', stock: ['potion_small', 'potion_big', 'bandage', 'herb'] }
+  healer: { label: 'Healer', stock: ['potion_small', 'potion_big', 'bandage', 'herb'] },
+  // adventure gear shop: armor, healing potions and safety gear
+  gearshop: { label: 'Adventure Gear Shop', stock: [
+    'leather_vest', 'leather_legs', 'reinforced_vest', 'hood', 'iron_helm', 'iron_chest', 'iron_legs', 'boots_leather', 'boots_iron',
+    'potion_small', 'potion_big', 'bandage', 'health_orb', 'stamina_orb', 'mana_orb',
+    'torch', 'lantern', 'rope', 'climbing_gear', 'compass', 'tent'
+  ] },
+  // healing center: a fuller infirmary than the corner healer
+  healing: { label: 'Healing Center', stock: ['potion_small', 'potion_big', 'bandage', 'health_orb', 'stamina_orb', 'mana_orb', 'holy_health', 'holy_stamina', 'holy_mana'] }
 };
 
 const SELLABLE = new Set(['material', 'food', 'consumable', 'tool', 'weapon', 'armor']);

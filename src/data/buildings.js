@@ -37,7 +37,22 @@ export const BUILDINGS = [
   { id: 'foodshop', name: 'Food Shop', func: 'foodshop', x: 1986, y: 2018, w: 4, h: 4, color: '#c08a4a' },
   { id: 'playerhouse', name: 'Player Residence', func: 'home', x: 2006, y: 2018, w: 4, h: 3, color: '#7a6a4a' },
   // ---- Center well (off the roads) ----
-  { id: 'well', name: 'Village Well', func: 'well', x: 1994, y: 1998, w: 2, h: 2, color: '#6a6a5a' }
+  { id: 'well', name: 'Village Well', func: 'well', x: 1994, y: 1998, w: 2, h: 2, color: '#6a6a5a' },
+
+  // ---- New civic buildings (v5.5) ----
+  // three watchtowers guarding the town's approaches
+  { id: 'watchtower_n', name: 'North Watchtower', func: 'watchtower', x: 2000, y: 1968, w: 3, h: 3, color: '#7a6a50' },
+  { id: 'watchtower_w', name: 'West Watchtower', func: 'watchtower', x: 1968, y: 1996, w: 3, h: 3, color: '#7a6a50' },
+  { id: 'watchtower_e', name: 'East Watchtower', func: 'watchtower', x: 2032, y: 1996, w: 3, h: 3, color: '#7a6a50' },
+  // school + playground for the village children
+  { id: 'school', name: 'Village School', func: 'school', x: 2026, y: 1976, w: 5, h: 4, color: '#5a7a8a' },
+  { id: 'playground', name: 'Playground', func: 'playground', x: 1968, y: 2006, w: 6, h: 4, color: '#7a8a4a' },
+  // healing center (a larger infirmary than the corner healer)
+  { id: 'healing', name: 'Healing Center', func: 'healing', x: 2028, y: 2004, w: 5, h: 4, color: '#4a8a6a' },
+  // the temple of the forest god, with a Shiva Lingam inside
+  { id: 'temple', name: 'Temple of the Forest God', func: 'temple', x: 2028, y: 2012, w: 5, h: 5, color: '#d0903a' },
+  // adventure gear shop (armor, potions, safety gear)
+  { id: 'gearshop', name: 'Adventure Gear Shop', func: 'gearshop', x: 1998, y: 2022, w: 4, h: 4, color: '#8a5a3a' }
 ];
 
 export const BUILDING_FUNC_LABELS = {
@@ -64,5 +79,11 @@ export const BUILDING_FUNC_LABELS = {
   guard: 'Guard Post',
   crafting: 'Crafting Area — campfire & workbench',
   home: 'Player Residence — sleep & store',
-  house: 'Residential House'
+  house: 'Residential House',
+  watchtower: 'Watchtower — keep watch over the roads',
+  school: 'School — where the children learn',
+  playground: 'Playground — the village children play here',
+  healing: 'Healing Center — treat wounds & buy medicine',
+  temple: 'Temple — pray to the forest god',
+  gearshop: 'Adventure Gear Shop — armor, potions & safety gear'
 };

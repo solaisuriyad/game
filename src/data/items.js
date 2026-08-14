@@ -82,6 +82,14 @@ export const ITEMS = [
   { id: 'holy_stamina', name: 'Endurance Charm', category: 'consumable', rarity: 'epic', weight: 0.2, value: 200, guildValue: 60, desc: 'Keeps your stamina FULL for 4 minutes.', holdStamina: 240, tags: ['charm'] },
   { id: 'holy_mana', name: 'Focus Charm', category: 'consumable', rarity: 'epic', weight: 0.2, value: 200, guildValue: 60, desc: 'Keeps your MP FULL for 3 minutes.', holdMana: 180, tags: ['charm'] },
 
+  // ---- Safety gear (adventure supplies from the Gear Shop) ----
+  { id: 'torch', name: 'Torch', category: 'tool', rarity: 'common', weight: 0.6, value: 10, guildValue: 2, desc: 'A pitch torch to light dark paths.', tags: ['tool'] },
+  { id: 'lantern', name: 'Lantern', category: 'tool', rarity: 'uncommon', weight: 1.0, value: 45, guildValue: 12, desc: 'A sturdy oil lantern for the deep forest.', tags: ['tool'] },
+  { id: 'rope', name: 'Climbing Rope', category: 'tool', rarity: 'common', weight: 1.5, value: 18, guildValue: 4, desc: 'Strong rope for climbing and traps.', tags: ['tool'] },
+  { id: 'climbing_gear', name: 'Climbing Gear', category: 'tool', rarity: 'uncommon', weight: 2.0, value: 90, guildValue: 25, desc: 'Pitons and harness for scaling cliffs.', tags: ['tool'] },
+  { id: 'compass', name: 'Compass', category: 'tool', rarity: 'uncommon', weight: 0.3, value: 60, guildValue: 15, desc: 'Points you toward the nearest monster.', tags: ['tool'] },
+  { id: 'tent', name: 'Travel Tent', category: 'tool', rarity: 'uncommon', weight: 4.0, value: 150, guildValue: 40, desc: 'A bedroll tent for resting in the wild.', tags: ['tool'] },
+
   // ---- Tools / ammo ----
   { id: 'arrow', name: 'Arrow', category: 'tool', rarity: 'common', weight: 0.1, value: 3, guildValue: 1, desc: 'A fletched arrow.', tags: ['ammo'] },
   { id: 'trap', name: 'Snare Trap', category: 'tool', rarity: 'common', weight: 1.0, value: 25, guildValue: 6, desc: 'Place to catch small game.', tags: ['trap'] },

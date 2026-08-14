@@ -236,6 +236,9 @@ export class MapRenderer {
       const sx = b.x - cam.x, sy = b.y - cam.y;
       if (sx > cam.vw + 20 || sy > cam.vh + 20 || sx + b.w < -20 || sy + b.h < -20) continue;
       const bd = b.building;
+      if (bd.func === 'watchtower') { this._drawWatchtower(ctx, sx, sy, b); continue; }
+      if (bd.func === 'temple') { this._drawTemple(ctx, sx, sy, b); continue; }
+      if (bd.func === 'playground') { this._drawPlayground(ctx, sx, sy, b); continue; }
       // walls
       ctx.fillStyle = '#9a8a6a';
       ctx.fillRect(sx, sy, b.w, b.h);
@@ -257,6 +260,93 @@ export class MapRenderer {
         ctx.fillText(bd.name, sx + b.w / 2, sy + b.h + 14);
       }
     }
+  }
+
+  // a tall stone watchtower with battlements + a flag
+  _drawWatchtower(ctx, sx, sy, b) {
+    const w = b.w, h = b.h;
+    // tall body
+    ctx.fillStyle = '#7a7a72';
+    ctx.fillRect(sx + w * 0.18, sy - 24, w * 0.64, h + 24);
+    ctx.fillStyle = '#6a6a62';
+    ctx.fillRect(sx + w * 0.3, sy - 24, w * 0.1, h + 24);
+    // battlements (crenellations)
+    ctx.fillStyle = '#7a7a72';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(sx + w * 0.18 + i * (w * 0.24), sy - 34, w * 0.12, 10);
+    }
+    // doorway
+    ctx.fillStyle = '#3a3a34';
+    ctx.fillRect(sx + w / 2 - 6, sy + h - 20, 12, 20);
+    // flag
+    ctx.fillStyle = '#5a4a2a';
+    ctx.fillRect(sx + w / 2 - 1, sy - 34, 2, 22);
+    ctx.fillStyle = '#c04a3a';
+    ctx.beginPath();
+    ctx.moveTo(sx + w / 2 + 1, sy - 34); ctx.lineTo(sx + w / 2 + 16, sy - 28); ctx.lineTo(sx + w / 2 + 1, sy - 22);
+    ctx.closePath(); ctx.fill();
+    // label
+    ctx.fillStyle = '#f5f0e0';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Watchtower', sx + w / 2, sy + h + 10);
+  }
+
+  // the temple — a saffron shrine with a tall gopuram-style spire
+  _drawTemple(ctx, sx, sy, b) {
+    const w = b.w, h = b.h;
+    // body
+    ctx.fillStyle = '#c88840';
+    ctx.fillRect(sx, sy, w, h);
+    ctx.fillStyle = '#a06a30';
+    ctx.fillRect(sx, sy + h - 8, w, 8);
+    // tiered spire
+    ctx.fillStyle = '#d0903a';
+    for (let i = 0; i < 3; i++) {
+      const tierW = w * (0.7 - i * 0.16);
+      const tierY = sy - (i + 1) * 12 - i * 4;
+      ctx.beginPath();
+      ctx.moveTo(sx + w / 2 - tierW / 2, tierY + 12);
+      ctx.lineTo(sx + w / 2, tierY);
+      ctx.lineTo(sx + w / 2 + tierW / 2, tierY + 12);
+      ctx.closePath(); ctx.fill();
+    }
+    // kalasha (finial)
+    ctx.fillStyle = '#ffd76a';
+    ctx.beginPath(); ctx.arc(sx + w / 2, sy - 46, 5, 0, Math.PI * 2); ctx.fill();
+    // door (dark, arched)
+    ctx.fillStyle = '#3a2410';
+    ctx.fillRect(sx + w / 2 - 8, sy + h - 20, 16, 20);
+    // label
+    ctx.fillStyle = '#ffd76a';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Temple', sx + w / 2, sy + h + 10);
+  }
+
+  // the playground — an open fenced area with a swing
+  _drawPlayground(ctx, sx, sy, b) {
+    const w = b.w, h = b.h;
+    // sand/grass base
+    ctx.fillStyle = '#6a8a4a';
+    ctx.fillRect(sx, sy, w, h);
+    ctx.fillStyle = '#c8b060';
+    ctx.fillRect(sx + 2, sy + 2, w - 4, h - 4);
+    // fence posts
+    ctx.strokeStyle = '#7a5c3a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx + 2, sy + 2, w - 4, h - 4);
+    // swing
+    ctx.strokeStyle = '#5a4228'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx + w * 0.35, sy + 4); ctx.lineTo(sx + w * 0.5, sy + h * 0.4); ctx.lineTo(sx + w * 0.65, sy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx + w * 0.5, sy + h * 0.4); ctx.lineTo(sx + w * 0.5, sy + h * 0.7); ctx.stroke();
+    ctx.fillStyle = '#5a4228';
+    ctx.fillRect(sx + w * 0.44, sy + h * 0.7, w * 0.12, 4);
+    // label
+    ctx.fillStyle = '#f0e6d0';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Playground', sx + w / 2, sy + h + 10);
   }
 
   _drawTrails(ctx, game) {

@@ -37,7 +37,13 @@ const WORKERS = {
   storage: ['shopkeeper', 'laborer'],
   house: ['homemaker'],
   home: [],
-  well: []
+  well: [],
+  watchtower: ['guard'],
+  school: ['teacher', 'child'],
+  playground: ['child'],
+  healing: ['nurse', 'healer', 'herbalist'],
+  temple: ['priest'],
+  gearshop: ['gearmerchant', 'merchant']
 };
 
 // Warm color themes so every building feels distinct.
@@ -65,7 +71,13 @@ const THEMES = {
   storage: { wall: '#403c38', floor: '#4c4438', wood: '#5a4e3a', accent: '#c0a86a' },
   house: { wall: '#4a4234', floor: '#5a4c36', wood: '#6a5638', accent: '#d0a85a' },
   home: { wall: '#4a3e30', floor: '#5a4a34', wood: '#6a5438', accent: '#d0a05a' },
-  well: { wall: '#4a6a8a', floor: '#4a7a3a', wood: '#6a5638', accent: '#8ac8e0' }
+  well: { wall: '#4a6a8a', floor: '#4a7a3a', wood: '#6a5638', accent: '#8ac8e0' },
+  watchtower: { wall: '#5a5244', floor: '#5c503c', wood: '#6a5c44', accent: '#d0c088' },
+  school: { wall: '#4a5a68', floor: '#5a6a70', wood: '#6a5a4a', accent: '#8ac0d8' },
+  playground: { wall: '#4a7a3a', floor: '#5a8a44', wood: '#7a5c3a', accent: '#a8d86a' },
+  healing: { wall: '#3e5a4a', floor: '#4a6a52', wood: '#5a6a4a', accent: '#6ad090' },
+  temple: { wall: '#5a3a20', floor: '#6a4a2a', wood: '#7a5a30', accent: '#ffb050' },
+  gearshop: { wall: '#4a4032', floor: '#5a4c38', wood: '#6a5638', accent: '#d0a05a' }
 };
 
 export class BuildingInterior {
@@ -211,6 +223,9 @@ export class BuildingInterior {
     ctx.fillStyle = '#d8c06a';
     ctx.beginPath(); ctx.arc(sx(RW / 2 + dw / 2 - 10), sy(RH - WALL / 2), 3 * scale, 0, Math.PI * 2); ctx.fill();
 
+    // decorative furniture per building (temple lingam, school desks, …)
+    this._drawFurniture(ctx, b, theme);
+
     // stations (counters + their NPCs)
     for (const s of this.stations) this._drawStation(ctx, s, theme);
 
@@ -308,6 +323,201 @@ export class BuildingInterior {
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(text, bx, by);
     ctx.restore();
+  }
+
+  // decorative furniture for the special buildings (drawn before the counters)
+  _drawFurniture(ctx, b, theme) {
+    const sx = (lx) => this._ox + lx * this._scale;
+    const sy = (ly) => this._oy + ly * this._scale;
+    switch (b.func) {
+      case 'temple':
+        this._drawLingam(ctx, sx, sy, theme);
+        break;
+      case 'school':
+        this._drawSchool(ctx, sx, sy, theme);
+        break;
+      case 'playground':
+        this._drawPlayground(ctx, sx, sy, theme);
+        break;
+      case 'watchtower':
+        this._drawWatchtower(ctx, sx, sy, theme);
+        break;
+      case 'healing':
+        this._drawBeds(ctx, sx, sy, theme);
+        break;
+      case 'gearshop':
+        this._drawGearShelves(ctx, sx, sy, theme);
+        break;
+    }
+  }
+
+  // The Shiva Lingam — a stone pillar on its base, lit by oil lamps and flowers.
+  _drawLingam(ctx, sx, sy, theme) {
+    const cx = 600, cy = 300; // logical room coords (upper center)
+    // raised dais
+    ctx.fillStyle = '#4a3420';
+    ctx.fillRect(sx(cx - 90), sy(cy + 60), 180 * this._scale, 26 * this._scale);
+    ctx.fillStyle = '#5a4230';
+    ctx.fillRect(sx(cx - 70), sy(cy + 50), 140 * this._scale, 12 * this._scale);
+    // yoni base (horizontal spout platform)
+    ctx.fillStyle = '#3a3a3e';
+    ctx.beginPath();
+    ctx.ellipse(sx(cx), sy(cy + 30), 60 * this._scale, 22 * this._scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2e2e32';
+    ctx.beginPath();
+    ctx.ellipse(sx(cx + 58), sy(cy + 30), 26 * this._scale, 12 * this._scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // the lingam (rounded stone pillar)
+    ctx.fillStyle = '#2a2a30';
+    ctx.beginPath();
+    ctx.ellipse(sx(cx), sy(cy - 8), 34 * this._scale, 48 * this._scale, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#383842';
+    ctx.beginPath();
+    ctx.ellipse(sx(cx), sy(cy - 14), 26 * this._scale, 40 * this._scale, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    // soft glow around the lingam
+    const glow = ctx.createRadialGradient(sx(cx), sy(cy - 4), 8, sx(cx), sy(cy - 4), 110 * this._scale);
+    glow.addColorStop(0, 'rgba(255,220,150,0.35)');
+    glow.addColorStop(1, 'rgba(255,220,150,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(sx(cx), sy(cy - 4), 110 * this._scale, 0, Math.PI * 2); ctx.fill();
+    // oil lamps (diyas) with flames
+    const diya = (lx, ly) => {
+      ctx.fillStyle = '#5a3a1a';
+      ctx.beginPath(); ctx.ellipse(sx(lx), sy(ly), 12 * this._scale, 6 * this._scale, 0, 0, Math.PI * 2); ctx.fill();
+      const f = ctx.createRadialGradient(sx(lx), sy(ly) - 12 * this._scale, 1, sx(lx), sy(ly) - 12 * this._scale, 10 * this._scale);
+      f.addColorStop(0, '#fff2a0'); f.addColorStop(0.4, '#ffb040'); f.addColorStop(1, 'rgba(255,120,20,0)');
+      ctx.fillStyle = f;
+      ctx.beginPath(); ctx.arc(sx(lx), sy(ly) - 12 * this._scale, 10 * this._scale, 0, Math.PI * 2); ctx.fill();
+    };
+    diya(cx - 70, cy + 40);
+    diya(cx + 70, cy + 40);
+    // flower offerings
+    ctx.fillStyle = '#ff8a5a';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      ctx.beginPath(); ctx.arc(sx(cx + Math.cos(a) * 44), sy(cy + 34 + Math.sin(a) * 8), 4 * this._scale, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#ffd76a';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + 0.4;
+      ctx.beginPath(); ctx.arc(sx(cx + Math.cos(a) * 46), sy(cy + 32 + Math.sin(a) * 8), 2.5 * this._scale, 0, Math.PI * 2); ctx.fill();
+    }
+    // incense smoke wisps
+    ctx.strokeStyle = 'rgba(220,220,230,0.5)';
+    ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i += 2) {
+      ctx.beginPath();
+      ctx.moveTo(sx(cx + i * 40), sy(cy - 30));
+      ctx.quadraticCurveTo(sx(cx + i * 46), sy(cy - 60), sx(cx + i * 34), sy(cy - 86));
+      ctx.stroke();
+    }
+  }
+
+  _drawSchool(ctx, sx, sy, theme) {
+    // chalkboard
+    ctx.fillStyle = '#2a3a2a';
+    ctx.fillRect(sx(470), sy(120), 260 * this._scale, 90 * this._scale);
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 6; ctx.strokeRect(sx(470), sy(120), 260 * this._scale, 90 * this._scale);
+    ctx.fillStyle = '#e8e8d8';
+    ctx.font = `${16 * this._scale}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A B C · 1 2 3', sx(600), sy(150));
+    ctx.fillText('the forest provides', sx(600), sy(182));
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    // desks
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < 3; i++) {
+        const dx = 320 + i * 190, dy = 330 + row * 150;
+        ctx.fillStyle = theme.wood;
+        ctx.fillRect(sx(dx - 50), sy(dy), 100 * this._scale, 16 * this._scale);
+        ctx.fillStyle = '#4a3a26';
+        ctx.fillRect(sx(dx - 44), sy(dy + 16), 8 * this._scale, 30 * this._scale);
+        ctx.fillRect(sx(dx + 36), sy(dy + 16), 8 * this._scale, 30 * this._scale);
+      }
+    }
+  }
+
+  _drawPlayground(ctx, sx, sy, theme) {
+    // swing set
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(sx(240), sy(220)); ctx.lineTo(sx(300), sy(140)); ctx.lineTo(sx(360), sy(220)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(300), sy(140)); ctx.lineTo(sx(300), sy(250)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(300), sy(250)); ctx.lineTo(sx(270), sy(300)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(300), sy(250)); ctx.lineTo(sx(330), sy(300)); ctx.stroke();
+    ctx.fillStyle = theme.wood; ctx.fillRect(sx(258), sy(298), 84 * this._scale, 8 * this._scale);
+    // slide
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(sx(560), sy(180)); ctx.lineTo(sx(620), sy(340)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(560), sy(180)); ctx.lineTo(sx(560), sy(130)); ctx.stroke();
+    ctx.fillStyle = '#c84a3a'; ctx.fillRect(sx(544), sy(118), 34 * this._scale, 14 * this._scale);
+    ctx.strokeStyle = theme.wood;
+    ctx.beginPath(); ctx.moveTo(sx(560), sy(132)); ctx.lineTo(sx(620), sy(352)); ctx.stroke();
+    // seesaw
+    ctx.fillStyle = '#c8c8c8';
+    ctx.beginPath(); ctx.ellipse(sx(820), sy(400), 10 * this._scale, 8 * this._scale, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(sx(740), sy(380)); ctx.lineTo(sx(900), sy(400)); ctx.stroke();
+    ctx.fillStyle = theme.wood;
+    ctx.fillRect(sx(730), sy(376), 20 * this._scale, 8 * this._scale);
+    ctx.fillRect(sx(892), sy(396), 20 * this._scale, 8 * this._scale);
+  }
+
+  _drawWatchtower(ctx, sx, sy, theme) {
+    // ladder up to a lookout platform
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(sx(600), sy(660)); ctx.lineTo(sx(600), sy(240)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(660), sy(660)); ctx.lineTo(sx(660), sy(240)); ctx.stroke();
+    for (let ly = 260; ly < 660; ly += 50) {
+      ctx.beginPath(); ctx.moveTo(sx(600), sy(ly)); ctx.lineTo(sx(660), sy(ly)); ctx.stroke();
+    }
+    // lookout platform + railing
+    ctx.fillStyle = theme.wood; ctx.fillRect(sx(520), sy(200), 220 * this._scale, 14 * this._scale);
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(sx(520), sy(200)); ctx.lineTo(sx(520), sy(140)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(740), sy(200)); ctx.lineTo(sx(740), sy(140)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(520), sy(140)); ctx.lineTo(sx(740), sy(140)); ctx.stroke();
+    // open view (blue sky through the railing)
+    ctx.fillStyle = '#8ac0e8';
+    ctx.fillRect(sx(526), sy(146), 208 * this._scale, 48 * this._scale);
+  }
+
+  _drawBeds(ctx, sx, sy, theme) {
+    for (let i = 0; i < 3; i++) {
+      const bx = 320 + i * 190, by = 260;
+      ctx.fillStyle = theme.wood; ctx.fillRect(sx(bx - 55), sy(by), 110 * this._scale, 12 * this._scale);
+      ctx.fillStyle = '#e8e8e8'; ctx.fillRect(sx(bx - 51), sy(by - 30), 102 * this._scale, 30 * this._scale);
+      ctx.fillStyle = '#7ac0a0'; ctx.fillRect(sx(bx - 51), sy(by - 30), 102 * this._scale, 12 * this._scale);
+      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(sx(bx - 51), sy(by - 44), 40 * this._scale, 16 * this._scale);
+      ctx.fillStyle = theme.wood;
+      ctx.fillRect(sx(bx - 55), sy(by + 12), 10 * this._scale, 20 * this._scale);
+      ctx.fillRect(sx(bx + 45), sy(by + 12), 10 * this._scale, 20 * this._scale);
+    }
+  }
+
+  _drawGearShelves(ctx, sx, sy, theme) {
+    // armor stand
+    ctx.strokeStyle = theme.wood; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(sx(280), sy(300)); ctx.lineTo(sx(280), sy(420)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(240), sy(340)); ctx.lineTo(sx(320), sy(340)); ctx.stroke();
+    ctx.fillStyle = '#5a6a7a';
+    ctx.beginPath(); ctx.arc(sx(280), sy(300), 16 * this._scale, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#4a5a68'; ctx.fillRect(sx(262), sy(312), 36 * this._scale, 30 * this._scale);
+    // potion shelves
+    ctx.fillStyle = theme.wood; ctx.fillRect(sx(560), sy(200), 200 * this._scale, 160 * this._scale);
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2; ctx.strokeRect(sx(560), sy(200), 200 * this._scale, 160 * this._scale);
+    const potion = ['#d0483a', '#4a8ac8', '#7a5ac8', '#4ac84a'];
+    for (let row = 0; row < 3; row++) {
+      for (let i = 0; i < 4; i++) {
+        const px = 590 + i * 44, py = 230 + row * 46;
+        ctx.fillStyle = potion[(row * 4 + i) % 4];
+        ctx.fillRect(sx(px), sy(py), 16 * this._scale, 24 * this._scale);
+        ctx.fillStyle = '#8a6a3a';
+        ctx.fillRect(sx(px), sy(py), 16 * this._scale, 5 * this._scale);
+      }
+    }
   }
 
   _drawHeader(ctx, SW, SH, b, theme) {
@@ -497,6 +707,33 @@ function stationsFor(b, g) {
     ];
     case 'house': return [
       center('house', 'Villager Home', 'A cozy home', 'homemaker', talk('homemaker'))
+    ];
+    case 'watchtower': return [
+      P('lookout', 'Look Out', 'Watch the roads & forest', 600, 300, 'guard', () => g.toast('You climb to the lookout. The forest stretches to the horizon — the Yggdrasil glows far to the east.')),
+      center('guard', 'Talk to the Guard', 'Ask about the roads', 'guard', talk('guard'))
+    ];
+    case 'school': return [
+      center('teach', 'Talk to the Teacher', 'Learn about the village', 'teacher', talk('teacher')),
+      P('study', 'Study', 'Read at a desk', 600, 560, null, () => { g.addXP(10); g.toast('You study for a while. +10 XP.'); }),
+    ];
+    case 'playground': return [
+      P('play', 'Play', 'Join the children', 600, 430, 'child', () => g.toast('You play with the village children. They laugh and cheer.')),
+      P('swing', 'Swing', 'Swing on the swing set', 300, 300, 'child', () => g.toast('You swing back and forth under the open sky.'))
+    ];
+    case 'healing': return [
+      center('buy', 'Buy Medicine', 'Potions, orbs & charms', 'nurse', shop('healing')),
+      P('rest', 'Rest & Heal', 'Recover fully', 600, 600, 'nurse', () => { g.survival.rest(); g.buildingInterior.exit(); })
+    ];
+    case 'temple': return [
+      P('pray', 'Pray at the Shiva Lingam', 'The forest god blesses you', 600, 300, 'priest', () => {
+        const p = g.player;
+        p.health = p.maxHealth; p.stamina = p.maxStamina; p.mp = p.maxMp;
+        g.toast('🙏 You pray at the Shiva Lingam. The forest god blesses you — all stats restored.');
+      }),
+      center('talk', 'Talk to the Priest', 'Hear the old blessings', 'priest', talk('priest'))
+    ];
+    case 'gearshop': return [
+      center('buy', 'Buy Gear', 'Armor · potions · safety gear', 'gearmerchant', shop('gearshop'))
     ];
     default: return [
       center('counter', 'Interact', b.name, null, main)

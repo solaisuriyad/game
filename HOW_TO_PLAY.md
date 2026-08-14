@@ -217,6 +217,12 @@ So the journey is: leave town → cross the dense forest → fight F-rank at the
 |---|---|
 | 🏛️ **Adventure Guild** | Submit materials, accept & turn in quests (the main hub) |
 | 🏹 **Hunter's Lodge** | Buy arrows, traps, knives, bandages |
+| 🎒 **Adventure Gear Shop** | Buy armor, healing potions, orbs, charms & safety gear (torch, rope, compass, tent) |
+| 🏥 **Healing Center** | Treat wounds — buy potions, orbs & charms, or rest to fully recover |
+| 🛕 **Temple of the Forest God** | Pray at the **Shiva Lingam** inside to fully restore all stats |
+| 🏫 **Village School** | Where the children learn — talk to the teacher or study for XP |
+| 🛝 **Playground** | The village children play here |
+| 🗼 **Watchtowers (×3)** | Guard towers around the town — climb to look out over the roads |
 | ⚒️ **Blacksmith** | Craft & repair weapons |
 | 🗡️ **Weapon Shop** | Buy swords, bows, spears, axes, hammers, daggers |
 | 🛡️ **Armor Shop** | Buy armor (head, body, legs, feet) |
