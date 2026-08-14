@@ -347,8 +347,13 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     this.player.update(dt, this);
-    // 3D mode: the player faces the camera direction (movement dir when moving)
-    if (this.mode3d && this.renderer3d) this.player.facing = this.renderer3d.facingAngle();
+    // 3D mode: the player aims where the mouse points (raycast onto the ground);
+    // if the cursor is above the horizon, fall back to facing the camera.
+    if (this.mode3d && this.renderer3d) {
+      const aim = this.renderer3d.aimWorldPoint();
+      if (aim) this.player.facing = Math.atan2(aim.y - this.player.y, aim.x - this.player.x);
+      else this.player.facing = this.renderer3d.facingAngle();
+    }
     this.combat.update(dt);
     this.activeSkills.update(dt);
     this.survival.update(dt);

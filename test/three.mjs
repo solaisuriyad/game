@@ -71,5 +71,39 @@ const fa = r3.facingAngle();
 console.log('facingAngle finite:', Number.isFinite(fa));
 if (!Number.isFinite(fa)) throw new Error('facing angle is NaN');
 
+// ---- 3D aiming: mouse raycast onto the ground ----
+game.player.x = 2000 * 32; game.player.y = 2000 * 32; // village center
+r3.yaw = 0; r3.pitch = 0.95; // reset camera (a previous test set yaw = π)
+r3.sync(); // position the camera around the player
+
+// aim at a point low on screen (definitely hits the ground)
+r3._mouseNdc = { x: 0, y: -0.5 };
+const aimC = r3.aimWorldPoint();
+console.log('aim (center-low):', aimC ? aimC.x.toFixed(0) + ',' + aimC.y.toFixed(0) : 'null');
+if (!aimC || !Number.isFinite(aimC.x) || !Number.isFinite(aimC.y)) throw new Error('aim point invalid');
+
+// aim to the right of the screen -> world point should move +x (east)
+r3._mouseNdc = { x: 1, y: -0.5 };
+const aimR = r3.aimWorldPoint();
+console.log('aim (right):', aimR ? aimR.x.toFixed(0) + ',' + aimR.y.toFixed(0) : 'null');
+if (!aimR) throw new Error('aim right missed the ground');
+if (!(aimR.x > aimC.x)) throw new Error('aim did not move right with cursor');
+
+// aim above the horizon (camera nearly level) -> returns null (fallback path)
+r3.pitch = 0.15; // nearly horizontal camera
+r3.sync();
+r3._mouseNdc = { x: 0, y: 1 }; // very top of screen = sky
+const aimTop = r3.aimWorldPoint();
+console.log('aim (above horizon):', aimTop === null ? 'null (correct)' : 'hit ' + aimTop.x.toFixed(0));
+if (aimTop !== null) throw new Error('aim above horizon should return null');
+r3.pitch = 0.95; r3.sync(); // restore
+
+// the player's facing should point toward the aim point (not just camera forward)
+r3._mouseNdc = { x: 0, y: -0.5 };
+const ap = r3.aimWorldPoint();
+const wantFacing = Math.atan2(ap.y - game.player.y, ap.x - game.player.x);
+console.log('aim facing finite:', Number.isFinite(wantFacing));
+if (!Number.isFinite(wantFacing)) throw new Error('aim facing is NaN');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

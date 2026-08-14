@@ -1,4 +1,5 @@
 # server-side save data (accounts) — never commit player data
-data/
+# (leading slash = only the repo ROOT data/ dir, not src/data/)
+/data/
 node_modules/
 *.log

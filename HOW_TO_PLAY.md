@@ -344,6 +344,6 @@ http://localhost:3000/?3d=1
 
 This shows the same world and characters in 3D (low-poly, built in code) while the normal 2D game stays the default.
 
-**3D controls:** **WASD** moves relative to the camera (W = away from you, S = toward, A/D = strafe). **Hold right-mouse and drag** to orbit the camera around you. **Scroll wheel** zooms in/out. **Left-click** attacks (aimed where the camera looks). It's a work in progress — menus and the building interiors are still 2D overlays.
+**3D controls:** **WASD** moves relative to the camera (W = away from you, S = toward, A/D = strafe). **Mouse** aims — your character faces wherever the cursor points on the ground. **Left-click** attacks / shoots arrows toward the aim point. **Hold right-mouse and drag** to orbit the camera around you. **Scroll wheel** zooms in/out. It's a work in progress — menus and the building interiors are still 2D overlays.
 
 **Good luck, hunter — the forest is waiting!** 🌲🏹

@@ -48,6 +48,13 @@ export class World3DRenderer {
     this._dragging = false;
     this._last = { x: 0, y: 0 };
 
+    // aiming: raycast the mouse cursor onto the ground plane
+    this._mouseNdc = { x: 0, y: 0 };
+    this._ray = new THREE.Raycaster();
+    this._ndcVec = new THREE.Vector2();
+    this._hitVec = new THREE.Vector3();
+    this._groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
     this.camera = new THREE.PerspectiveCamera(60, 1, 4, 120000);
 
     // lights
@@ -266,6 +273,9 @@ export class World3DRenderer {
     const camY = Math.sin(this.pitch) * this.distance;
     this.camera.position.set(camX, camY, camZ);
     this.camera.lookAt(pp.x, 14, pp.z);
+    // keep the camera's world matrix current so raycasting/aiming reads the
+    // fresh orientation even before the first render frame
+    this.camera.updateMatrixWorld(true);
   }
 
   // ---- 3D controls: camera-relative movement + facing ----
@@ -301,7 +311,19 @@ export class World3DRenderer {
     return Math.atan2(f.y, f.x);
   }
 
-  // browser-only: mouse orbit + wheel zoom (right-drag to orbit, wheel to zoom)
+  // cast the mouse cursor onto the ground plane; returns the world point {x,y}
+  // the player is aiming at, or null if the cursor points above the horizon.
+  aimWorldPoint() {
+    const ndc = this._mouseNdc || { x: 0, y: 0 };
+    this._ray.setFromCamera(this._ndcVec.set(ndc.x, ndc.y), this.camera);
+    if (this._ray.ray.intersectPlane(this._groundPlane, this._hitVec)) {
+      return { x: this._hitVec.x + PX_W / 2, y: this._hitVec.z + PX_H / 2 };
+    }
+    return null;
+  }
+
+  // browser-only: mouse orbit + wheel zoom (right-drag to orbit, wheel to zoom),
+  // and cursor tracking so attacks/aiming work on the 3D canvas.
   attachControls() {
     if (this._controlsAttached) return;
     this._controlsAttached = true;
@@ -313,15 +335,30 @@ export class World3DRenderer {
         this._dragging = true;
         this._last = { x: e.clientX, y: e.clientY };
         e.preventDefault();
+      } else if (e.button === 0) {
+        // left-click = attack. The 2D game reads mousedown on its own canvas,
+        // which is BEHIND this one in 3D mode — mirror it into the shared input.
+        const m = this.game.input.mouse;
+        m.buttons |= 1;
       }
     };
     const onMove = (e) => {
-      if (!this._dragging) return;
-      const dx = e.clientX - this._last.x;
-      const dy = e.clientY - this._last.y;
-      this._last = { x: e.clientX, y: e.clientY };
-      this.yaw -= dx * 0.005;
-      this.pitch = Math.max(0.15, Math.min(1.35, this.pitch + dy * 0.004));
+      // track the cursor (in normalized device coords) for aiming
+      const rect = el.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
+      // also mirror into the shared mouse so 2D combat logic sees a fresh position
+      const m = this.game.input.mouse;
+      m.x = mx; m.y = my;
+      // orbit while dragging
+      if (this._dragging) {
+        const dx = e.clientX - this._last.x;
+        const dy = e.clientY - this._last.y;
+        this._last = { x: e.clientX, y: e.clientY };
+        this.yaw -= dx * 0.005;
+        this.pitch = Math.max(0.15, Math.min(1.35, this.pitch + dy * 0.004));
+      }
     };
     const onUp = () => { this._dragging = false; };
     const onWheel = (e) => {
