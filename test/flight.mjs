@@ -52,6 +52,27 @@ import("../src/main.js").then(()=>{
     if(typeof ab.params.range !== "number") throw new Error("thunder_attack missing range gate");
   }
 
+  // 5. screen shake only happens when the monster is actually close enough to hit
+  p.flying = false; p.altitude = 0;
+  const roarer = g.monsters.find(m=>m.abilities.some(a=>a.id==="roar") && !m.dead);
+  if(roarer){
+    const ab = roarer.abilities.find(a=>a.id==="roar");
+    // far away: no shake
+    roarer.x = p.x + 800; roarer.y = p.y;
+    g.camera.shake = 0;
+    g.abilities.execute(roarer, "roar", ab.params, g);
+    console.log("roar from 800px away -> shake", g.camera.shake, "(expect 0)");
+    if(g.camera.shake > 0) throw new Error("roar shook the screen from far away");
+    // close: shake happens
+    roarer.x = p.x + 40; roarer.y = p.y;
+    g.camera.shake = 0;
+    g.abilities.execute(roarer, "roar", ab.params, g);
+    console.log("roar from 40px away -> shake", g.camera.shake, "(expect > 0)");
+    if(g.camera.shake <= 0) throw new Error("roar did not shake the screen when close");
+  } else {
+    console.log("(no roaring monster in this run — skipping shake check)");
+  }
+
   console.log("FLIGHT SAFETY TESTS PASSED");
   process.exit(0);
 });

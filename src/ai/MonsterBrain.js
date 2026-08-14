@@ -171,7 +171,9 @@ function chooseAbility(m, dPlayer, inMelee, game) {
   const wantsClose = playerRanged && dPlayer > 140;
 
   const candidates = [];
-  const isSelf = (id) => ['regenerate', 'rage', 'howl', 'summon', 'roar'].includes(id);
+  // "self" abilities don't target the player directly, so they skip the reach
+  // gate. Roar is NOT self — it damages/stuns the player, so it IS reach-gated.
+  const isSelf = (id) => ['regenerate', 'rage', 'howl', 'summon'].includes(id);
   for (const ab of m.abilities) {
     if ((m.abilityCd[ab.id] || 0) > 0) continue;
     // reach gating: melee abilities require close range; ranged/dash require within reach

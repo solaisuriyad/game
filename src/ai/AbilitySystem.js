@@ -67,9 +67,9 @@ export class AbilitySystem {
     if (d <= (params.radius || 90)) {
       game.combat.damagePlayer(monster.damage * params.damage, monster, null);
       game.combat.knockbackPlayer(monster, 200);
+      game.camera.addShake(6);
+      game.audio.sfx('hit');
     }
-    game.camera.addShake(6);
-    game.audio.sfx('hit');
   }
   do_regenerate(monster, params, game) {
     monster.hp = Math.min(monster.maxHp, monster.hp + (params.heal || 30));
@@ -85,9 +85,9 @@ export class AbilitySystem {
     if (monster.distTo(p) <= (params.radius || 100)) {
       game.combat.damagePlayer(monster.damage * params.damage, monster, null);
       game.combat.knockbackPlayer(monster, 220);
+      game.camera.addShake(8);
+      game.audio.sfx('hit');
     }
-    game.camera.addShake(8);
-    game.audio.sfx('hit');
   }
   do_tail_swipe(monster, params, game) {
     const p = game.player;
@@ -106,9 +106,9 @@ export class AbilitySystem {
   }
   do_roar(monster, params, game) {
     const p = game.player;
-    game.audio.sfx('roar');
-    game.camera.addShake(6);
     if (monster.distTo(p) <= (params.range || 160)) {
+      game.audio.sfx('roar');
+      game.camera.addShake(6);
       game.combat.damagePlayer(monster.damage * (params.damage || 0.2), monster, null);
       p.addStatus('stun', 0.35, 1);
     }
@@ -152,9 +152,9 @@ export class AbilitySystem {
   }
   do_thunder_attack(monster, params, game) {
     const p = game.player;
-    game.camera.addShake(7);
-    game.audio.sfx('hit');
     if (monster.distTo(p) <= (params.radius || 160)) {
+      game.camera.addShake(7);
+      game.audio.sfx('hit');
       game.combat.damagePlayer(monster.damage * (params.damage || 1.3), monster, null);
       if (Math.random() < 0.25) p.addStatus('stun', 0.3, 1);
       game.addFloatText(p.x, p.y - 30, '⚡ Thunder!', '#c8a0ff');
