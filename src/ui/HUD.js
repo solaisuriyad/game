@@ -104,6 +104,9 @@ export class HUD {
     // ---- monster finder (compass arrow to the nearest monster) ----
     this._drawMonsterFinder(ctx, W, H);
 
+    // ---- attacker indicator (red arrow + name pointing at what just hit you) ----
+    this._drawAttackerIndicator(ctx, W, H);
+
     // ---- loot feed (recent drops) ----
     this._drawLootFeed(ctx, W, H);
 
@@ -130,7 +133,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v4.7 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v4.8 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -372,6 +375,34 @@ export class HUD {
     ctx.fillRect(px - tw / 2 - 6, py - 20, tw + 12, 15);
     ctx.fillStyle = '#ffb0a0';
     ctx.fillText(label, px, py - 8);
+    ctx.textAlign = 'left';
+  }
+
+  // red arrow + name pointing at whatever just hit you (so an attacker is never
+  // invisible — especially relevant while flying, where ground monsters used to
+  // be able to hit you from below)
+  _drawAttackerIndicator(ctx, W, H) {
+    const p = this.game.player;
+    if (!p.recentAttacker || p.recentAttacker.t <= 0) return;
+    const atk = p.recentAttacker;
+    const px = W / 2, py = H / 2;
+    const r = 60;
+    const ax = px + Math.cos(atk.dir) * r;
+    const ay = py + Math.sin(atk.dir) * r;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(atk.dir);
+    ctx.fillStyle = '#ff3030';
+    ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-7, -8); ctx.lineTo(-7, 8); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    const label = `⚔ ${atk.name}`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillRect(px - tw / 2 - 6, py - 36, tw + 12, 17);
+    ctx.fillStyle = '#ff8a8a';
+    ctx.fillText(label, px, py - 26);
     ctx.textAlign = 'left';
   }
 

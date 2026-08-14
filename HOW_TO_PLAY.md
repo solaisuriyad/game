@@ -56,7 +56,7 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 | **S / ↓** | Walk down |
 | **D / →** | Walk right |
 | **R (hold) + W/A/S/D** | **RUN** — move much faster (but it drains your stamina) |
-| **X** | **FLY** — take off into the air (30s, up to 50ft). Press **X again to land**. |
+| **X** | **FLY** — take off into the air (30s, up to 50ft). Press **X again to land**. **While airborne (above ~15ft) you're out of reach of ground monsters** — only flying dragons/dragonoids can hit you. |
 | **Mouse** | Aim / look in a direction |
 
 ### ⚔️ Fighting

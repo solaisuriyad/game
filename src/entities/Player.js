@@ -57,6 +57,7 @@ export class Player extends Entity {
     this.charging = false;
     this.chargeTime = 0;
     this.lastDamageDir = 0;
+    this.recentAttacker = null; // { name, dir, t } — who last hit you (for the HUD)
 
     this.kills = 0;
     this.animalsHunted = 0;
@@ -230,6 +231,7 @@ export class Player extends Entity {
     this.attackWindup = Math.max(0, this.attackWindup - dt);
     this.dodgeCd = Math.max(0, this.dodgeCd - dt);
     if (this.dodgeTimer > 0) this.dodgeTimer -= dt;
+    if (this.recentAttacker) this.recentAttacker.t -= dt;
   }
 
   draw(ctx, cam, game) {

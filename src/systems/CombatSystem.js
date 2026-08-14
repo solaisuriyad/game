@@ -156,6 +156,9 @@ export class CombatSystem {
     // invulnerable while blessed by the Yggdrasil, standing within its aura,
     // or during the brief post-respawn grace period
     if (p.yggBlessing > 0 || this.game.nearYggdrasil() || p.spawnGrace > 0) return;
+    // a player in flight is out of reach of ground-based attackers — only
+    // flying monsters (dragons/dragonoids) can reach them
+    if (p.flying && p.altitude > 15 && source && !source.flying) return;
     let dmg = amount;
     if (p.blocking) { dmg *= 0.25; p.stamina = Math.max(0, p.stamina - 12); }
     dmg -= p.totalDefense * 0.5;
@@ -164,7 +167,15 @@ export class CombatSystem {
     this._recentDamage = 3;
     this._recentCombat = 4;
     p.health -= dmg;
-    if (source) p.lastDamageDir = Math.atan2(p.y - source.y, p.x - source.x);
+    if (source) {
+      p.lastDamageDir = Math.atan2(p.y - source.y, p.x - source.x);
+      // remember the attacker so the HUD can show WHO hit you and from where
+      p.recentAttacker = {
+        name: source.name || (source.def && source.def.name) || 'a creature',
+        dir: Math.atan2(source.y - p.y, source.x - p.x),
+        t: 2
+      };
+    }
     this.game.addFloatText(p.x, p.y - 24, '-' + dmg, '#ff6060');
     this.game.audio.sfx('playerHit');
     this.game.camera.addShake(4);

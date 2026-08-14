@@ -273,7 +273,7 @@ export const MONSTERS = [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
       { id: 'fire_breath', params: { damage: 1.4, cooldown: 5.0, range: 280, speed: 320 } },
       { id: 'fire_ball', params: { damage: 1.3, cooldown: 4.5, range: 300, speed: 300 } },
-      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, range: 170, radius: 170 } },
       { id: 'fly', params: { damage: 1.2, cooldown: 6.0, range: 260, speed: 400 } },
       { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } }
     ],
@@ -292,7 +292,7 @@ export const MONSTERS = [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.0, range: 60, knockback: 130 } },
       { id: 'ice_breath', params: { damage: 1.3, cooldown: 5.0, range: 280, speed: 320 } },
       { id: 'air_slash', params: { damage: 1.2, cooldown: 4.5, range: 300, speed: 320 } },
-      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, range: 170, radius: 170 } },
       { id: 'fly', params: { damage: 1.2, cooldown: 6.0, range: 260, speed: 400 } },
       { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 110, radius: 110 } }
     ],
@@ -311,7 +311,7 @@ export const MONSTERS = [
       { id: 'melee_basic', params: { damage: 1.0, cooldown: 1.1, range: 64, knockback: 140 } },
       { id: 'ground_slam', params: { damage: 1.5, cooldown: 6.0, range: 130, radius: 130 } },
       { id: 'water_slash', params: { damage: 1.2, cooldown: 4.5, range: 280, speed: 300 } },
-      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, radius: 170 } },
+      { id: 'thunder_attack', params: { damage: 1.5, cooldown: 9.0, range: 170, radius: 170 } },
       { id: 'tail_swipe', params: { damage: 1.3, cooldown: 6.0, range: 120, radius: 120 } }
     ],
     loot: [
@@ -328,7 +328,7 @@ export const MONSTERS = [
     abilities: [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
       { id: 'fire_breath', params: { damage: 1.5, cooldown: 4.0, range: 300, speed: 340 } },
-      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, range: 190, radius: 190 } },
       { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 520 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
       { id: 'summon', params: { summonId: 'fire_dragon', count: 1, cooldown: 16.0, range: 0 } },
@@ -348,7 +348,7 @@ export const MONSTERS = [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 64, knockback: 150 } },
       { id: 'ice_breath', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 340 } },
       { id: 'air_slash', params: { damage: 1.4, cooldown: 4.0, range: 320, speed: 340 } },
-      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, range: 190, radius: 190 } },
       { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 520 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 500 } },
       { id: 'summon', params: { summonId: 'ice_dragon', count: 1, cooldown: 16.0, range: 0 } },
@@ -368,7 +368,7 @@ export const MONSTERS = [
       { id: 'melee_basic', params: { damage: 1.1, cooldown: 0.9, range: 66, knockback: 160 } },
       { id: 'ground_slam', params: { damage: 1.7, cooldown: 5.0, range: 140, radius: 150 } },
       { id: 'water_slash', params: { damage: 1.4, cooldown: 4.0, range: 300, speed: 320 } },
-      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, radius: 190 } },
+      { id: 'thunder_attack', params: { damage: 1.8, cooldown: 8.0, range: 190, radius: 190 } },
       { id: 'fly', params: { damage: 1.5, cooldown: 5.0, range: 320, speed: 500 } },
       { id: 'charge', params: { damage: 1.6, cooldown: 6.0, range: 340, speed: 480 } },
       { id: 'summon', params: { summonId: 'earth_dragon', count: 1, cooldown: 16.0, range: 0 } },
