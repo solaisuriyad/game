@@ -684,7 +684,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 4.1 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
+      <div class="muted" style="margin-bottom:10px">Version 4.2 — skills · scrollable map · 5 tree types · Yggdrasil · 22 monsters</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
@@ -730,7 +730,15 @@ export class MenuManager {
 
   _collectCustomization() {
     const input = document.getElementById('name-input');
-    this._cust.name = input ? input.value.trim() || 'Hunter' : 'Hunter';
+    this._cust.name = input ? input.value.trim() : '';
+  }
+
+  // validate the required popup fields; returns an error string or null
+  _validateCustomization() {
+    this._collectCustomization();
+    if (!this._cust.name) return 'Please enter your character name.';
+    if (!this._cust.gender) return 'Please choose a body type.';
+    return null;
   }
 
   _continue() {
@@ -742,7 +750,8 @@ export class MenuManager {
   }
 
   _startOnline() {
-    this._collectCustomization();
+    const err = this._validateCustomization();
+    if (err) { this._showFieldError(err); return; }
     const c = this._cust;
     this.game.newGame({
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
@@ -763,13 +772,28 @@ export class MenuManager {
   }
 
   _startNewGame() {
-    this._collectCustomization();
+    const err = this._validateCustomization();
+    if (err) { this._showFieldError(err); return; }
     const c = this._cust;
     this.game.newGame({
       name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
       hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
     });
     this.showSkillSelection();
+  }
+
+  _showFieldError(msg) {
+    let el = document.getElementById('name-error');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'name-error';
+      el.className = 'muted';
+      el.style.color = '#ff8a8a';
+      el.style.marginTop = '6px';
+      const form = document.querySelector('.title-form');
+      if (form) form.appendChild(el);
+    }
+    el.textContent = msg;
   }
 
   // Select up to 3 active skills (hotkeys 1/2/3). Reachable anytime with O.

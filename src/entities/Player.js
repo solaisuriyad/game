@@ -101,6 +101,15 @@ export class Player extends Entity {
   equipWeapon(w) { this.weapon = w; }
   equipArmor(a) { if (a) this.armor[a.slot] = a; }
 
+  _darken(hex) {
+    if (!hex) return '#555';
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, ((n >> 16) & 255) - 40);
+    const g = Math.max(0, ((n >> 8) & 255) - 40);
+    const b = Math.max(0, (n & 255) - 40);
+    return `rgb(${r},${g},${b})`;
+  }
+
   // stop flying and snap to the nearest walkable ground so the player is never
   // left stuck inside a tree / building / water (which caused "frozen" movement)
   land(game) {
@@ -276,30 +285,68 @@ export class Player extends Entity {
       ctx.restore();
     }
 
-    // body (gender-aware: male broader, female narrower, neutral in-between)
-    const bodyW = this.gender === 'male' ? s * 0.68 : this.gender === 'female' ? s * 0.54 : s * 0.62;
-    ctx.fillStyle = this.clothColor;
-    ctx.beginPath(); ctx.ellipse(0, s * 0.15 + bob, bodyW, s * 0.72, 0, 0, Math.PI * 2); ctx.fill();
+    // ---- bigger, clearly gender-distinct figure ----
+    const scale = 1.35; // make the character more visible
+    ctx.save();
+    ctx.scale(scale, scale);
+    // body: male = broad torso + trousers, female = slimmer torso + flared dress
+    if (this.gender === 'male') {
+      // broad shoulders + torso
+      ctx.fillStyle = this.clothColor;
+      ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.72, s * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+      // legs (trousers)
+      ctx.fillStyle = this._darken(this.clothColor);
+      ctx.fillRect(-s * 0.28, s * 0.55, s * 0.24, s * 0.42);
+      ctx.fillRect(s * 0.04, s * 0.55, s * 0.24, s * 0.42);
+    } else if (this.gender === 'female') {
+      // slimmer torso
+      ctx.fillStyle = this.clothColor;
+      ctx.beginPath(); ctx.ellipse(0, s * 0.12 + bob, s * 0.52, s * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      // flared dress / skirt
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.4, s * 0.3);
+      ctx.lineTo(-s * 0.7, s * 0.95);
+      ctx.lineTo(s * 0.7, s * 0.95);
+      ctx.lineTo(s * 0.4, s * 0.3);
+      ctx.closePath(); ctx.fill();
+      // legs (slender)
+      ctx.fillStyle = this.skinTone;
+      ctx.fillRect(-s * 0.18, s * 0.85, s * 0.12, s * 0.25);
+      ctx.fillRect(s * 0.06, s * 0.85, s * 0.12, s * 0.25);
+    } else {
+      // neutral
+      ctx.fillStyle = this.clothColor;
+      ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.62, s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = this._darken(this.clothColor);
+      ctx.fillRect(-s * 0.22, s * 0.55, s * 0.2, s * 0.4);
+      ctx.fillRect(s * 0.02, s * 0.55, s * 0.2, s * 0.4);
+    }
+    // arms
+    ctx.fillStyle = this.skinTone;
+    ctx.beginPath(); ctx.ellipse(-s * 0.72, s * 0.28 + bob, s * 0.11, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(s * 0.72, s * 0.28 + bob, s * 0.11, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
     // head
     ctx.fillStyle = this.skinTone;
-    ctx.beginPath(); ctx.arc(0, -s * 0.55 + bob, s * 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -s * 0.52 + bob, s * 0.48, 0, Math.PI * 2); ctx.fill();
     // hair (gender-aware: female long, neutral medium, male short)
     ctx.fillStyle = this.hairColor;
     if (this.gender === 'female') {
-      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(-s * 0.5, -s * 0.42 + bob, s * 0.14, s * 0.42, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(s * 0.5, -s * 0.42 + bob, s * 0.14, s * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -s * 0.68 + bob, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.48, -s * 0.4 + bob, s * 0.14, s * 0.44, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.48, -s * 0.4 + bob, s * 0.14, s * 0.44, 0, 0, Math.PI * 2); ctx.fill();
     } else if (this.gender === 'neutral') {
-      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(-s * 0.42, -s * 0.5 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(s * 0.42, -s * 0.5 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -s * 0.68 + bob, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 0.4, -s * 0.48 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.4, -s * 0.48 + bob, s * 0.12, s * 0.26, 0, 0, Math.PI * 2); ctx.fill();
     } else {
-      ctx.beginPath(); ctx.arc(0, -s * 0.72 + bob, s * 0.5, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -s * 0.68 + bob, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
     }
     // eyes
     ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.55 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(s * 0.16, -s * 0.55 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // ---- end body ----
 
     if (this.weapon && this.attackAnim <= 0) {
       ctx.save();

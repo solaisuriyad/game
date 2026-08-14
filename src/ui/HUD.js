@@ -72,22 +72,30 @@ export class HUD {
     ctx.textBaseline = 'top';
     ctx.font = '11px sans-serif';
 
-    // ---- status bars (top-left) ----
-    this._bar(ctx, 12, 12, 180, p.health / p.maxHealth, '#d0483a', `${Math.ceil(p.health)}/${p.maxHealth}`);
-    this._bar(ctx, 12, 28, 160, p.stamina / p.maxStamina, '#4a9a4a', `STAMINA ${Math.ceil(p.stamina)}`);
-    this._bar(ctx, 12, 44, 160, p.mp / p.maxMp, '#7a5ac8', `MP ${Math.ceil(p.mp)}`);
-    this._bar(ctx, 12, 60, 160, p.hunger / 100, '#d08a3a', 'HUNGER');
-    this._bar(ctx, 12, 76, 120, (p.temperature + 10) / 40, '#4a8ac8', `${Math.round(p.temperature)}°C`);
+    // ---- player name (top-left, above the status bars) ----
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.font = 'bold 14px sans-serif';
+    const nameW = ctx.measureText(p.name).width;
+    ctx.fillRect(10, 10, nameW + 14, 22);
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillText(p.name, 17, 16);
+
+    // ---- status bars (top-left, below the name) ----
+    this._bar(ctx, 12, 40, 180, p.health / p.maxHealth, '#d0483a', `${Math.ceil(p.health)}/${p.maxHealth}`);
+    this._bar(ctx, 12, 56, 160, p.stamina / p.maxStamina, '#4a9a4a', `STAMINA ${Math.ceil(p.stamina)}`);
+    this._bar(ctx, 12, 72, 160, p.mp / p.maxMp, '#7a5ac8', `MP ${Math.ceil(p.mp)}`);
+    this._bar(ctx, 12, 88, 160, p.hunger / 100, '#d08a3a', 'HUNGER');
+    this._bar(ctx, 12, 104, 120, (p.temperature + 10) / 40, '#4a8ac8', `${Math.round(p.temperature)}°C`);
     if (p.recovering) {
       ctx.fillStyle = '#7ae07a';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('⚡ Recovering…', 12, 94);
+      ctx.fillText('⚡ Recovering…', 12, 122);
     }
     // hint when no skills selected yet
     if (g.activeSkills.selected.length === 0) {
       ctx.fillStyle = '#ffd76a';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('Press O to choose your skills', 12, 110);
+      ctx.fillText('Press O to choose your skills', 12, 138);
     }
 
     // ---- monster status panel (nearest monster currently engaged with you) ----
@@ -119,7 +127,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v4.1 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v4.2 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----

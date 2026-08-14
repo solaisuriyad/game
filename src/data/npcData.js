@@ -34,7 +34,7 @@ export const PERSONALITIES = [
   'ambitious', 'laid-back', 'suspicious', 'generous'
 ];
 
-export const HAIR_COLORS = ['#2a2018', '#4a3624', '#7a5a30', '#a0722f', '#b8863c', '#c8a06a', '#d8c8b0', '#5a5a5a', '#7a3030', '#a04040'];
+export const HAIR_COLORS = ['#000000', '#2a2018', '#4a3624', '#7a5a30', '#a0722f', '#b8863c', '#c8a06a', '#d8c8b0', '#5a5a5a', '#7a3030', '#a04040'];
 export const SKIN_TONES = ['#f0d5b0', '#e8c39a', '#d9ab7f', '#c68e63', '#a9704a', '#8a5636', '#6b4028'];
 export const CLOTH_COLORS = ['#7a6a4a', '#5a6a5a', '#6a5a6a', '#8a5a3a', '#4a5a6a', '#8a7a5a', '#6a7a7a', '#7a4a4a', '#5a6a7a', '#9a8a5a'];
 
