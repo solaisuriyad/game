@@ -77,8 +77,7 @@ export class Player extends Entity {
     this.flyLevel = 0;      // 0=ground, 1=50ft, 2=75ft, 3=50ft(2nd press)
     this.targetAlt = 0;
     this.altitude = 0;      // current altitude in feet (0..75)
-    this.auto75Timer = 0;   // counts down while at 75ft (30s)
-    this.auto50Timer = 0;   // counts down while auto-descending at 50ft (5s)
+    this.flyTimer = 0;      // remaining flight time (30s, then 5s descend, then land)
     this.flyCd = 0;         // landing cooldown (10s)
     this.yggBlessing = 0;   // invulnerability aura near the Yggdrasil (seconds)
   }
@@ -108,6 +107,18 @@ export class Player extends Entity {
     const g = Math.max(0, ((n >> 8) & 255) - 40);
     const b = Math.max(0, (n & 255) - 40);
     return `rgb(${r},${g},${b})`;
+  }
+
+  // land the player (with cooldown) — used by the manual X cycle and the auto-timer
+  _land(game, toast) {
+    this.flyLevel = 0;
+    this.flying = false;
+    this.targetAlt = 0;
+    this.altitude = 0;
+    this.flyTimer = 0;
+    this.land(game);
+    this.flyCd = 10;
+    game.toast(toast);
   }
 
   // stop flying and snap to the nearest walkable ground so the player is never
@@ -154,51 +165,33 @@ export class Player extends Entity {
       if (this.flyLevel === 1) {
         this.flying = true;
         this.targetAlt = 50;
+        this.flyTimer = 30; // 30s total flight time, always
         game.toast('✈️ You take flight at 50 feet.');
       } else if (this.flyLevel === 2) {
         this.flying = true;
         this.targetAlt = 75;
-        this.auto75Timer = 30; // 30s at 75ft before auto-descend
+        this.flyTimer = 30;
         game.toast('✈️ You fly higher at 75 feet!');
       } else if (this.flyLevel === 3) {
         this.flying = true;
         this.targetAlt = 50;
+        this.flyTimer = 30;
         game.toast('✈️ Descending back to 50 feet.');
       } else { // flyLevel === 4 -> land
-        this.flyLevel = 0;
-        this.flying = false;
-        this.targetAlt = 0;
-        this.altitude = 0;
-        this.auto75Timer = 0;
-        this.auto50Timer = 0;
-        this.land(game);
-        this.flyCd = 10;
-        game.toast('🛬 You land. Flying cools down for 10s.');
+        this._land(game, '🛬 You land. Flying cools down for 10s.');
       }
       game.audio.sfx('levelup');
     }
 
-    // auto-timer: after 30s at 75ft, descend to 50ft
-    if (this.flying && this.flyLevel === 2 && this.auto75Timer > 0) {
-      this.auto75Timer -= dt;
-      if (this.auto75Timer <= 0) {
+    // auto-timer: after 30s of flight, descend to 50ft (5s), then land
+    if (this.flying) {
+      this.flyTimer -= dt;
+      if (this.flyTimer <= 0 && this.targetAlt === 75) {
         this.targetAlt = 50;
-        this.auto50Timer = 5; // 5s at 50ft
+        this.flyTimer = 5; // 5s at 50ft before landing
         game.toast('↘️ Flight time up — descending to 50 feet.');
-      }
-    }
-    // after 5s at 50ft, land + cooldown
-    if (this.flying && this.auto50Timer > 0) {
-      this.auto50Timer -= dt;
-      if (this.auto50Timer <= 0) {
-        this.flyLevel = 0;
-        this.flying = false;
-        this.targetAlt = 0;
-        this.altitude = 0;
-        this.auto75Timer = 0;
-        this.land(game);
-        this.flyCd = 10;
-        game.toast('🛬 You land. Flying cools down for 10s.');
+      } else if (this.flyTimer <= 0) {
+        this._land(game, '🛬 Flight time up — you land. Flying cools down for 10s.');
       }
     }
 
