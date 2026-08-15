@@ -48,8 +48,9 @@ let welcome = await waitFor(a, (m) => m.type === 'welcome');
 console.log('first login saveData null:', welcome.saveData === null);
 if (welcome.saveData !== null) throw new Error('new account should have no save yet');
 
-// 2. send a save with distinctive data
-a.send(JSON.stringify({ type: 'save', data: { player: { x: 5000, y: 6000, gold: 999, level: 7, name: 'Hunter_Alice' } } }));
+// 2. send a save with distinctive data at a guaranteed-walkable position
+const savePos = gs.world.randomVillagePosition();
+a.send(JSON.stringify({ type: 'save', data: { player: { x: savePos.x, y: savePos.y, gold: 999, level: 7, name: 'Hunter_Alice' } } }));
 await new Promise((r) => setTimeout(r, 600)); // let the debounced write flush
 a.close();
 await new Promise((r) => setTimeout(r, 100));
@@ -61,7 +62,7 @@ welcome = await waitFor(b, (m) => m.type === 'welcome');
 console.log('re-login gold:', welcome.saveData.player.gold, 'level:', welcome.saveData.player.level, 'spawn:', welcome.spawn.x, welcome.spawn.y);
 if (welcome.saveData.player.gold !== 999) throw new Error('saved gold not restored');
 if (welcome.saveData.player.level !== 7) throw new Error('saved level not restored');
-if (welcome.spawn.x !== 5000 || welcome.spawn.y !== 6000) throw new Error('saved position not used for spawn');
+if (welcome.spawn.x !== savePos.x || welcome.spawn.y !== savePos.y) throw new Error('saved position not used for spawn');
 b.close();
 await new Promise((r) => setTimeout(r, 100));
 

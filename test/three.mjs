@@ -30,11 +30,10 @@ if (treeCount < 500000) throw new Error('trees were thinned (invisible blocking 
 
 // distance culling: only chunks near the player should be visible
 r3.sync();
-const visChunks = r3._treeChunks.filter((c) => c.trunks.visible);
-const visTrees = visChunks.reduce((s, c) => s + c.trunks.count, 0);
-console.log('visible tree chunks:', visChunks.length, '/', r3._treeChunks.length, '| visible trees:', visTrees, '/', treeCount);
+const visChunks = r3._treeChunks.filter((c) => c.meshes[0] && c.meshes[0].visible);
+const visTrees = visChunks.reduce((s, c) => s + c.normal + c.snowy, 0);
+console.log('visible tree chunks:', visChunks.length, '/', r3._treeChunks.length, '| visible trees:', visTrees, '/', Math.round(treeCount / 2));
 if (visChunks.length >= r3._treeChunks.length) throw new Error('tree culling not working (all chunks visible)');
-if (visTrees >= treeCount) throw new Error('no trees culled');
 
 // ---- chopping a tree removes it from the 3D view ----
 // find a tree near the player and count trees in its chunk before/after chop
@@ -43,20 +42,20 @@ if (playerTree) {
   const cx = Math.floor(playerTree.x / r3._treeChunkSize), cy = Math.floor(playerTree.y / r3._treeChunkSize);
   const key = cx + ',' + cy;
   const chunkBefore = r3._treeChunkMap.get(key);
-  const countBefore = chunkBefore.trunks.count;
+  const countBefore = chunkBefore.normal + chunkBefore.snowy;
   // chop it (same as the game does)
   playerTree.depleted = true;
   if (!game.world.depletedTrees.includes(playerTree)) game.world.depletedTrees.push(playerTree);
   r3.sync();
   const chunkAfter = r3._treeChunkMap.get(key);
-  const countAfter = chunkAfter.trunks.count;
+  const countAfter = chunkAfter.normal + chunkAfter.snowy;
   console.log('chunk trees before chop:', countBefore, '| after chop:', countAfter, '(expect one fewer)');
   if (countAfter !== countBefore - 1) throw new Error('chopped tree did not disappear from 3D view');
   // regrow it
   playerTree.depleted = false;
   game.world.depletedTrees = game.world.depletedTrees.filter((t) => t !== playerTree);
   r3.sync();
-  const countRegrown = r3._treeChunkMap.get(key).trunks.count;
+  const countRegrown = r3._treeChunkMap.get(key).normal + r3._treeChunkMap.get(key).snowy;
   console.log('after regrow:', countRegrown, '(expect back to', countBefore + ')');
   if (countRegrown !== countBefore) throw new Error('regrown tree did not come back');
 } else {

@@ -5,7 +5,7 @@
 // This is opt-in (`?3d=1`): the normal 2D renderer stays the default. The 3D
 // view reads the same entities the 2D game simulates, so logic is untouched.
 import * as THREE from '../../vendor/three.module.js';
-import { TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY } from './WorldSystem.js';
+import { TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY, SNOW_X0, SNOW_X1, SNOW_Y0, SNOW_Y1, isSnowRegion } from './WorldSystem.js';
 import { makeFigure } from './Figure3D.js';
 // only render entities within this world-pixel radius of the player (perf)
 const CULL = 2600;
@@ -22,6 +22,10 @@ function shared() {
     trunk: new THREE.MeshStandardMaterial({ color: 0x4a3a26, roughness: 1 }),
     canopy: new THREE.MeshStandardMaterial({ color: 0x3f7a35, roughness: 1 }),
     canopyDark: new THREE.MeshStandardMaterial({ color: 0x2a5a33, roughness: 1 }),
+    snowCanopy: new THREE.MeshStandardMaterial({ color: 0xe8eef0, roughness: 1 }),
+    rock: new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1 }),
+    snowCap: new THREE.MeshStandardMaterial({ color: 0xf2f5f7, roughness: 0.6 }),
+    snowGround: new THREE.MeshStandardMaterial({ color: 0xeef2f4, roughness: 1 }),
     wall: new THREE.MeshStandardMaterial({ color: 0x9a8a6a, roughness: 1 }),
     roof: new THREE.MeshStandardMaterial({ color: 0x8a5a3a, roughness: 1 }),
     body: new THREE.MeshStandardMaterial({ color: 0x7a6a4a, roughness: 1 }),
@@ -140,10 +144,57 @@ export class World3DRenderer {
     for (const b of w.buildings) {
       root.add(this._makeBuilding(b));
     }
+    // the permanent snow region (north-west quarter of the monster forest)
+    root.add(this._makeSnowOverlay());
+    // mountains (peaks around the town + monster forest, some snowy/waterfalls)
+    for (const m of w.mountains) {
+      root.add(this._makeMountain(m));
+    }
     // the Yggdrasil — the colossal world tree at the heart of monster territory
     root.add(this._makeYggdrasil());
     this._terrain = root;
     this.scene.add(root);
+  }
+
+  // a flat white plane covering the permanent snow region (ground is a single
+  // big plane, so we lay a snow quad over that quarter of the monster forest)
+  _makeSnowOverlay() {
+    const S = shared();
+    const w = (SNOW_X1 - SNOW_X0) * TILE;
+    const h = (SNOW_Y1 - SNOW_Y0) * TILE;
+    const cx = ((SNOW_X0 + SNOW_X1) / 2) * TILE - PX_W / 2;
+    const cz = ((SNOW_Y0 + SNOW_Y1) / 2) * TILE - PX_H / 2;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), S.snowGround);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(cx, 0.6, cz);
+    return mesh;
+  }
+
+  // a low-poly mountain peak: rocky cone, white snow cap, optional waterfall
+  _makeMountain(m) {
+    const S = shared();
+    const g = new THREE.Group();
+    // rocky body
+    const body = new THREE.Mesh(new THREE.ConeGeometry(m.r, m.h, 8), S.rock);
+    body.position.y = m.h / 2;
+    g.add(body);
+    // snow cap (smaller white cone near the top)
+    if (m.snowy) {
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(m.r * 0.5, m.h * 0.42, 8), S.snowCap);
+      cap.position.y = m.h * 0.78;
+      g.add(cap);
+    }
+    // waterfall: a blue stream flowing down the south side into a pool
+    if (m.waterfall) {
+      const stream = new THREE.Mesh(new THREE.BoxGeometry(m.r * 0.16, m.h * 0.7, 2), S.water);
+      stream.position.set(m.r * 0.28, m.h * 0.42, m.r * 0.3);
+      g.add(stream);
+      const pool = new THREE.Mesh(new THREE.CylinderGeometry(m.r * 0.3, m.r * 0.34, 4, 10), S.water);
+      pool.position.set(m.r * 0.28, 2, m.r * 0.3);
+      g.add(pool);
+    }
+    g.position.set(m.x - PX_W / 2, 0, m.y - PX_H / 2);
+    return g;
   }
 
   _makeYggdrasil() {
@@ -223,7 +274,8 @@ export class World3DRenderer {
   }
 
   // build (or rebuild) the instanced meshes for one spatial chunk, skipping any
-  // chopped (depleted) trees so they disappear from view
+  // chopped (depleted) trees so they disappear from view. Snowy trees use a
+  // white canopy (separate instanced mesh so they stay snowy all year round).
   _buildTreeChunk(key, trees) {
     const S = shared();
     const CHUNK = this._treeChunkSize;
@@ -232,33 +284,42 @@ export class World3DRenderer {
     const dummy = this._treeDummy;
 
     const old = this._treeChunkMap.get(key);
-    if (old) { root.remove(old.trunks); root.remove(old.canopies); }
+    if (old) { for (const m of old.meshes) root.remove(m); }
 
     const keep = trees.filter((t) => !t.depleted);
-    const n = keep.length;
-    const trunks = new THREE.InstancedMesh(G.trunk, S.trunk, n);
-    const canopies = new THREE.InstancedMesh(G.canopy, S.canopy, n);
-    for (let j = 0; j < n; j++) {
-      const c = keep[j];
-      const size = c.size || 1;
-      const x = c.x + c.w / 2 - PX_W / 2;
-      const z = c.y + c.h / 2 - PX_H / 2;
-      dummy.position.set(x, 13 * size, z);
-      dummy.scale.setScalar(size);
-      dummy.rotation.set(0, 0, 0);
-      dummy.updateMatrix();
-      trunks.setMatrixAt(j, dummy.matrix);
-      dummy.position.y = 26 * size + 6 * size;
-      dummy.updateMatrix();
-      canopies.setMatrixAt(j, dummy.matrix);
-    }
-    trunks.instanceMatrix.needsUpdate = true;
-    canopies.instanceMatrix.needsUpdate = true;
-    root.add(trunks);
-    root.add(canopies);
+    const normal = keep.filter((t) => !t.snowy);
+    const snowy = keep.filter((t) => t.snowy);
+    const meshes = [];
+
+    const build = (list, canopyMat) => {
+      const n = list.length;
+      if (!n) return;
+      const trunks = new THREE.InstancedMesh(G.trunk, S.trunk, n);
+      const canopies = new THREE.InstancedMesh(G.canopy, canopyMat, n);
+      for (let j = 0; j < n; j++) {
+        const c = list[j];
+        const size = c.size || 1;
+        const x = c.x + c.w / 2 - PX_W / 2;
+        const z = c.y + c.h / 2 - PX_H / 2;
+        dummy.position.set(x, 13 * size, z);
+        dummy.scale.setScalar(size);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        trunks.setMatrixAt(j, dummy.matrix);
+        dummy.position.y = 26 * size + 6 * size;
+        dummy.updateMatrix();
+        canopies.setMatrixAt(j, dummy.matrix);
+      }
+      trunks.instanceMatrix.needsUpdate = true;
+      canopies.instanceMatrix.needsUpdate = true;
+      root.add(trunks); root.add(canopies);
+      meshes.push(trunks, canopies);
+    };
+    build(normal, S.canopy);
+    build(snowy, S.snowCanopy);
 
     const [cx, cy] = key.split(',').map(Number);
-    const entry = { trunks, canopies, trees, key, wx: (cx + 0.5) * CHUNK, wy: (cy + 0.5) * CHUNK };
+    const entry = { meshes, trees, key, wx: (cx + 0.5) * CHUNK, wy: (cy + 0.5) * CHUNK, normal: normal.length, snowy: snowy.length };
     this._treeChunkMap.set(key, entry);
     const idx = this._treeChunks.findIndex((c) => c.key === key);
     if (idx >= 0) this._treeChunks[idx] = entry; else this._treeChunks.push(entry);
@@ -602,8 +663,7 @@ export class World3DRenderer {
       for (const c of this._treeChunks) {
         const dx = c.wx - px, dy = c.wy - py;
         const vis = (dx * dx + dy * dy) <= CULL_TREES * CULL_TREES;
-        c.trunks.visible = vis;
-        c.canopies.visible = vis;
+        for (const m of c.meshes) m.visible = vis;
       }
     }
 
@@ -689,11 +749,19 @@ export class World3DRenderer {
         this.scene.fog.far = 20000;
       }
 
-      // winter → snow instead of rain; other seasons → rain
-      if (g.time && g.time.isWinter && (w.raining || w.state === 'cloudy')) {
+      // snow falls: (a) in winter, (b) inside the permanent snow region, or
+      // (c) near a snowy mountain — any season. Otherwise rain.
+      const inSnowRegion = g.player && isSnowRegion(Math.floor(g.player.x / TILE), Math.floor(g.player.y / TILE));
+      let snowOn = (g.time && g.time.isWinter && (w.raining || w.state === 'cloudy')) || !!inSnowRegion;
+      if (!snowOn && g.world.mountains) {
+        for (const m of g.world.mountains) {
+          if (m.snowy && Math.hypot(m.x - g.player.x, m.y - g.player.y) < 900) { snowOn = true; break; }
+        }
+      }
+      if (snowOn) {
         this._ensureSnow();
         this._snow.visible = true;
-        this._snow.material.opacity = 0.5 + w.intensity * 0.4;
+        this._snow.material.opacity = inSnowRegion ? 0.45 : (0.5 + w.intensity * 0.4);
         this._animateSnow();
         this._snow.position.set(pp.x, 0, pp.z);
         if (this._rain) this._rain.visible = false;
@@ -785,7 +853,7 @@ export class World3DRenderer {
     this._snow.geometry.attributes.position.needsUpdate = true;
   }
 
-  // change tree canopy + ground color per season
+  // change tree canopy + ground color per season (snowy trees stay white)
   _applySeason(index) {
     const S = shared();
     const GROUND = [0x4a8a3a, 0x4f8a3a, 0x9a7a3a, 0xe8ecee]; // spring, summer, autumn, winter
@@ -793,8 +861,6 @@ export class World3DRenderer {
     if (S.canopy) S.canopy.color.setHex(CANOPY[index] ?? 0x3f7a35);
     if (S.canopyDark) S.canopyDark.color.setHex(CANOPY[index] ?? 0x2a5a33);
     if (this._groundMat) this._groundMat.color.setHex(GROUND[index] ?? 0x3f7033);
-    // update the instanced tree canopies (they share S.canopy)
-    if (this._treeChunks) for (const c of this._treeChunks) { c.canopies.material = S.canopy; }
   }
 
   // rebuild the FX group each frame (these are few + transient, so clearing is

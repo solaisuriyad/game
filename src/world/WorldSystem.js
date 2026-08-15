@@ -16,8 +16,16 @@ export const YGGDRASIL_CY = 2000;
 
 // ground tile types
 export const T = {
-  GRASS: 0, PATH: 1, DIRT: 2, FARM: 3, WATER: 4, SAND: 5, FLOWER: 6, FLOOR: 7
+  GRASS: 0, PATH: 1, DIRT: 2, FARM: 3, WATER: 4, SAND: 5, FLOWER: 6, FLOOR: 7, SNOW: 8
 };
+
+// The permanent SNOW REGION — the north-west quarter of the monster forest. Here
+// the ground and trees are always snow-covered, no matter the season.
+export const SNOW_X0 = 2150, SNOW_X1 = 2700;
+export const SNOW_Y0 = 1450, SNOW_Y1 = 2000;
+export function isSnowRegion(tx, ty) {
+  return tx >= SNOW_X0 && tx < SNOW_X1 && ty >= SNOW_Y0 && ty < SNOW_Y1;
+}
 
 export const ZONES = [
   { name: 'Village', from: 0, to: 50, danger: 0, minRank: 0, color: '#5a8a4a' },
@@ -45,6 +53,7 @@ export class WorldSystem {
     this.staticGrid = new Map(); // cellKey -> array of collider objects
     this.depletedTrees = []; // chopped trees awaiting respawn (small list)
     this.nodes = [];       // resource nodes (herb, mushroom, berry, ore, tree, rock)
+    this.mountains = [];   // procedural mountains (peaks with snow caps / waterfalls)
     this._cell = Math.floor(256 / TILE); // grid cell = 8 tiles = 256px
     this.discovered = new Uint8Array(0); // (fog moved to the 700px minimap; keep a stub)
     this.generate();
@@ -69,8 +78,54 @@ export class WorldSystem {
     this._placeBuildings();
     // 6. the Yggdrasil FIRST (so the forest doesn't grow inside its grove)
     this._placeYggdrasil();
-    // 7. forest trees + resource nodes
+    // 7. mountains (some around the town, some around the monster forest)
+    this._placeMountains();
+    // 8. forest trees + resource nodes + the permanent snow region
     this._placeForest();
+  }
+
+  // place a ring of mountains around a center (blocking peaks; some snowy, some
+  // with waterfalls). Used around the town AND around the monster forest.
+  _ringMountains(cx, cy, radius, jitter, count, forceSnowy, snowyNW) {
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2 + this.rng.range(-0.18, 0.18);
+      const r = radius + this.rng.range(-jitter, jitter);
+      const tx = Math.round(cx + Math.cos(ang) * r);
+      const ty = Math.round(cy + Math.sin(ang) * r);
+      if (tx < 60 || ty < 60 || tx > WORLD_W - 60 || ty > WORLD_H - 60) continue;
+      // never block the village, the east road, or the Yggdrasil grove
+      if (Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY) < 58) continue;
+      if (Math.hypot(tx - YGGDRASIL_CX, ty - YGGDRASIL_CY) < 55) continue;
+      if (ty === VILLAGE_CY && tx > VILLAGE_CX && tx < VILLAGE_CX + 185) continue; // east road
+      // snowy: forced, inside the snow region, or on the north side of the
+      // monster forest (snowyNW = the forest's snowy side gets snow-capped peaks)
+      const snowy = forceSnowy || isSnowRegion(tx, ty) || (snowyNW && ty < cy);
+      const halfTiles = this.rng.range(7, 13);   // base radius in tiles
+      const h = this.rng.range(130, 260);         // peak height in px
+      const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
+      const rpx = halfTiles * TILE;               // base radius in px
+      const m = { x: px, y: py, r: rpx, h, snowy, waterfall: this.rng.chance(0.35) };
+      this.mountains.push(m);
+      // block movement + stop trees growing on the peak (square bounding box)
+      this._addStatic({ type: 'mountain', x: px - rpx, y: py - rpx, w: rpx * 2, h: rpx * 2, mountain: m });
+    }
+  }
+
+  _placeMountains() {
+    this.mountains = [];
+    // mountains ringing the town (natural wall, leaving the east road open)
+    this._ringMountains(VILLAGE_CX, VILLAGE_CY, 96, 14, 10, false, false);
+    // mountains ringing the far edge of the monster forest (the snow side is snowy)
+    this._ringMountains(YGGDRASIL_CX, YGGDRASIL_CY, 620, 20, 12, false, true);
+  }
+
+  // is a tile inside any mountain's bounding box? (keep trees off peaks)
+  _inMountain(tx, ty) {
+    const px = tx * TILE, py = ty * TILE;
+    for (const m of this.mountains) {
+      if (px >= m.x - m.r && px <= m.x + m.r && py >= m.y - m.r && py <= m.y + m.r) return true;
+    }
+    return false;
   }
 
   _placeYggdrasil() {
@@ -149,13 +204,17 @@ export class WorldSystem {
     const yR = 40; // keep a clear grove around the world tree's trunk
     for (let ty = 0; ty < WORLD_H; ty++) {
       for (let tx = 0; tx < WORLD_W; tx++) {
-        if (this.tiles[this.idx(tx, ty)] !== T.GRASS) continue;
+        const idx = this.idx(tx, ty);
+        if (this.tiles[idx] !== T.GRASS) continue;
+        const snowy = isSnowRegion(tx, ty);
+        if (snowy) this.tiles[idx] = T.SNOW; // permanent snow-covered ground
+        if (this._inMountain(tx, ty)) continue; // no trees on peaks
         const d = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
         if (Math.hypot(tx - YGGDRASIL_CX, ty - YGGDRASIL_CY) < yR) continue; // tree grove
         if (d < 34) {
           // occasional village tree / flower (slightly bigger clearing for the village)
-          if (rng.chance(0.02)) this._addTree(tx, ty);
-          else if (rng.chance(0.03)) this.tiles[this.idx(tx, ty)] = T.FLOWER;
+          if (rng.chance(0.02)) this._addTree(tx, ty, false, false);
+          else if (!snowy && rng.chance(0.03)) this.tiles[idx] = T.FLOWER;
           continue;
         }
         let density;
@@ -164,9 +223,9 @@ export class WorldSystem {
         else if (d < 800) density = Math.min(0.15, 0.04 + d * 0.00012);
         else density = 0.025;                    // sparse outer wilderness
         if (rng.chance(density)) {
-          this._addTree(tx, ty, d > 150);
-        } else if (rng.chance(0.02)) {
-          this.tiles[this.idx(tx, ty)] = T.FLOWER;
+          this._addTree(tx, ty, d > 150, snowy);
+        } else if (!snowy && rng.chance(0.02)) {
+          this.tiles[idx] = T.FLOWER;
         }
       }
     }
@@ -178,7 +237,7 @@ export class WorldSystem {
     this._scatterNodes('flower', 120, 24, 1400);
   }
 
-  _addTree(tx, ty, dark = false) {
+  _addTree(tx, ty, dark = false, snowy = false) {
     const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
     // 7 tree kinds: oak, pine, birch, autumn, willow, crimson, goldleaf
     const variant = this.rng.int(0, 6);
@@ -188,7 +247,7 @@ export class WorldSystem {
     if (bigRoll < 0.12) size = 2;      // 2x2 (4 tiles)
     else if (bigRoll < 0.15) size = 3; // 3x3 (9 tiles)
     const half = (size * TILE) / 2;
-    this._addStatic({ type: 'tree', x: px - half, y: py - half, w: size * TILE, h: size * TILE, dark, variant, size });
+    this._addStatic({ type: 'tree', x: px - half, y: py - half, w: size * TILE, h: size * TILE, dark, variant, size, snowy });
   }
   _addStatic(obj) {
     // register in EVERY cell the object overlaps, so huge colliders (the world

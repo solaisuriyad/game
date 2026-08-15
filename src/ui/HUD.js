@@ -29,6 +29,7 @@ export class HUD {
         else if (t === T.PATH || t === T.FLOOR) { r = 184; g = 160; b = 106; }
         else if (t === T.FARM) { r = 107; g = 74; b = 42; }
         else if (t === T.SAND) { r = 203; g = 184; b = 138; }
+        else if (t === T.SNOW) { r = 235; g = 240; b = 244; }
         else {
           const shade = 70 - dist * 0.02;
           r = 40; g = Math.max(40, shade + 30); b = 30;
@@ -138,7 +139,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v7.5 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v7.6 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----

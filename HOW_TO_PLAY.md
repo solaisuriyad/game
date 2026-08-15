@@ -162,6 +162,10 @@ Monsters radiate outward from the Yggdrasil **by rank**: the **A+ dragonoids** g
 
 So the journey is: leave town → cross the dense forest → fight F-rank at the edge → push inward through E, D, C, B, S → and finally face the A+ dragonoids at the tree itself. *(Press M to see it all — the map marks the monster territory around the tree.)*
 
+### Mountains & the snow region
+- **Mountains** ring the town and the monster forest. Some peaks are **snow-capped** (with falling snow), and some have **waterfalls** pouring down one side into a pool.
+- The **north-west quarter of the monster forest** is a permanent **snow region** — the ground is white, the trees are snow-covered, and snow falls there all year round.
+
 ## PART 6 — HOW TO PLAY (the full journey)
 
 ### 1. Your first quest

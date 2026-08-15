@@ -48,6 +48,7 @@ export class MapRenderer {
       case T.SAND: return SAND;
       case T.FLOOR: return FLOOR;
       case T.FLOWER: return GRASS[h];
+      case T.SNOW: return ['#e8ecee', '#dfe5e8', '#e4eaec', '#eef0f2'][h]; // snow field
       default: return GRASS[h];
     }
   }
@@ -88,9 +89,11 @@ export class MapRenderer {
     for (const c of w.collidersNear(cam.x + cam.vw / 2, cam.y + cam.vh / 2, cam.vw / 2 + 60)) {
       const sx = c.x - cam.x, sy = c.y - cam.y;
       if (c.type === 'tree') {
-        this._drawTree(ctx, sx + c.w / 2, sy + c.h / 2, c.dark, c.depleted, c.variant, c.size);
+        this._drawTree(ctx, sx + c.w / 2, sy + c.h / 2, c.dark, c.depleted, c.variant, c.size, c.snowy);
       } else if (c.type === 'yggdrasil') {
         this._drawYggdrasil(ctx, sx + c.w / 2, sy + c.h / 2, c);
+      } else if (c.type === 'mountain') {
+        this._drawMountain(ctx, sx + c.w / 2, sy + c.h / 2, c.mountain);
       } else if (c.type === 'rock') {
         ctx.fillStyle = c.depleted ? '#5a5a55' : '#7a7a78';
         ctx.beginPath();
@@ -104,7 +107,7 @@ export class MapRenderer {
     }
   }
 
-  _drawTree(ctx, x, y, dark, depleted, variant = 0, size = 1) {
+  _drawTree(ctx, x, y, dark, depleted, variant = 0, size = 1, snowy = false) {
     // scale up big trees (occupy multiple tiles)
     const k = size;
     if (depleted) {
@@ -124,6 +127,8 @@ export class MapRenderer {
       { canopy: '#8a3040', highlight: '#c04a5a', shape: 'round' },
       { canopy: '#c8a030', highlight: '#e8c85a', shape: 'round' }
     ][variant] || { canopy: '#3f7a35', highlight: '#5a9a4a', shape: 'round' };
+    // snowy trees: white canopy (pine shape keeps the snow look)
+    if (snowy) { LEAF.canopy = '#e8eef0'; LEAF.highlight = '#ffffff'; LEAF.shape = 'pine'; }
     const col = dark ? this._darken(LEAF.canopy) : LEAF.canopy;
     ctx.fillStyle = '#4a3a26';
     ctx.fillRect(x - 2 * k, y + 2 * k, 4 * k, 10 * k);
@@ -157,6 +162,35 @@ export class MapRenderer {
     const g = Math.max(0, ((n >> 8) & 255) - 40);
     const b = Math.max(0, (n & 255) - 40);
     return `rgb(${r},${g},${b})`;
+  }
+
+  // a mountain (top-down view): a big rocky peak with a snow cap + waterfall mark
+  _drawMountain(ctx, x, y, m) {
+    const r = m.r;
+    // rocky base (irregular blob)
+    ctx.fillStyle = m.snowy ? '#8a8a92' : '#6a6258';
+    ctx.beginPath();
+    ctx.moveTo(x - r, y + r * 0.2);
+    ctx.quadraticCurveTo(x - r * 0.6, y - r, x, y - r * 0.9);
+    ctx.quadraticCurveTo(x + r * 0.6, y - r, x + r, y + r * 0.2);
+    ctx.quadraticCurveTo(x + r * 0.5, y + r, x, y + r * 0.8);
+    ctx.quadraticCurveTo(x - r * 0.5, y + r, x - r, y + r * 0.2);
+    ctx.closePath(); ctx.fill();
+    // inner shading
+    ctx.fillStyle = m.snowy ? '#7a7a84' : '#5a5248';
+    ctx.beginPath(); ctx.arc(x, y + r * 0.15, r * 0.55, 0, Math.PI * 2); ctx.fill();
+    // snow cap
+    if (m.snowy) {
+      ctx.fillStyle = '#f2f5f7';
+      ctx.beginPath(); ctx.arc(x - r * 0.1, y - r * 0.15, r * 0.34, 0, Math.PI * 2); ctx.fill();
+    }
+    // waterfall (blue streak down the south side)
+    if (m.waterfall) {
+      ctx.fillStyle = '#4aa8e0';
+      ctx.beginPath(); ctx.ellipse(x + r * 0.3, y + r * 0.5, r * 0.16, r * 0.3, 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7ac8f0';
+      ctx.beginPath(); ctx.ellipse(x + r * 0.3, y + r * 0.5, r * 0.08, r * 0.2, 0.4, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   // The Yggdrasil — a colossal 9-color world tree that powers the deep forest.
