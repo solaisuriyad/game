@@ -42,13 +42,14 @@ export class World3DRenderer {
     this.scene.background = new THREE.Color(0x87b5d8); // sky blue
     this.scene.fog = new THREE.Fog(0x87b5d8, 4000, 20000);
 
-    // orbit camera state (third-person, mouse-controlled)
-    this.yaw = 0;        // horizontal angle around the player
-    this.pitch = 0.95;   // downward tilt (radians)
-    this.distance = 440; // zoom distance
-    this.follow = false; // true → camera auto-follows behind the player's back
+    // third-person look camera (Minecraft-style): mouse-look rotates the view,
+    // the camera sits at the player's level and follows behind their back.
+    this.lookYaw = 0;        // horizontal look direction (also the facing target)
+    this.lookPitch = 0.15;   // vertical look: + = up (sky), - = down (ground)
+    this.distance = 440;     // follow distance behind the player
     this._dragging = false;
     this._last = { x: 0, y: 0 };
+    this._clouds = null;
 
     // aiming: raycast the mouse cursor onto the ground plane
     this._mouseNdc = { x: 0, y: 0 };
@@ -124,6 +125,9 @@ export class World3DRenderer {
     this._skyMoon = new THREE.Mesh(new THREE.SphereGeometry(300, 12, 10), new THREE.MeshBasicMaterial({ color: 0xdfe8ff, fog: false }));
     this._skyMoon.frustumCulled = false;
     this.scene.add(this._skyMoon);
+
+    // drifting clouds high in the sky (visible when you look up)
+    this._clouds = this._makeClouds();
 
     // water river + pond as a single strip + one quad (cheap)
     this._addTileOverlays(root, S);
@@ -282,6 +286,28 @@ export class World3DRenderer {
       const entry = this._treeChunkMap.get(key);
       if (entry) this._buildTreeChunk(key, entry.trees);
     }
+  }
+
+  _makeClouds() {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.72, fog: false, depthWrite: false });
+    const puff = new THREE.SphereGeometry(70, 8, 6);
+    for (let i = 0; i < 24; i++) {
+      const cloud = new THREE.Group();
+      const n = 3 + (i % 4);
+      for (let j = 0; j < n; j++) {
+        const p = new THREE.Mesh(puff, mat);
+        p.position.set(j * 80 - 70, (j % 2) * 22, ((i + j) % 4) * 14 - 20);
+        p.scale.set(1.7, 0.45, 1.2);
+        cloud.add(p);
+      }
+      cloud.position.set((i % 6) * 3000 - 7500, 2300 + (i % 5) * 260, (Math.floor(i / 6)) * 3400 - 6800);
+      cloud.userData.bx = cloud.position.x;
+      g.add(cloud);
+    }
+    g.frustumCulled = false;
+    this.scene.add(g);
+    return g;
   }
 
   _addTileOverlays(root, S) {
@@ -581,29 +607,35 @@ export class World3DRenderer {
       }
     }
 
-    // auto-follow: ease the camera to sit BEHIND the player's back (opposite their
-    // facing) so the view is a classic third-person "over the shoulder". Manual
-    // right-drag orbit (360°) overrides this while dragging.
-    if (this.follow && !this._dragging && g.player) {
-      let targetYaw = g.player.facing + Math.PI;
-      let dy = targetYaw - this.yaw;
-      while (dy > Math.PI) dy -= Math.PI * 2;
-      while (dy < -Math.PI) dy += Math.PI * 2;
-      this.yaw += dy * 0.08;
-    }
-
-    // camera follows the player at a comfortable third-person angle
+    // ---- Minecraft-style third-person camera ----
+    // The camera sits at the player's level, behind their back, looking the same
+    // way they face. When the player FLIES, the camera rises with them; the
+    // vertical look (lookPitch) tilts the view up to the sky or down to the ground.
     const pp = this._worldToLocal(px, py);
-    const camX = pp.x + Math.sin(this.yaw) * this.distance;
-    const camZ = pp.z + Math.cos(this.yaw) * this.distance;
-    const camY = Math.sin(this.pitch) * this.distance;
+    const elev = g.player.altitude ? g.player.altitude * 3 : 0;
+    const facing = g.player.facing;
+    const fwdX = Math.cos(facing), fwdZ = Math.sin(facing);
+    const dist = this.distance;
+    const shoulder = 46;
+    const camX = pp.x - fwdX * dist;
+    const camZ = pp.z - fwdZ * dist;
+    const camY = elev + shoulder + this.lookPitch * dist * 0.55;
+    const lookX = pp.x + fwdX * 320;
+    const lookZ = pp.z + fwdZ * 320;
+    const lookY = elev + 12 + this.lookPitch * 260;
     this.camera.position.set(camX, camY, camZ);
-    this.camera.lookAt(pp.x, 14, pp.z);
-    // keep the camera's world matrix current so raycasting/aiming reads the
-    // fresh orientation even before the first render frame
+    this.camera.lookAt(lookX, lookY, lookZ);
+    // keep the camera's world matrix current
     this.camera.updateMatrixWorld(true);
 
-    // day/night lighting + weather (sky, fog, lights, rain) from the game clock
+    // drift the clouds slowly overhead (anchored to the player)
+    if (this._clouds) {
+      const drift = (performance.now() * 0.006) % 3000;
+      this._clouds.position.set(pp.x, 0, pp.z);
+      for (const c of this._clouds.children) c.position.x = c.userData.bx + drift;
+    }
+
+    // day/night lighting + weather + seasons (sky, fog, lights, rain/snow)
     this._applyEnvironment(pp);
   }
 
@@ -827,20 +859,15 @@ export class World3DRenderer {
     }
   }
 
-  // ---- 3D controls: camera-relative movement + facing ----
-  // unit vector pointing AWAY from the camera (on the ground plane), in 2D world
-  // coords { x: worldX, y: worldY }. Used to rotate WASD into camera space.
+  // ---- 3D controls: mouse-look + camera-relative movement ----
+  // unit vector in the direction the player FACES (world x/y), which equals the
+  // camera's look direction — used to rotate WASD into "camera space".
   cameraForward() {
-    const pp = this._worldToLocal(this.game.player.x, this.game.player.y);
-    const camX = pp.x + Math.sin(this.yaw) * this.distance;
-    const camZ = pp.z + Math.cos(this.yaw) * this.distance;
-    const fx = pp.x - camX, fz = pp.z - camZ;
-    const len = Math.hypot(fx, fz) || 1;
-    return { x: fx / len, y: fz / len };
+    const f = this.game.player.facing;
+    return { x: Math.cos(f), y: Math.sin(f) };
   }
 
-  // WASD direction, rotated into camera space: W = away from camera,
-  // S = toward camera, A/D = strafe. Returns { x: worldX, y: worldY } (or 0,0).
+  // WASD, rotated so W = forward (where you look), S = back, A/D = strafe.
   cameraDirVector() {
     const raw = this.game.input.dirVector(); // { x: ±1 (right), y: ±1 (down/south) }
     const F = this.cameraForward();
@@ -852,13 +879,8 @@ export class World3DRenderer {
     return { x: dx, y: dy };
   }
 
-  // the direction the player should FACE (movement dir when moving, else forward)
-  facingAngle() {
-    const d = this.cameraDirVector();
-    if (d.x !== 0 || d.y !== 0) return Math.atan2(d.y, d.x);
-    const f = this.cameraForward();
-    return Math.atan2(f.y, f.x);
-  }
+  // the direction the player should face when idle (the mouse-look direction)
+  facingAngle() { return this.lookYaw; }
 
   // cast the mouse cursor onto the ground plane; returns the world point {x,y}
   // the player is aiming at, or null if the cursor points above the horizon.
@@ -871,58 +893,53 @@ export class World3DRenderer {
     return null;
   }
 
-  // browser-only: mouse orbit + wheel zoom (right-drag to orbit, wheel to zoom),
-  // and cursor tracking so attacks/aiming work on the 3D canvas.
+  // browser-only: mouse-look (move the cursor toward an edge to turn that way),
+  // scroll to look up/down, and left-click to attack. Minecraft-style feel.
   attachControls() {
     if (this._controlsAttached) return;
     this._controlsAttached = true;
     const el = this.renderer ? this.renderer.domElement : null;
     if (!el || typeof window === 'undefined') return;
 
+    const clampPitch = (v) => Math.max(-0.75, Math.min(0.95, v));
+
     const onDown = (e) => {
-      if (e.button === 2 || e.button === 1) { // right / middle drag = orbit
-        this._dragging = true;
-        this._last = { x: e.clientX, y: e.clientY };
-        e.preventDefault();
-      } else if (e.button === 0) {
-        // left-click = attack. The 2D game reads mousedown on its own canvas,
-        // which is BEHIND this one in 3D mode — mirror it into the shared input.
-        const m = this.game.input.mouse;
-        m.buttons |= 1;
+      if (e.button === 2 || e.button === 1) { e.preventDefault(); return; }
+      if (e.button === 0) {
+        // left-click = attack (mirror into the shared input, since the 2D canvas is behind)
+        this.game.input.mouse.buttons |= 1;
       }
     };
     const onMove = (e) => {
-      // track the cursor (in normalized device coords) for aiming
       const rect = el.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      // mirror into the shared mouse for 2D logic
+      const m = this.game.input.mouse; m.x = mx; m.y = my;
+      // track NDC (kept for any legacy aim code)
       this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
-      // also mirror into the shared mouse so 2D combat logic sees a fresh position
-      const m = this.game.input.mouse;
-      m.x = mx; m.y = my;
-      // orbit while dragging
-      if (this._dragging) {
-        const dx = e.clientX - this._last.x;
-        const dy = e.clientY - this._last.y;
-        this._last = { x: e.clientX, y: e.clientY };
-        this.yaw -= dx * 0.005;
-        this.pitch = Math.max(0.15, Math.min(1.35, this.pitch + dy * 0.004));
+      // edge-based look: near an edge the view turns that way (dead-zone in center)
+      const nx = (mx / rect.width) * 2 - 1;
+      const ny = (my / rect.height) * 2 - 1;
+      const DZ = 0.34;
+      const ex = nx > DZ ? (nx - DZ) / (1 - DZ) : nx < -DZ ? (nx + DZ) / (1 - DZ) : 0;
+      const ey = ny > DZ ? (ny - DZ) / (1 - DZ) : ny < -DZ ? (ny + DZ) / (1 - DZ) : 0;
+      if (ex !== 0 || ey !== 0) {
+        this.lookYaw -= ex * 0.045;
+        this.lookPitch = clampPitch(this.lookPitch - ey * 0.035);
       }
     };
-    const onUp = () => { this._dragging = false; };
     const onWheel = (e) => {
-      this.distance = Math.max(180, Math.min(900, this.distance * (1 + e.deltaY * 0.001)));
+      // scroll up = look up (sky), scroll down = look down (ground)
+      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09));
       e.preventDefault();
     };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
     window.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     this._detachControls = () => {
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
       window.removeEventListener('wheel', onWheel);
     };
   }
@@ -960,7 +977,7 @@ export class World3DRenderer {
     try {
       const hint = document.createElement('div');
       hint.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,8,6,0.7);color:#e8e0c8;font:12px sans-serif;padding:4px 12px;border-radius:6px;pointer-events:none;';
-      hint.textContent = '3D · WASD move · mouse aim · right-drag orbit · wheel zoom · Esc menu';
+      hint.textContent = '3D · WASD move · mouse to look around · scroll to look up/down · click to attack · Esc menu';
       document.body.appendChild(hint);
     } catch (e) {}
   }

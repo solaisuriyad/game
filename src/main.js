@@ -121,10 +121,7 @@ class Game {
       try {
         this.renderer3d = new World3DRenderer(this);
         this.interior3d = new Interior3DRenderer(this);
-        // third-person camera: follow behind the player's back, 360° orbit via right-drag
-        this.renderer3d.follow = true;
-        // 3D: movement is camera-relative (W = away from camera), and the player
-        // faces where the camera looks. This replaces the 2D top-down dirVector.
+        // 3D: movement is camera-relative (W = forward), mouse-look turns the view
         this._dirFn = () => this.renderer3d.cameraDirVector();
       } catch (e) { this.mode3d = false; }
     }
@@ -351,29 +348,19 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     this.player.update(dt, this);
-    // 3D mode: aim at the mouse (raycast), but AUTO-FACE a monster in combat.
-    // If a monster is attacking you (or right next to you), snap toward it so
-    // fighting never fights the camera. Otherwise follow the mouse smoothly.
+    // 3D mode: the player faces where you look (mouse-look), but AUTO-FACES a
+    // monster in combat so fighting never fights the camera. Smooth turn.
     if (this.mode3d && this.renderer3d) {
       const p = this.player;
-      let target = null;
       const mons = this.multiplayer.connected ? this.remoteMonsters : this.monsters;
-      let bestD = 500, engaged = null;
+      let target = this.renderer3d.lookYaw;
+      let bestD = 500;
       for (const m of mons) {
         if (m.dead) continue;
         const d = Math.hypot(m.x - p.x, m.y - p.y);
         if (d > bestD) continue;
-        const hostile = m.target === p || m.aggroTimer > 0 || d < 180;
-        if (hostile) { bestD = d; engaged = m; }
+        if (m.target === p || m.aggroTimer > 0 || d < 180) { bestD = d; target = Math.atan2(m.y - p.y, m.x - p.x); }
       }
-      if (engaged) {
-        target = Math.atan2(engaged.y - p.y, engaged.x - p.x);
-      } else {
-        const aim = this.renderer3d.aimWorldPoint();
-        if (aim) target = Math.atan2(aim.y - p.y, aim.x - p.x);
-        else target = this.renderer3d.facingAngle();
-      }
-      // smooth the turn (wrap-around-safe lerp)
       let diff = target - p.facing;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;

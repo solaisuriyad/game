@@ -84,65 +84,49 @@ const ents2 = r3.entityRoot.children.length;
 console.log('entity meshes after moving far:', ents2, '(expect fewer, since far from town)');
 if (ents2 > ents) throw new Error('expected fewer nearby entities after moving away');
 
-// ---- camera-relative movement math ----
-// yaw=0 -> camera due south, looking north. W should move NORTH (world -y),
-// D should move EAST (world +x).
-r3.yaw = 0; r3.pitch = 0.95; r3.distance = 440;
+// ---- camera-relative movement (W = forward = where you look) ----
+game.player.facing = 0;  // facing east
+r3.lookYaw = 0; r3.lookPitch = 0.2;
 game.input.dirVector = () => ({ x: 0, y: -1 }); // W
 let d = r3.cameraDirVector();
-console.log('W (yaw=0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈-1)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - (-1)) > 0.01) throw new Error('W not mapped to forward');
+console.log('W (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
+if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('W not mapped to forward');
 
 game.input.dirVector = () => ({ x: 1, y: 0 }); // D
 d = r3.cameraDirVector();
-console.log('D (yaw=0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0)');
-if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('D not mapped to camera-right');
+console.log('D (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('D not mapped to camera-right');
 
-// rotate 180°: camera north of player looking south -> W should move SOUTH (+y)
-r3.yaw = Math.PI;
-game.input.dirVector = () => ({ x: 0, y: -1 }); // W
+// turn to face south (π/2): W should now move south
+game.player.facing = Math.PI / 2;
+game.input.dirVector = () => ({ x: 0, y: -1 });
 d = r3.cameraDirVector();
-console.log('W (yaw=π) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈+1)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with camera yaw');
+console.log('W (facing π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with facing');
 
-// facing angle should be finite
-const fa = r3.facingAngle();
-console.log('facingAngle finite:', Number.isFinite(fa));
-if (!Number.isFinite(fa)) throw new Error('facing angle is NaN');
+// facingAngle returns the look direction (mouse-look target)
+r3.lookYaw = 1.2;
+console.log('facingAngle:', r3.facingAngle().toFixed(2), '(expect 1.20)');
+if (Math.abs(r3.facingAngle() - 1.2) > 0.001) throw new Error('facingAngle not the look yaw');
 
-// ---- 3D aiming: mouse raycast onto the ground ----
-game.player.x = 2000 * 32; game.player.y = 2000 * 32; // village center
-r3.yaw = 0; r3.pitch = 0.95; // reset camera (a previous test set yaw = π)
-r3.sync(); // position the camera around the player
-
-// aim at a point low on screen (definitely hits the ground)
-r3._mouseNdc = { x: 0, y: -0.5 };
-const aimC = r3.aimWorldPoint();
-console.log('aim (center-low):', aimC ? aimC.x.toFixed(0) + ',' + aimC.y.toFixed(0) : 'null');
-if (!aimC || !Number.isFinite(aimC.x) || !Number.isFinite(aimC.y)) throw new Error('aim point invalid');
-
-// aim to the right of the screen -> world point should move +x (east)
-r3._mouseNdc = { x: 1, y: -0.5 };
-const aimR = r3.aimWorldPoint();
-console.log('aim (right):', aimR ? aimR.x.toFixed(0) + ',' + aimR.y.toFixed(0) : 'null');
-if (!aimR) throw new Error('aim right missed the ground');
-if (!(aimR.x > aimC.x)) throw new Error('aim did not move right with cursor');
-
-// aim above the horizon (camera nearly level) -> returns null (fallback path)
-r3.pitch = 0.15; // nearly horizontal camera
+// ---- third-person camera: behind the player + follows altitude ----
+game.player.x = 2000 * 32; game.player.y = 2000 * 32;
+game.player.facing = 0; game.player.altitude = 0;
+r3.lookPitch = 0.2; r3.sync();
+const cam0 = r3.camera.position.clone();
+// flying: camera should rise with the player
+game.player.altitude = 50;
 r3.sync();
-r3._mouseNdc = { x: 0, y: 1 }; // very top of screen = sky
-const aimTop = r3.aimWorldPoint();
-console.log('aim (above horizon):', aimTop === null ? 'null (correct)' : 'hit ' + aimTop.x.toFixed(0));
-if (aimTop !== null) throw new Error('aim above horizon should return null');
-r3.pitch = 0.95; r3.sync(); // restore
-
-// the player's facing should point toward the aim point (not just camera forward)
-r3._mouseNdc = { x: 0, y: -0.5 };
-const ap = r3.aimWorldPoint();
-const wantFacing = Math.atan2(ap.y - game.player.y, ap.x - game.player.x);
-console.log('aim facing finite:', Number.isFinite(wantFacing));
-if (!Number.isFinite(wantFacing)) throw new Error('aim facing is NaN');
+const camFly = r3.camera.position.clone();
+console.log('camera y on ground:', cam0.y.toFixed(0), '| while flying:', camFly.y.toFixed(0), '(should be higher)');
+if (!(camFly.y > cam0.y)) throw new Error('camera did not rise when player flies');
+// camera should be BEHIND the player (negative x when facing east)
+console.log('camera x vs player x (facing east):', cam0.x.toFixed(0), 'vs', r3._worldToLocal(game.player.x, game.player.y).x.toFixed(0), '(camera behind = smaller x)');
+if (!(cam0.x < r3._worldToLocal(game.player.x, game.player.y).x)) throw new Error('camera not behind the player');
+// look up (pitch up) should raise the look target (see sky)
+r3.lookPitch = 0.8; r3.sync();
+console.log('look-up camera y:', r3.camera.position.y.toFixed(0), '(higher than level view)');
+if (!(r3.camera.position.y > cam0.y)) throw new Error('look up did not raise the camera/view');
 
 // ---- distinct 3D models ----
 // a dragon should have WINGS (more parts than a generic beast)
@@ -201,7 +185,7 @@ if (r3._rain.visible) throw new Error('rain not hidden in sunny weather');
 
 // ---- FX: projectiles / drops / nodes / corpses appear in 3D ----
 game.player.x = 2000 * 32; game.player.y = 2000 * 32;
-r3.yaw = 0; r3.pitch = 0.95;
+game.player.facing = 0; game.player.altitude = 0;
 game.projectiles.push({ x: game.player.x + 100, y: game.player.y, vx: 300, vy: 0, kind: 'arrow', dead: false });
 game.drops.push({ x: game.player.x + 120, y: game.player.y, dead: false });
 game.corpses.push({ x: game.player.x - 100, y: game.player.y });
@@ -226,7 +210,7 @@ game.floatTexts.length = 0;
 
 // ---- name/rank labels above monsters + NPCs ----
 game.player.x = 2000 * 32; game.player.y = 2000 * 32;
-r3.yaw = 0; r3.pitch = 0.95; r3.sync();
+game.player.facing = 0; r3.sync();
 r3._drawNameLabels(r3.hudCtx);
 console.log('name labels draw did not throw ✓');
 // a monster near the player should be labelable (verify the gather logic)
@@ -235,21 +219,8 @@ console.log('nearby monster for label:', near ? near.name + ' (' + near.rank + '
 if (!near) throw new Error('no nearby monster to label (test setup issue)');
 if (!near.rank) throw new Error('monster missing rank for label');
 
-// ---- third-person follow camera (behind the player's back) ----
-const { makeFigure } = await import('../src/world/Figure3D.js');
-game.player.facing = 0;           // facing east
-r3.yaw = 0; r3.follow = true; r3._dragging = false;
-for (let i = 0; i < 120; i++) r3.sync();
-// camera should end up BEHIND the player (opposite facing), i.e. yaw ≈ π
-console.log('follow camera yaw after easing:', r3.yaw.toFixed(2), '(expect ≈ 3.14 = behind)');
-if (Math.abs(Math.abs(r3.yaw) - Math.PI) > 0.3) throw new Error('camera did not follow behind the player');
-
-// while dragging, follow is overridden (manual 360° orbit)
-r3._dragging = true; r3.yaw = 1.0; r3.sync();
-console.log('orbit while dragging holds yaw:', r3.yaw.toFixed(2), '(expect ≈ 1.00)');
-if (Math.abs(r3.yaw - 1.0) > 0.01) throw new Error('follow overrode manual orbit');
-
 // ---- gender-distinct figures ----
+const { makeFigure } = await import('../src/world/Figure3D.js');
 const male = makeFigure({ gender: 'male', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a' });
 const female = makeFigure({ gender: 'female', skinTone: '#e8c39a', hairColor: '#a04040', clothColor: '#7a4a6a' });
 const neutral = makeFigure({ gender: 'neutral', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a' });
