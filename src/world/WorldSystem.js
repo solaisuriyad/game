@@ -16,7 +16,7 @@ export const YGGDRASIL_CY = 2000;
 
 // ground tile types
 export const T = {
-  GRASS: 0, PATH: 1, DIRT: 2, FARM: 3, WATER: 4, SAND: 5, FLOWER: 6, FLOOR: 7, SNOW: 8
+  GRASS: 0, PATH: 1, DIRT: 2, FARM: 3, WATER: 4, SAND: 5, FLOWER: 6, FLOOR: 7, SNOW: 8, MOUNTAIN: 9
 };
 
 // The permanent SNOW REGION — the north-west quarter of the monster forest. Here
@@ -84,8 +84,10 @@ export class WorldSystem {
     this._placeForest();
   }
 
-  // place a ring of mountains around a center (blocking peaks; some snowy, some
-  // with waterfalls). Used around the town AND around the monster forest.
+  // place a ring of mountains around a center. Peaks come in three sizes — small
+  // hills, medium mountains, and towering giants — with a mix of snowy + waterfall
+  // variants. Tiles under each peak are marked MOUNTAIN (a single array write per
+  // tile) so the forest pass skips them in O(1) instead of checking every peak.
   _ringMountains(cx, cy, radius, jitter, count, forceSnowy, snowyNW) {
     for (let i = 0; i < count; i++) {
       const ang = (i / count) * Math.PI * 2 + this.rng.range(-0.18, 0.18);
@@ -100,32 +102,37 @@ export class WorldSystem {
       // snowy: forced, inside the snow region, or on the north side of the
       // monster forest (snowyNW = the forest's snowy side gets snow-capped peaks)
       const snowy = forceSnowy || isSnowRegion(tx, ty) || (snowyNW && ty < cy);
-      const halfTiles = this.rng.range(7, 13);   // base radius in tiles
-      const h = this.rng.range(130, 260);         // peak height in px
+
+      // three height tiers: small hills, medium peaks, towering giants
+      const roll = this.rng.float();
+      let halfTiles, h;
+      if (roll < 0.4) { halfTiles = this.rng.range(4, 6); h = this.rng.range(50, 100); }
+      else if (roll < 0.78) { halfTiles = this.rng.range(7, 10); h = this.rng.range(130, 200); }
+      else { halfTiles = this.rng.range(11, 15); h = this.rng.range(300, 460); }
+
       const px = tx * TILE + TILE / 2, py = ty * TILE + TILE / 2;
       const rpx = halfTiles * TILE;               // base radius in px
       const m = { x: px, y: py, r: rpx, h, snowy, waterfall: this.rng.chance(0.35) };
       this.mountains.push(m);
       // block movement + stop trees growing on the peak (square bounding box)
       this._addStatic({ type: 'mountain', x: px - rpx, y: py - rpx, w: rpx * 2, h: rpx * 2, mountain: m });
+      // mark tiles under the peak as MOUNTAIN (fast skip in the forest pass)
+      const t0x = Math.max(0, tx - halfTiles), t1x = Math.min(WORLD_W - 1, tx + halfTiles);
+      const t0y = Math.max(0, ty - halfTiles), t1y = Math.min(WORLD_H - 1, ty + halfTiles);
+      for (let yy = t0y; yy <= t1y; yy++) {
+        for (let xx = t0x; xx <= t1x; xx++) {
+          if (this.tiles[this.idx(xx, yy)] === T.GRASS) this.tiles[this.idx(xx, yy)] = T.MOUNTAIN;
+        }
+      }
     }
   }
 
   _placeMountains() {
     this.mountains = [];
-    // mountains ringing the town (natural wall, leaving the east road open)
-    this._ringMountains(VILLAGE_CX, VILLAGE_CY, 96, 14, 10, false, false);
+    // a few mountains ringing the town (natural wall, leaving the east road open)
+    this._ringMountains(VILLAGE_CX, VILLAGE_CY, 96, 14, 6, false, false);
     // mountains ringing the far edge of the monster forest (the snow side is snowy)
-    this._ringMountains(YGGDRASIL_CX, YGGDRASIL_CY, 620, 20, 12, false, true);
-  }
-
-  // is a tile inside any mountain's bounding box? (keep trees off peaks)
-  _inMountain(tx, ty) {
-    const px = tx * TILE, py = ty * TILE;
-    for (const m of this.mountains) {
-      if (px >= m.x - m.r && px <= m.x + m.r && py >= m.y - m.r && py <= m.y + m.r) return true;
-    }
-    return false;
+    this._ringMountains(YGGDRASIL_CX, YGGDRASIL_CY, 620, 20, 8, false, true);
   }
 
   _placeYggdrasil() {
@@ -208,7 +215,7 @@ export class WorldSystem {
         if (this.tiles[idx] !== T.GRASS) continue;
         const snowy = isSnowRegion(tx, ty);
         if (snowy) this.tiles[idx] = T.SNOW; // permanent snow-covered ground
-        if (this._inMountain(tx, ty)) continue; // no trees on peaks
+        // mountain tiles (T.MOUNTAIN) are skipped by the GRASS check above
         const d = Math.hypot(tx - VILLAGE_CX, ty - VILLAGE_CY);
         if (Math.hypot(tx - YGGDRASIL_CX, ty - YGGDRASIL_CY) < yR) continue; // tree grove
         if (d < 34) {
@@ -307,7 +314,8 @@ export class WorldSystem {
   // is a world pixel blocked by water or a static collider (ignoring the given entity)?
   blockedAt(px, py, ignore = null) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-    if (this.tileAt(tx, ty) === T.WATER) return true;
+    const tt = this.tileAt(tx, ty);
+    if (tt === T.WATER || tt === T.MOUNTAIN) return true;
     for (const b of this.buildings) {
       if (b !== ignore && px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) return true;
     }
@@ -336,7 +344,8 @@ export class WorldSystem {
 
   circleBlocked(x, y, r, ignore = null) {
     const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-    if (this.tileAt(tx, ty) === T.WATER) return true;
+    const tt = this.tileAt(tx, ty);
+    if (tt === T.WATER || tt === T.MOUNTAIN) return true;
     // check a few points around the circle
     for (const [ox, oy] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) {
       const px = x + ox, py = y + oy;

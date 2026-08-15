@@ -49,6 +49,7 @@ export class MapRenderer {
       case T.FLOOR: return FLOOR;
       case T.FLOWER: return GRASS[h];
       case T.SNOW: return ['#e8ecee', '#dfe5e8', '#e4eaec', '#eef0f2'][h]; // snow field
+      case T.MOUNTAIN: return ['#6a6258', '#5f5850', '#665e54', '#71685c'][h]; // rocky peak
       default: return GRASS[h];
     }
   }

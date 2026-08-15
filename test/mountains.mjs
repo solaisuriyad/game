@@ -41,9 +41,15 @@ if (!w.blockedAt(m0.x, m0.y)) throw new Error('mountain does not block movement'
 const { World3DRenderer } = await import('../src/world/World3DRenderer.js');
 const r3 = new World3DRenderer(game);
 let mountainCones = 0;
-r3._terrain.traverse((o) => { if (o.isMesh && o.geometry && o.geometry.type === 'ConeGeometry' && o.geometry.parameters && o.geometry.parameters.height > 100) mountainCones++; });
-console.log('3D mountain cones (height > 100):', mountainCones, '(expect >=', w.mountains.length + ')');
+r3._terrain.traverse((o) => { if (o.isMesh && o.geometry && o.geometry.type === 'ConeGeometry' && o.geometry.parameters && o.geometry.parameters.height > 40) mountainCones++; });
+console.log('3D mountain cones (height > 40):', mountainCones, '(expect >=', w.mountains.length + ')');
 if (mountainCones < w.mountains.length) throw new Error('3D mountains missing');
+
+// mountain heights vary: at least one small and one tall peak
+const heights = w.mountains.map(m => m.h);
+console.log('mountain height range:', Math.min(...heights), 'to', Math.max(...heights));
+if (Math.max(...heights) < 250) throw new Error('expected at least one towering mountain');
+if (Math.min(...heights) > 120) throw new Error('expected at least one small hill');
 
 // 6. snow falls when player is inside the snow region
 game.player.x = cx * 32; game.player.y = cy * 32;

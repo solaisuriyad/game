@@ -53,6 +53,8 @@ export class World3DRenderer {
     this.distance = 440;     // follow distance behind the player
     this._dragging = false;
     this._last = { x: 0, y: 0 };
+    this._lastMx = null;  // last mouse position (for Minecraft-style delta look)
+    this._lastMy = null;
     this._clouds = null;
 
     // aiming: raycast the mouse cursor onto the ground plane
@@ -983,18 +985,15 @@ export class World3DRenderer {
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
       // mirror into the shared mouse for 2D logic
       const m = this.game.input.mouse; m.x = mx; m.y = my;
-      // track NDC (kept for any legacy aim code)
       this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
-      // edge-based look: near an edge the view turns that way (dead-zone in center)
-      const nx = (mx / rect.width) * 2 - 1;
-      const ny = (my / rect.height) * 2 - 1;
-      const DZ = 0.34;
-      const ex = nx > DZ ? (nx - DZ) / (1 - DZ) : nx < -DZ ? (nx + DZ) / (1 - DZ) : 0;
-      const ey = ny > DZ ? (ny - DZ) / (1 - DZ) : ny < -DZ ? (ny + DZ) / (1 - DZ) : 0;
-      if (ex !== 0 || ey !== 0) {
-        // mouse RIGHT = turn right, mouse LEFT = turn left (matches the screen)
-        this.lookYaw += ex * 0.045;
-        this.lookPitch = clampPitch(this.lookPitch - ey * 0.035);
+      // Minecraft-style delta look: rotate the view by how far the mouse moved.
+      // Moving the mouse RIGHT turns right, LEFT turns left (matches the screen).
+      if (this._lastMx == null) { this._lastMx = mx; this._lastMy = my; }
+      const dx = mx - this._lastMx, dy = my - this._lastMy;
+      this._lastMx = mx; this._lastMy = my;
+      if (dx !== 0 || dy !== 0) {
+        this.lookYaw += dx * 0.0032;
+        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032);
       }
     };
     const onWheel = (e) => {
