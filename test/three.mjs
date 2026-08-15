@@ -83,36 +83,30 @@ const ents2 = r3.entityRoot.children.length;
 console.log('entity meshes after moving far:', ents2, '(expect fewer, since far from town)');
 if (ents2 > ents) throw new Error('expected fewer nearby entities after moving away');
 
-// ---- camera-relative movement (W = forward = where you look) ----
+// ---- camera-relative movement (W = forward = player facing = cursor dir) ----
 game.player.facing = 0;  // facing east
-r3.lookYaw = 0; r3._sYaw = 0; r3.lookPitch = 0.2;
+r3.lookPitch = 0.2;
 game.input.dirVector = () => ({ x: 0, y: -1 }); // W
 let d = r3.cameraDirVector();
-console.log('W (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
+console.log('W (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
 if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('W not mapped to forward');
 
 game.input.dirVector = () => ({ x: 1, y: 0 }); // D
 d = r3.cameraDirVector();
-console.log('D (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
+console.log('D (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
 if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('D not mapped to camera-right');
 
 // turn to face south (π/2): W should now move south
-r3.lookYaw = Math.PI / 2; r3._sYaw = Math.PI / 2;
+game.player.facing = Math.PI / 2;
 game.input.dirVector = () => ({ x: 0, y: -1 });
 d = r3.cameraDirVector();
-console.log('W (lookYaw π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with look direction');
+console.log('W (facing π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with facing');
 
-// smoothing: _sYaw eases toward lookYaw (smooth, no jump)
-r3.lookYaw = Math.PI; r3._sYaw = 0;
-r3.sync();
-console.log('after one sync, _sYaw eased toward π:', r3._sYaw.toFixed(2), '(between 0 and π)');
-if (!(r3._sYaw > 0 && r3._sYaw < Math.PI)) throw new Error('look smoothing not working');
-
-// facingAngle returns the look direction (mouse-look target)
-r3.lookYaw = 1.2;
+// facingAngle = the player's facing
+game.player.facing = 1.2;
 console.log('facingAngle:', r3.facingAngle().toFixed(2), '(expect 1.20)');
-if (Math.abs(r3.facingAngle() - 1.2) > 0.001) throw new Error('facingAngle not the look yaw');
+if (Math.abs(r3.facingAngle() - 1.2) > 0.001) throw new Error('facingAngle not the player facing');
 
 // ---- third-person camera: behind the player + follows altitude ----
 game.player.x = 2000 * 32; game.player.y = 2000 * 32;

@@ -704,17 +704,13 @@ export class World3DRenderer {
       }
     }
 
-    // ---- Minecraft-style third-person camera ----
-    // Lightly smooth the look toward the raw mouse target: fast enough to feel
-    // instant, but removes micro-jitter so it reads as "smooth" not "laggy".
-    this._sYaw += (this.lookYaw - this._sYaw) * 0.5;
-    this._sPitch += (this.lookPitch - this._sPitch) * 0.5;
-    const lookF = this._sYaw;
-    const lookP = this._sPitch;
-
+    // ---- third-person camera (follows the player's facing) ----
+    // The player faces the mouse cursor (full 360°); the camera sits behind them.
     const pp = this._worldToLocal(px, py);
     const elev = g.player.altitude ? g.player.altitude * 3 : 0;
-    const fwdX = Math.cos(lookF), fwdZ = Math.sin(lookF);
+    const facing = g.player.facing;
+    const fwdX = Math.cos(facing), fwdZ = Math.sin(facing);
+    const lookP = this.lookPitch;
     const dist = this.distance;
     const shoulder = 46;
     const camX = pp.x - fwdX * dist;
@@ -986,10 +982,10 @@ export class World3DRenderer {
   }
 
   // ---- 3D controls: mouse-look + camera-relative movement ----
-  // unit vector in the camera's look direction (world x/y) — used to rotate WASD
-  // into "camera space". Uses the SMOOTHED look so movement matches the view.
+  // unit vector in the direction the player FACES (world x/y) — used to rotate
+  // WASD into "camera space". The player faces the mouse cursor (full 360°).
   cameraForward() {
-    const f = this._sYaw;
+    const f = this.game.player.facing;
     return { x: Math.cos(f), y: Math.sin(f) };
   }
 
@@ -1005,8 +1001,8 @@ export class World3DRenderer {
     return { x: dx, y: dy };
   }
 
-  // the direction the player should face when idle (the mouse-look direction)
-  facingAngle() { return this.lookYaw; }
+  // the direction the player should face when idle (the mouse-cursor direction)
+  facingAngle() { return this.game.player.facing; }
 
   // cast the mouse cursor onto the ground plane; returns the world point {x,y}
   // the player is aiming at, or null if the cursor points above the horizon.
@@ -1019,8 +1015,10 @@ export class World3DRenderer {
     return null;
   }
 
-  // browser-only: mouse-look (move the cursor toward an edge to turn that way),
-  // scroll to look up/down, and left-click to attack. Minecraft-style feel.
+  // browser-only controls. The player FACES the mouse cursor (full 360°), scroll
+  // looks up/down, and left-click attacks. When a menu/popup is open these are
+  // fully ignored so the mouse never affects the background screen, and scroll
+  // is left alone so popups can scroll their own content.
   attachControls() {
     if (this._controlsAttached) return;
     this._controlsAttached = true;
@@ -1028,8 +1026,10 @@ export class World3DRenderer {
     if (!el || typeof window === 'undefined') return;
 
     const clampPitch = (v) => Math.max(-0.75, Math.min(0.95, v));
+    const uiBlocked = () => this.game.ui.open || this.game.buildingInterior.active;
 
     const onDown = (e) => {
+      if (uiBlocked()) return; // clicking inside a popup must not attack
       if (e.button === 2 || e.button === 1) { e.preventDefault(); return; }
       if (e.button === 0) {
         // left-click = attack (mirror into the shared input, since the 2D canvas is behind)
@@ -1039,26 +1039,16 @@ export class World3DRenderer {
     const onMove = (e) => {
       const rect = el.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      // mirror into the shared mouse for 2D logic
+      // track the cursor (NDC for the aim raycast + shared mouse for 2D logic).
+      // The actual facing is computed from the aim point in main.js each frame.
       const m = this.game.input.mouse; m.x = mx; m.y = my;
       this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
-      // Minecraft-style delta look: rotate the view by how far the mouse moved.
-      // Moving the mouse RIGHT turns right, LEFT turns left (matches the screen).
-      if (this._lastMx == null) { this._lastMx = mx; this._lastMy = my; }
-      const dx = mx - this._lastMx, dy = my - this._lastMy;
-      this._lastMx = mx; this._lastMy = my;
-      if (dx !== 0 || dy !== 0) {
-        // mouse RIGHT = look RIGHT, mouse LEFT = look LEFT (screen-matched).
-        // Note the "-dx": the camera is behind the player, so a rightward mouse
-        // swing must rotate the look direction the opposite sign to feel correct.
-        const s = this.lookSens * (this.invertX ? -1 : 1);
-        this.lookYaw -= dx * 0.0035 * s;
-        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0035 * this.lookSens);
-      }
     };
     const onWheel = (e) => {
+      // while a popup is open, do NOT touch the wheel so the popup can scroll
+      if (uiBlocked()) return;
       // scroll up = look up (sky), scroll down = look down (ground)
-      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09));
+      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09) * this.lookSens);
       e.preventDefault();
     };
     window.addEventListener('mousedown', onDown);

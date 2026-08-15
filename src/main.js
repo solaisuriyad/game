@@ -348,9 +348,9 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     this.player.update(dt, this);
-    // 3D mode: the player body faces where you look (locked to the camera,
-    // instant — no lag). When a monster attacks you, the body auto-faces it
-    // (smoothly), so fighting never fights the camera.
+    // 3D mode: the player FACES the mouse cursor (full 360°). The cursor is
+    // raycast onto the ground and the player turns to look at that point. When a
+    // monster attacks, the player auto-faces it (smoothly) instead.
     if (this.mode3d && this.renderer3d) {
       const p = this.player;
       const mons = this.multiplayer.connected ? this.remoteMonsters : this.monsters;
@@ -368,7 +368,12 @@ class Game {
         while (diff < -Math.PI) diff += Math.PI * 2;
         p.facing += diff * Math.min(1, dt * 12);
       } else {
-        p.facing = this.renderer3d.lookYaw; // lock body to camera (instant)
+        const aim = this.renderer3d.aimWorldPoint();
+        if (aim) {
+          const dx = aim.x - p.x, dy = aim.y - p.y;
+          // ignore when the cursor is right on top of the player (avoids jitter)
+          if (dx * dx + dy * dy > 900) p.facing = Math.atan2(dy, dx);
+        }
       }
     }
     this.combat.update(dt);
