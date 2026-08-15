@@ -140,5 +140,37 @@ const sEntry = r3._meshCache.get(r3._key(slime));
 console.log('slime elevation:', sEntry.group.position.y.toFixed(0), '(expect 0)');
 if (sEntry.group.position.y !== 0) throw new Error('grounded slime should not be elevated');
 
+// ---- day/night + weather ----
+// noon: bright sky
+game.time.timeOfDay = 0.5; // noon
+game.weather.state = 'sunny'; game.weather.intensity = 0;
+r3.sync();
+const skyNoon = '#' + r3.scene.background.getHexString();
+console.log('sky at noon:', skyNoon);
+// midnight: sky should be dark
+game.time.timeOfDay = 0.0; // midnight
+r3.sync();
+const skyNight = '#' + r3.scene.background.getHexString();
+const nightLum = r3.scene.background.getHSL({});
+console.log('sky at night:', skyNight, '| night darker than noon:', nightLum.l < 0.5);
+if (!(nightLum.l < 0.5)) throw new Error('night sky not darkened');
+
+// rain: a rain Points system appears
+game.weather.state = 'rain'; game.weather.intensity = 1;
+r3.sync();
+console.log('rain present:', !!r3._rain, '| visible:', r3._rain && r3._rain.visible);
+if (!r3._rain || !r3._rain.visible) throw new Error('rain not shown during rain weather');
+// raindrops have valid positions (no NaN)
+let nan = false;
+for (let i = 0; i < r3._rainPos.length; i++) if (!Number.isFinite(r3._rainPos[i])) nan = true;
+console.log('raindrop positions valid:', !nan);
+if (nan) throw new Error('NaN raindrop positions');
+
+// clear weather -> rain hidden
+game.weather.state = 'sunny'; game.weather.intensity = 0;
+r3.sync();
+console.log('rain hidden when sunny:', !r3._rain.visible);
+if (r3._rain.visible) throw new Error('rain not hidden in sunny weather');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

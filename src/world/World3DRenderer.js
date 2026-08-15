@@ -64,6 +64,18 @@ export class World3DRenderer {
     this.sun.position.set(1, 2, 0.6).normalize();
     this.scene.add(this.sun);
 
+    // day/night + weather state (mutated each frame from the game's time/weather)
+    this._skyDay = new THREE.Color(0x87b5d8);
+    this._skyNight = new THREE.Color(0x0a0e18);
+    this._fogDay = new THREE.Color(0x87b5d8);
+    this._fogNight = new THREE.Color(0x0a0e18);
+    this._sunDay = new THREE.Color(0xfff2d8);
+    this._sunNight = new THREE.Color(0x8899cc);
+    this._tmp = new THREE.Color();
+    this._rain = null;       // Points object (created lazily when it rains)
+    this._rainBase = null;   // base x/y/z per raindrop
+    this._rainPos = null;    // live position attribute
+
     // entity group (rebuilt each frame from game state)
     this.entityRoot = new THREE.Group();
     this.scene.add(this.entityRoot);
@@ -476,6 +488,91 @@ export class World3DRenderer {
     // keep the camera's world matrix current so raycasting/aiming reads the
     // fresh orientation even before the first render frame
     this.camera.updateMatrixWorld(true);
+
+    // day/night lighting + weather (sky, fog, lights, rain) from the game clock
+    this._applyEnvironment(pp);
+  }
+
+  // ---- day/night + weather ----
+  _applyEnvironment(pp) {
+    const g = this.game;
+    const dark = g.time ? g.time.darkness : 0;
+    const w = g.weather;
+
+    // sky + fog interpolate from day → night
+    this.scene.background.lerpColors(this._skyDay, this._skyNight, dark);
+    this.scene.fog.color.lerpColors(this._fogDay, this._fogNight, dark);
+
+    // lights dim at night (sun becomes a soft moon)
+    this.hemi.intensity = 1.0 - dark * 0.75;
+    this.sun.intensity = 1.4 - dark * 1.3;
+    this.sun.color.lerpColors(this._sunDay, this._sunNight, dark);
+
+    // weather: darken + densify fog for rain/fog/storm
+    if (w) {
+      const fogDense = w.state === 'fog' ? 0.85 : w.raining ? 0.3 * w.intensity : 0;
+      const stormDark = w.isStorm ? 0.25 : 0;
+      const extra = Math.max(fogDense * 0.35, stormDark);
+      if (extra > 0) {
+        this._tmp.setRGB(0, 0, 0);
+        this.scene.background.lerp(this._tmp, extra);
+        this.scene.fog.color.lerp(this._tmp, extra * 0.5);
+        this.scene.fog.near = 2000 - fogDense * 1500;
+        this.scene.fog.far = 12000 - fogDense * 6000;
+        this.hemi.intensity *= (1 - extra * 0.5);
+        this.sun.intensity *= (1 - extra);
+      } else {
+        this.scene.fog.near = 4000;
+        this.scene.fog.far = 20000;
+      }
+
+      // rain / heavy rain / storm → falling rain particles
+      if (w.raining && w.intensity > 0.05) {
+        this._ensureRain();
+        this._rain.visible = true;
+        this._rain.material.opacity = 0.25 + w.intensity * 0.45;
+        this._rain.material.size = w.isStorm ? 9 : 6;
+        this._animateRain();
+        this._rain.position.set(pp.x, 0, pp.z);
+      } else if (this._rain) {
+        this._rain.visible = false;
+      }
+    }
+  }
+
+  _ensureRain() {
+    if (this._rain) return;
+    const N = 1400, SPAN = 4200, H = 700;
+    const base = new Float32Array(N * 3);
+    const pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      base[i * 3] = (Math.random() - 0.5) * SPAN;      // x offset
+      base[i * 3 + 1] = Math.random() * H;             // y
+      base[i * 3 + 2] = (Math.random() - 0.5) * SPAN;  // z offset
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xaac8e8, size: 6, transparent: true, opacity: 0.4, depthWrite: false });
+    this._rain = new THREE.Points(geo, mat);
+    this._rain.frustumCulled = false;
+    this._rainBase = base;
+    this._rainPos = pos;
+    this.scene.add(this._rain);
+  }
+
+  _animateRain() {
+    // fall speed (px/sec), driven by wall-clock time so it loops smoothly
+    const t = performance.now() * 0.001;
+    const fall = 650;
+    const H = 700;
+    const base = this._rainBase, pos = this._rainPos;
+    for (let i = 0; i < base.length / 3; i++) {
+      pos[i * 3] = base[i * 3];
+      let y = base[i * 3 + 1] - fall * t;
+      pos[i * 3 + 1] = ((y % H) + H) % H;
+      pos[i * 3 + 2] = base[i * 3 + 2];
+    }
+    this._rain.geometry.attributes.position.needsUpdate = true;
   }
 
   // ---- 3D controls: camera-relative movement + facing ----
