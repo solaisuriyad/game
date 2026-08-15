@@ -45,6 +45,7 @@ import { MenuManager } from './ui/MenuManager.js';
 import { BuildingInterior } from './ui/BuildingInterior.js';
 import { ChatUI } from './ui/ChatUI.js';
 import { World3DRenderer } from './world/World3DRenderer.js';
+import { Interior3DRenderer } from './world/Interior3DRenderer.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
 import { RANKS } from './data/quests.js';
@@ -119,6 +120,7 @@ class Game {
     if (this.mode3d) {
       try {
         this.renderer3d = new World3DRenderer(this);
+        this.interior3d = new Interior3DRenderer(this);
         // 3D: movement is camera-relative (W = away from camera), and the player
         // faces where the camera looks. This replaces the 2D top-down dirVector.
         this._dirFn = () => this.renderer3d.cameraDirVector();
@@ -445,10 +447,14 @@ class Game {
     }
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    // experimental 3D mode: render the world in Three.js instead of 2D canvas.
-    // Game logic (update) is unchanged; only the drawing swaps.
-    if (this.mode3d && this.renderer3d && this.state === 'playing' && this.player && !this.buildingInterior.active) {
-      try { this.renderer3d.render(); } catch (e) {}
+    // experimental 3D mode: render the world (or a building interior) in Three.js
+    // instead of the 2D canvas. Game logic (update) is unchanged; only drawing swaps.
+    if (this.mode3d && this.renderer3d && this.state === 'playing' && this.player) {
+      if (this.buildingInterior.active && this.interior3d) {
+        try { this.renderer3d.ensureRenderer(); this.interior3d.render(this.renderer3d); } catch (e) {}
+      } else if (!this.buildingInterior.active) {
+        try { this.renderer3d.render(); } catch (e) {}
+      }
       return;
     }
     if (this.buildingInterior.active) {

@@ -582,8 +582,12 @@ export class World3DRenderer {
     this.sync();
     if (!this.renderer) this.ensureRenderer();
     this.renderer.render(this.scene, this.camera);
-    // draw the normal 2D HUD on the transparent overlay so the player can see
-    // health/stamina/MP, gold, minimap, prompts and toasts in 3D mode
+    this.renderHUD();
+  }
+
+  // draw the normal 2D HUD onto the transparent overlay (shared by the 3D world
+  // AND the 3D building interiors, so the HUD looks identical everywhere)
+  renderHUD() {
     if (this.hudCtx) {
       try {
         this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);

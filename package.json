@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/smoke.mjs && node test/coop.mjs && node test/ranks.mjs && node test/gender-map.mjs && node test/npc-perf.mjs && node test/stress.mjs && node test/death.mjs && node test/flight.mjs && node test/world.mjs && node test/monster-stability.mjs && node test/interior.mjs && node test/civic.mjs && node test/sleep-temple.mjs && node test/chat.mjs && node test/accounts.mjs && node test/three.mjs",
+    "test": "node test/smoke.mjs && node test/coop.mjs && node test/ranks.mjs && node test/gender-map.mjs && node test/npc-perf.mjs && node test/stress.mjs && node test/death.mjs && node test/flight.mjs && node test/world.mjs && node test/monster-stability.mjs && node test/interior.mjs && node test/civic.mjs && node test/sleep-temple.mjs && node test/chat.mjs && node test/accounts.mjs && node test/three.mjs && node test/interior3d.mjs",
     "stress": "node test/stress.mjs"
   }
 }
