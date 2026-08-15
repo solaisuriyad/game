@@ -541,7 +541,7 @@ export class World3DRenderer {
     };
   }
 
-  // browser-only: create the WebGL renderer + canvas
+  // browser-only: create the WebGL renderer + canvas (and a HUD canvas above it)
   ensureRenderer() {
     if (this.renderer) return;
     const canvas = document.createElement('canvas');
@@ -550,10 +550,21 @@ export class World3DRenderer {
     document.body.appendChild(canvas);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+
+    // a transparent 2D canvas ABOVE the 3D scene for the HUD (health bars, gold,
+    // minimap, prompts…). pointer-events:none so it never blocks mouse aiming.
+    this.hudCanvas = document.createElement('canvas');
+    this.hudCanvas.id = 'hud3d';
+    this.hudCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;';
+    document.body.appendChild(this.hudCanvas);
+    this.hudCtx = this.hudCanvas.getContext('2d');
+
     this._resize = () => {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
+      this.hudCanvas.width = window.innerWidth;
+      this.hudCanvas.height = window.innerHeight;
     };
     this._resize();
     window.addEventListener('resize', this._resize);
@@ -562,7 +573,7 @@ export class World3DRenderer {
     try {
       const hint = document.createElement('div');
       hint.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,8,6,0.7);color:#e8e0c8;font:12px sans-serif;padding:4px 12px;border-radius:6px;pointer-events:none;';
-      hint.textContent = '3D preview · WASD move · right-drag orbit · wheel zoom · Esc menu';
+      hint.textContent = '3D · WASD move · mouse aim · right-drag orbit · wheel zoom · Esc menu';
       document.body.appendChild(hint);
     } catch (e) {}
   }
@@ -571,5 +582,14 @@ export class World3DRenderer {
     this.sync();
     if (!this.renderer) this.ensureRenderer();
     this.renderer.render(this.scene, this.camera);
+    // draw the normal 2D HUD on the transparent overlay so the player can see
+    // health/stamina/MP, gold, minimap, prompts and toasts in 3D mode
+    if (this.hudCtx) {
+      try {
+        this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);
+        this.game.hud.render(this.hudCtx);
+        if (this.game.deathInfo) this.game.hud.renderDeathScreen(this.hudCtx);
+      } catch (e) {}
+    }
   }
 }
