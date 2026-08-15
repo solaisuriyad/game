@@ -350,10 +350,11 @@ class Game {
     // 3D mode: A/D TURN the player left/right (so the side you turn to becomes
     // your new "front"), and the mouse drag-looks (move mouse → turn, stop →
     // stop). The camera trails smoothly behind so the player's turn is visible.
+    // NOTE: directions are INVERTED by request — A turns right, D turns left.
     if (this.mode3d && this.renderer3d) {
       const TURN = 2.8; // radians per second
-      if (this.input.held('a')) this.renderer3d.lookYaw += TURN * dt;
-      if (this.input.held('d')) this.renderer3d.lookYaw -= TURN * dt;
+      if (this.input.held('a')) this.renderer3d.lookYaw -= TURN * dt; // A = right
+      if (this.input.held('d')) this.renderer3d.lookYaw += TURN * dt; // D = left
       this.renderer3d.updateCameraFollow(dt);
     }
     this.player.update(dt, this);

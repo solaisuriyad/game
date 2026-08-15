@@ -1060,13 +1060,14 @@ export class World3DRenderer {
       if (uiBlocked()) return; // don't rotate the view while a popup is open
 
       // Drag mouse-look: rotate by how far the mouse MOVED (not where it is).
-      // Mouse moves RIGHT → view turns RIGHT. Mouse STOPS → view stops. This can
-      // never spin on its own (no feedback loop).
+      // INVERTED by request: mouse moves RIGHT → view turns LEFT, and vice-versa.
+      // Mouse STOPS → view stops. This can never spin on its own (no feedback
+      // loop). Vertical is normal (mouse up = look up).
       const dx = e.movementX ?? 0;
       const dy = e.movementY ?? 0;
       if (dx !== 0 || dy !== 0) {
         const s = this.lookSens;
-        this.lookYaw -= dx * 0.0032 * s;                        // right = turn right
+        this.lookYaw += dx * 0.0032 * s;                          // right = turn left
         this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032 * s); // up = look up
       }
     };
