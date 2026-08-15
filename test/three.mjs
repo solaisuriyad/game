@@ -22,11 +22,19 @@ r3.sync();
 const terrainCount = r3._terrain.children.length;
 console.log('terrain children (ground + water + instanced trees + buildings):', terrainCount);
 if (terrainCount < 40) throw new Error('terrain looks too empty: ' + terrainCount);
-// the instanced tree meshes hold hundreds of thousands of trees in 2 draw calls
+// the instanced tree meshes now live in many chunks (thinned + distance-culled)
 const trees = r3._terrain.children.filter((c) => c.isInstancedMesh);
 const treeCount = trees.reduce((s, m) => s + m.count, 0);
-console.log('trees via instancing (2 meshes):', treeCount);
-if (treeCount < 100000) throw new Error('expected many instanced trees, got ' + treeCount);
+console.log('tree instances (thinned, across', trees.length, 'chunks):', treeCount);
+if (treeCount < 50000) throw new Error('expected many thinned trees, got ' + treeCount);
+
+// distance culling: only chunks near the player should be visible
+r3.sync();
+const visChunks = r3._treeChunks.filter((c) => c.trunks.visible);
+const visTrees = visChunks.reduce((s, c) => s + c.trunks.count, 0);
+console.log('visible tree chunks:', visChunks.length, '/', r3._treeChunks.length, '| visible trees:', visTrees, '/', treeCount);
+if (visChunks.length >= r3._treeChunks.length) throw new Error('tree culling not working (all chunks visible)');
+if (visTrees >= treeCount) throw new Error('no trees culled');
 
 // the Yggdrasil world tree must be present in the 3D scene (it's the centerpiece)
 if (!r3._yggGlow) throw new Error('Yggdrasil missing from 3D scene');

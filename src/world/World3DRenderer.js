@@ -153,37 +153,60 @@ export class World3DRenderer {
 
   _addTrees(root, S) {
     const w = this.game.world;
-    const trees = [];
+    // 615k individual trees are far too many to render. Fix: (1) thin them to a
+    // representative sample, (2) split into spatial chunks of InstancedMeshes,
+    // (3) distance-cull chunks each frame so only trees near the player draw.
+    const TREE_STEP = 6;   // keep every 6th tree (~100k total)
+    const CHUNK = 2000;    // chunk size in world px
+
+    const chunks = new Map(); // "cx,cy" -> array of trees
+    let i = 0;
     for (const cell of w.staticGrid.values()) {
-      for (const o of cell) if (o.type === 'tree') trees.push(o);
+      for (const o of cell) {
+        if (o.type !== 'tree') continue;
+        i++;
+        if (i % TREE_STEP !== 0) continue;
+        const cx = Math.floor(o.x / CHUNK), cy = Math.floor(o.y / CHUNK);
+        const key = cx + ',' + cy;
+        if (!chunks.has(key)) chunks.set(key, []);
+        chunks.get(key).push(o);
+      }
     }
-    const n = trees.length;
-    if (!n) return;
 
     const trunkGeo = new THREE.CylinderGeometry(2.4, 2.9, 26, 6);
     const canopyGeo = new THREE.ConeGeometry(11, 24, 7);
-    const trunks = new THREE.InstancedMesh(trunkGeo, S.trunk, n);
-    const canopies = new THREE.InstancedMesh(canopyGeo, S.canopy, n);
-
     const dummy = new THREE.Object3D();
-    for (let i = 0; i < n; i++) {
-      const c = trees[i];
-      const size = c.size || 1;
-      const x = c.x + c.w / 2 - PX_W / 2;
-      const z = c.y + c.h / 2 - PX_H / 2;
-      dummy.position.set(x, 13 * size, z);
-      dummy.scale.setScalar(size);
-      dummy.rotation.set(0, 0, 0);
-      dummy.updateMatrix();
-      trunks.setMatrixAt(i, dummy.matrix);
-      dummy.position.y = 26 * size + 6 * size;
-      dummy.updateMatrix();
-      canopies.setMatrixAt(i, dummy.matrix);
+    this._treeChunks = [];
+
+    for (const [key, trees] of chunks) {
+      const n = trees.length;
+      const trunks = new THREE.InstancedMesh(trunkGeo, S.trunk, n);
+      const canopies = new THREE.InstancedMesh(canopyGeo, S.canopy, n);
+      for (let j = 0; j < n; j++) {
+        const c = trees[j];
+        const size = c.size || 1;
+        const x = c.x + c.w / 2 - PX_W / 2;
+        const z = c.y + c.h / 2 - PX_H / 2;
+        dummy.position.set(x, 13 * size, z);
+        dummy.scale.setScalar(size);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        trunks.setMatrixAt(j, dummy.matrix);
+        dummy.position.y = 26 * size + 6 * size;
+        dummy.updateMatrix();
+        canopies.setMatrixAt(j, dummy.matrix);
+      }
+      trunks.instanceMatrix.needsUpdate = true;
+      canopies.instanceMatrix.needsUpdate = true;
+      root.add(trunks);
+      root.add(canopies);
+      // world-pixel center of this chunk (for distance culling)
+      const [cx, cy] = key.split(',').map(Number);
+      this._treeChunks.push({
+        trunks, canopies,
+        wx: (cx + 0.5) * CHUNK, wy: (cy + 0.5) * CHUNK
+      });
     }
-    trunks.instanceMatrix.needsUpdate = true;
-    canopies.instanceMatrix.needsUpdate = true;
-    root.add(trunks);
-    root.add(canopies);
   }
 
   _addTileOverlays(root, S) {
@@ -223,7 +246,9 @@ export class World3DRenderer {
     return { x: x - PX_W / 2, z: y - PX_H / 2 };
   }
 
-  _key(e) { return (e.id || 'e' + e.x + '_' + e.y); }
+  // stable cache key: the PLAYER has no `id`, so using x/y would rebuild its
+  // mesh every single frame (a major slowdown). Use a fixed key for the player.
+  _key(e) { return e.isPlayer ? 'player' : (e.id || 'e' + e.x + '_' + e.y); }
 
   // material cache by color (avoid rebuilding materials every frame)
   _mat(hex) {
@@ -429,6 +454,18 @@ export class World3DRenderer {
       this._yggGlow.material.opacity = 0.10 + Math.sin(t) * 0.04;
     }
 
+    // distance-cull tree chunks: only render trees near the player (the single
+    // biggest 3D perf win — without this all ~100k trees draw every frame)
+    if (this._treeChunks) {
+      const CULL_TREES = 6000;
+      for (const c of this._treeChunks) {
+        const dx = c.wx - px, dy = c.wy - py;
+        const vis = (dx * dx + dy * dy) <= CULL_TREES * CULL_TREES;
+        c.trunks.visible = vis;
+        c.canopies.visible = vis;
+      }
+    }
+
     // camera follows the player at a comfortable third-person angle
     const pp = this._worldToLocal(px, py);
     const camX = pp.x + Math.sin(this.yaw) * this.distance;
@@ -548,8 +585,9 @@ export class World3DRenderer {
     canvas.id = 'game3d';
     canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:1;';
     document.body.appendChild(canvas);
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    // cap the pixel ratio — rendering at 2x on a large screen is a big perf cost
+    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
 
     // a transparent 2D canvas ABOVE the 3D scene for the HUD (health bars, gold,
     // minimap, prompts…). pointer-events:none so it never blocks mouse aiming.
