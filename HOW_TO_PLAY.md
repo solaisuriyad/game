@@ -342,7 +342,7 @@ The game is being upgraded to **full 3D** step by step. To preview the current 3
 http://localhost:3000/?3d=1
 ```
 
-This shows the same world and characters in 3D (low-poly, built in code) while the normal 2D game stays the default.
+This shows the same world and characters in 3D (low-poly, built in code) while the normal 2D game stays the default. The 3D world includes the **Yggdrasil** (a huge glowing world tree) and distinct models: winged dragons and dragonoids (who fly above the ground), wolves, spiders, treants, goblins and animals.
 
 **3D controls:** **WASD** moves relative to the camera (W = away from you, S = toward, A/D = strafe). **Mouse** aims — your character faces wherever the cursor points on the ground. **Left-click** attacks / shoots arrows toward the aim point. **Hold right-mouse and drag** to orbit the camera around you. **Scroll wheel** zooms in/out. It's a work in progress — menus and the building interiors are still 2D overlays.
 

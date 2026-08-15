@@ -28,6 +28,10 @@ const treeCount = trees.reduce((s, m) => s + m.count, 0);
 console.log('trees via instancing (2 meshes):', treeCount);
 if (treeCount < 100000) throw new Error('expected many instanced trees, got ' + treeCount);
 
+// the Yggdrasil world tree must be present in the 3D scene (it's the centerpiece)
+if (!r3._yggGlow) throw new Error('Yggdrasil missing from 3D scene');
+console.log('Yggdrasil present (glow mesh) ✓');
+
 // entity meshes: player + npcs + (some) monsters + animals near spawn
 const ents = r3.entityRoot.children.length;
 console.log('entity meshes near player:', ents);
@@ -104,6 +108,29 @@ const ap = r3.aimWorldPoint();
 const wantFacing = Math.atan2(ap.y - game.player.y, ap.x - game.player.x);
 console.log('aim facing finite:', Number.isFinite(wantFacing));
 if (!Number.isFinite(wantFacing)) throw new Error('aim facing is NaN');
+
+// ---- distinct 3D models ----
+// a dragon should have WINGS (more parts than a generic beast)
+const dragon = game.monsters.find((m) => m.family === 'dragon' && !m.dead);
+const dragonMesh = r3._makeEntityMesh(dragon, 'dragon', dragon.color);
+console.log('dragon parts:', dragonMesh.children.length, '(expect > 5 — wings/tail/horns)');
+if (dragonMesh.children.length < 5) throw new Error('dragon model too simple (missing wings/tail)');
+
+// flying entities are lifted off the ground
+dragon.x = game.player.x + 100; dragon.y = game.player.y;
+r3.sync();
+const dk = r3._key(dragon);
+const dEntry = r3._meshCache.get(dk);
+console.log('dragon elevation:', dEntry.group.position.y.toFixed(0), '(expect ~80, flying)');
+if (Math.abs(dEntry.group.position.y - 80) > 1) throw new Error('flying dragon not elevated');
+
+// a slime is grounded (elevation 0)
+const slime = game.monsters.find((m) => m.family === 'slime' && !m.dead);
+slime.x = game.player.x + 120; slime.y = game.player.y;
+r3.sync();
+const sEntry = r3._meshCache.get(r3._key(slime));
+console.log('slime elevation:', sEntry.group.position.y.toFixed(0), '(expect 0)');
+if (sEntry.group.position.y !== 0) throw new Error('grounded slime should not be elevated');
 
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

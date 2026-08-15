@@ -71,8 +71,9 @@ export class World3DRenderer {
     this._terrain = null;
     this._terrainKey = '';
     this._meshCache = new Map(); // key -> { group, meshes, kind, color, facing }
+    this._yggGlow = null;        // the world tree's glow (pulsed each frame)
 
-    // build the static world (ground + trees + buildings) once
+    // build the static world (ground + trees + buildings + Yggdrasil) once
     this._buildTerrain();
   }
 
@@ -100,8 +101,54 @@ export class World3DRenderer {
     for (const b of w.buildings) {
       root.add(this._makeBuilding(b));
     }
+    // the Yggdrasil — the colossal world tree at the heart of monster territory
+    root.add(this._makeYggdrasil());
     this._terrain = root;
     this.scene.add(root);
+  }
+
+  _makeYggdrasil() {
+    const w = this.game.world;
+    if (!w.yggdrasil) return new THREE.Group();
+    const S = shared();
+    const g = new THREE.Group();
+    const cx = w.yggdrasil.x - PX_W / 2;
+    const cz = w.yggdrasil.y - PX_H / 2;
+
+    // colossal trunk
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(90, 120, 720, 10), new THREE.MeshStandardMaterial({ color: 0x4a3220, roughness: 1 }));
+    trunk.position.y = 360;
+    g.add(trunk);
+    // giant roots
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const root = new THREE.Mesh(new THREE.CylinderGeometry(26, 40, 320, 6), S.trunk);
+      root.position.set(Math.cos(a) * 130, 80, Math.sin(a) * 130);
+      root.rotation.z = Math.cos(a) * 0.6;
+      root.rotation.x = Math.sin(a) * 0.6;
+      g.add(root);
+    }
+    // 9-color layered canopy (spheres of distinct colors, arranged in a big dome)
+    const COLORS = [0xff5040, 0xffa030, 0xffe040, 0x7ae040, 0x40e0a0, 0x40c0e0, 0x5070ff, 0xa050ff, 0xff50c0];
+    for (let i = 0; i < COLORS.length; i++) {
+      const mat = new THREE.MeshStandardMaterial({ color: COLORS[i], roughness: 0.6, emissive: COLORS[i], emissiveIntensity: 0.15 });
+      const r = 520 - i * 45;
+      const y = 760 + i * 30;
+      const blob = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), mat);
+      blob.position.set(0, y, 0);
+      g.add(blob);
+    }
+    // big soft glow
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(760, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0.12, depthWrite: false })
+    );
+    glow.position.y = 800;
+    g.add(glow);
+    this._yggGlow = glow;
+
+    g.position.set(cx, 0, cz);
+    return g;
   }
 
   _addTrees(root, S) {
@@ -178,49 +225,155 @@ export class World3DRenderer {
 
   _key(e) { return (e.id || 'e' + e.x + '_' + e.y); }
 
+  // material cache by color (avoid rebuilding materials every frame)
+  _mat(hex) {
+    if (!this._matCache) this._matCache = new Map();
+    if (!this._matCache.has(hex)) {
+      this._matCache.set(hex, new THREE.MeshStandardMaterial({ color: parseInt(hex.slice(1), 16), roughness: 1 }));
+    }
+    return this._matCache.get(hex);
+  }
+
+  _addWings(g, mat, scale = 1) {
+    // two triangular wing membranes
+    const wingGeo = new THREE.BufferGeometry();
+    const s = 22 * scale;
+    const verts = new Float32Array([
+      0, 0, 0,   -s, s * 0.7, -s * 0.5,   -s * 1.1, s * 0.2, s * 0.2
+    ]);
+    wingGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    wingGeo.setIndex([0, 1, 2]);
+    wingGeo.computeVertexNormals();
+    const lw = new THREE.Mesh(wingGeo, mat);
+    lw.position.set(-6, 16 * scale, 0);
+    g.add(lw);
+    const rw = new THREE.Mesh(wingGeo, mat);
+    rw.position.set(6, 16 * scale, 0);
+    rw.rotation.y = Math.PI;
+    g.add(rw);
+  }
+
   _makeEntityMesh(e, kind, color, facing) {
     const S = shared();
     const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: parseInt((color || '#7a6a4a').slice(1), 16), roughness: 1 });
+    const mat = this._mat(color || '#7a6a4a');
+    const skin = S.skin;
+    const boss = e.boss === true;
 
     if (kind === 'player' || kind === 'npc') {
       const body = new THREE.Mesh(new THREE.CapsuleGeometry(6, 12, 4, 8), mat);
-      body.position.y = 12;
-      g.add(body);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(6, 10, 8), S.skin);
-      head.position.y = 24;
-      g.add(head);
+      body.position.y = 12; g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(6, 10, 8), skin);
+      head.position.y = 24; g.add(head);
     } else if (kind === 'slime') {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(8, 10, 8), mat);
-      b.scale.y = 0.6; b.position.y = 6;
-      g.add(b);
-    } else if (kind === 'dragon' || kind === 'dragonoid') {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(13, 10, 8), mat);
-      b.position.y = 12; b.scale.z = 1.4;
-      g.add(b);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(8, 8, 6), mat);
-      head.position.set(14, 18, 0); g.add(head);
+      const b = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 9), mat);
+      b.scale.y = 0.6; b.position.y = 6; g.add(b);
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(2.2, 6, 6), S.playerGlow);
+      eye.position.set(3, 8, 6); g.add(eye);
     } else if (kind === 'spider') {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(8, 10, 8), mat);
-      b.position.y = 8; g.add(b);
+      // bulbous abdomen + small head + 8 jointed legs
+      const b = new THREE.Mesh(new THREE.SphereGeometry(9, 10, 8), mat);
+      b.position.y = 9; b.scale.set(1, 0.9, 1.2); g.add(b);
+      const h = new THREE.Mesh(new THREE.SphereGeometry(5.5, 8, 6), mat);
+      h.position.set(0, 11, 9); g.add(h);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 26, 5), mat);
+        leg.position.set(Math.cos(a) * 7, 6, Math.sin(a) * 7);
+        leg.rotation.z = Math.cos(a) * 0.7;
+        leg.rotation.x = Math.sin(a) * 0.7;
+        g.add(leg);
+      }
+    } else if (kind === 'treant') {
+      // walking tree: trunk body, branch arms, leafy head
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(6, 8, 26, 7), S.trunk);
+      body.position.y = 14; g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(9, 8, 7), S.canopy);
+      head.position.y = 32; g.add(head);
+      const arm = (sgn) => {
+        const a = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 3, 20, 5), S.trunk);
+        a.position.set(sgn * 9, 16, 0); a.rotation.z = sgn * 0.9; g.add(a);
+      };
+      arm(-1); arm(1);
+    } else if (kind === 'wolf') {
+      // quadruped: elongated body, head, tail, legs
+      const b = new THREE.Mesh(new THREE.CapsuleGeometry(6, 16, 4, 8), mat);
+      b.rotation.z = Math.PI / 2; b.position.y = 8; g.add(b);
       const h = new THREE.Mesh(new THREE.SphereGeometry(5, 8, 6), mat);
-      h.position.y = 12; g.add(h);
+      h.position.set(14, 9, 0); g.add(h);
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 3, 16, 5), mat);
+      tail.position.set(-16, 10, 0); tail.rotation.z = Math.PI / 3; g.add(tail);
+      for (const [lx, lz] of [[-6, -4], [-6, 4], [6, -4], [6, 4]]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2, 10, 5), mat);
+        leg.position.set(lx, 3, lz); g.add(leg);
+      }
+    } else if (kind === 'dragon') {
+      // winged serpent: long body, tail, horned head, big wings
+      const b = new THREE.Mesh(new THREE.CapsuleGeometry(13, 20, 4, 8), mat);
+      b.rotation.z = Math.PI / 2; b.position.y = 14; g.add(b);
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(7, 30, 6), mat);
+      tail.rotation.z = Math.PI / 2; tail.position.set(-28, 16, 0); g.add(tail);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(9, 8, 6), mat);
+      head.position.set(26, 18, 0); g.add(head);
+      for (const sgn of [-1, 1]) {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(3, 12, 6), S.skin);
+        horn.position.set(26 + sgn * 5, 26, 0); horn.rotation.z = sgn * 0.4; g.add(horn);
+      }
+      this._addWings(g, mat, 1.6);
+    } else if (kind === 'dragonoid') {
+      // upright dragon-human hybrid: humanoid body + wings + horns
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(9, 16, 4, 8), mat);
+      body.position.y = 18; g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(8, 8, 6), mat);
+      head.position.y = 34; g.add(head);
+      for (const sgn of [-1, 1]) {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(3, 14, 6), S.skin);
+        horn.position.set(sgn * 6, 40, 0); horn.rotation.z = sgn * 0.5; g.add(horn);
+      }
+      this._addWings(g, mat, 1.3);
+    } else if (kind === 'bird') {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat);
+      b.position.y = 10; g.add(b);
+      this._addWings(g, mat, 0.6);
+    } else if (kind === 'goblin') {
+      // humanoid monster (goblins, skeletons): small upright body + head
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(5, 10, 4, 8), mat);
+      body.position.y = 10; g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(5, 8, 6), mat);
+      head.position.y = 20; g.add(head);
     } else {
-      // generic beast: boxy body + head
-      const b = new THREE.Mesh(new THREE.BoxGeometry(14, 10, 9), mat);
-      b.position.y = 8; g.add(b);
-      const h = new THREE.Mesh(new THREE.BoxGeometry(7, 7, 7), mat);
-      h.position.set(10, 10, 0); g.add(h);
+      // generic beast / animals (rabbit, deer, boar, goat, bear…) — quadruped
+      const b = new THREE.Mesh(new THREE.CapsuleGeometry(5, 10, 4, 8), mat);
+      b.rotation.z = Math.PI / 2; b.position.y = 6; g.add(b);
+      const h = new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat);
+      h.position.set(11, 7, 0); g.add(h);
+      for (const [lx, lz] of [[-4, -3], [-4, 3], [4, -3], [4, 3]]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.6, 8, 5), mat);
+        leg.position.set(lx, 2, lz); g.add(leg);
+      }
     }
 
-    // boss marker (gold ring)
-    if (kind === 'boss') {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(14, 1.6, 6, 20), S.boss);
+    // boss marker (gold ring + slight scale-up)
+    if (boss) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(16, 1.8, 6, 20), S.boss);
       ring.rotation.x = Math.PI / 2; ring.position.y = 2;
       g.add(ring);
+      g.scale.setScalar(1.35);
     }
     return g;
   }
+
+  _kindForMonster(m) {
+    if (m.family === 'slime') return 'slime';
+    if (m.family === 'spider') return 'spider';
+    if (m.family === 'treant') return 'treant';
+    if (m.family === 'wolf') return 'wolf';
+    if (m.family === 'dragon') return 'dragon';
+    if (m.family === 'dragonoid') return 'dragonoid';
+    if (m.family === 'goblin' || m.family === 'undead') return 'goblin';
+    return 'beast';
+  }
+  _kindForAnimal(a) { return a.def && a.def.id === 'bird' ? 'bird' : 'beast'; }
 
   // update all entity meshes from the current game state
   sync() {
@@ -239,9 +392,13 @@ export class World3DRenderer {
         this.entityRoot.add(entry.group);
       }
       const p = this._worldToLocal(e.x, e.y);
-      entry.group.position.set(p.x, 0, p.z);
+      // lift flying entities (dragons/dragonoids/player flight) off the ground
+      let elev = 0;
+      if (e.altitude) elev = e.altitude * 3;          // player flight (feet → px)
+      else if (e.flying || e.flyingNow) elev = 80;      // dragons / dragonoids
+      else if (kind === 'bird') elev = 30;
+      entry.group.position.set(p.x, elev, p.z);
       entry.group.rotation.y = -(e.facing || 0);
-      // monsters glow when enraged
       entry.group.visible = Math.hypot(e.x - px, e.y - py) <= CULL;
     };
 
@@ -253,17 +410,23 @@ export class World3DRenderer {
     const mons = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
     for (const m of mons) {
       if (m.dead) continue;
-      if (Math.hypot(m.x - px, m.y - py) <= CULL) place(m, m.family || 'beast', m.color);
+      if (Math.hypot(m.x - px, m.y - py) <= CULL) place(m, this._kindForMonster(m), m.color);
     }
     const animals = g.multiplayer.connected ? g.remoteAnimals : g.animals;
     for (const a of animals) {
       if (a.dead) continue;
-      if (Math.hypot(a.x - px, a.y - py) <= CULL) place(a, 'beast', a.color);
+      if (Math.hypot(a.x - px, a.y - py) <= CULL) place(a, this._kindForAnimal(a), a.color);
     }
 
     // remove meshes for entities that no longer exist
     for (const [key, entry] of this._meshCache) {
       if (!seen.has(key)) { this.entityRoot.remove(entry.group); this._meshCache.delete(key); }
+    }
+
+    // pulse the Yggdrasil's glow
+    if (this._yggGlow) {
+      const t = g.time ? g.time.timeOfDay * 60 : 0;
+      this._yggGlow.material.opacity = 0.10 + Math.sin(t) * 0.04;
     }
 
     // camera follows the player at a comfortable third-person angle
