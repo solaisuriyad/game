@@ -170,59 +170,99 @@ export class World3DRenderer {
 
   _addTrees(root, S) {
     const w = this.game.world;
-    // 615k individual trees are far too many to render. Fix: (1) thin them to a
-    // representative sample, (2) split into spatial chunks of InstancedMeshes,
-    // (3) distance-cull chunks each frame so only trees near the player draw.
-    const TREE_STEP = 6;   // keep every 6th tree (~100k total)
+    // Trees BLOCK the player (collision), so the 3D view must render every one —
+    // thinning them left 5/6 of blocking trees invisible ("invisible walls").
+    // Instead: render ALL trees, split into spatial chunks of InstancedMeshes,
+    // distance-cull chunks each frame, and rebuild a chunk when a tree is chopped.
     const CHUNK = 2000;    // chunk size in world px
 
-    const chunks = new Map(); // "cx,cy" -> array of trees
-    let i = 0;
+    this._treeRoot = root;
+    this._treeChunkSize = CHUNK;
+    this._treeGeo = {
+      trunk: new THREE.CylinderGeometry(2.4, 2.9, 26, 6),
+      canopy: new THREE.ConeGeometry(11, 24, 7)
+    };
+    this._treeDummy = new THREE.Object3D();
+    this._treeChunks = [];          // cull list: { trunks, canopies, wx, wy, key }
+    this._treeChunkMap = new Map(); // key -> { trunks, canopies, trees }
+    this._depletedSnapshot = new Set(w.depletedTrees);
+
+    const chunks = new Map(); // key -> array of tree objects (all, incl. depleted)
     for (const cell of w.staticGrid.values()) {
       for (const o of cell) {
         if (o.type !== 'tree') continue;
-        i++;
-        if (i % TREE_STEP !== 0) continue;
         const cx = Math.floor(o.x / CHUNK), cy = Math.floor(o.y / CHUNK);
         const key = cx + ',' + cy;
         if (!chunks.has(key)) chunks.set(key, []);
         chunks.get(key).push(o);
       }
     }
+    for (const [key, trees] of chunks) this._buildTreeChunk(key, trees);
+  }
 
-    const trunkGeo = new THREE.CylinderGeometry(2.4, 2.9, 26, 6);
-    const canopyGeo = new THREE.ConeGeometry(11, 24, 7);
-    const dummy = new THREE.Object3D();
-    this._treeChunks = [];
+  // build (or rebuild) the instanced meshes for one spatial chunk, skipping any
+  // chopped (depleted) trees so they disappear from view
+  _buildTreeChunk(key, trees) {
+    const S = shared();
+    const CHUNK = this._treeChunkSize;
+    const root = this._treeRoot;
+    const G = this._treeGeo;
+    const dummy = this._treeDummy;
 
-    for (const [key, trees] of chunks) {
-      const n = trees.length;
-      const trunks = new THREE.InstancedMesh(trunkGeo, S.trunk, n);
-      const canopies = new THREE.InstancedMesh(canopyGeo, S.canopy, n);
-      for (let j = 0; j < n; j++) {
-        const c = trees[j];
-        const size = c.size || 1;
-        const x = c.x + c.w / 2 - PX_W / 2;
-        const z = c.y + c.h / 2 - PX_H / 2;
-        dummy.position.set(x, 13 * size, z);
-        dummy.scale.setScalar(size);
-        dummy.rotation.set(0, 0, 0);
-        dummy.updateMatrix();
-        trunks.setMatrixAt(j, dummy.matrix);
-        dummy.position.y = 26 * size + 6 * size;
-        dummy.updateMatrix();
-        canopies.setMatrixAt(j, dummy.matrix);
-      }
-      trunks.instanceMatrix.needsUpdate = true;
-      canopies.instanceMatrix.needsUpdate = true;
-      root.add(trunks);
-      root.add(canopies);
-      // world-pixel center of this chunk (for distance culling)
-      const [cx, cy] = key.split(',').map(Number);
-      this._treeChunks.push({
-        trunks, canopies,
-        wx: (cx + 0.5) * CHUNK, wy: (cy + 0.5) * CHUNK
-      });
+    const old = this._treeChunkMap.get(key);
+    if (old) { root.remove(old.trunks); root.remove(old.canopies); }
+
+    const keep = trees.filter((t) => !t.depleted);
+    const n = keep.length;
+    const trunks = new THREE.InstancedMesh(G.trunk, S.trunk, n);
+    const canopies = new THREE.InstancedMesh(G.canopy, S.canopy, n);
+    for (let j = 0; j < n; j++) {
+      const c = keep[j];
+      const size = c.size || 1;
+      const x = c.x + c.w / 2 - PX_W / 2;
+      const z = c.y + c.h / 2 - PX_H / 2;
+      dummy.position.set(x, 13 * size, z);
+      dummy.scale.setScalar(size);
+      dummy.rotation.set(0, 0, 0);
+      dummy.updateMatrix();
+      trunks.setMatrixAt(j, dummy.matrix);
+      dummy.position.y = 26 * size + 6 * size;
+      dummy.updateMatrix();
+      canopies.setMatrixAt(j, dummy.matrix);
+    }
+    trunks.instanceMatrix.needsUpdate = true;
+    canopies.instanceMatrix.needsUpdate = true;
+    root.add(trunks);
+    root.add(canopies);
+
+    const [cx, cy] = key.split(',').map(Number);
+    const entry = { trunks, canopies, trees, key, wx: (cx + 0.5) * CHUNK, wy: (cy + 0.5) * CHUNK };
+    this._treeChunkMap.set(key, entry);
+    const idx = this._treeChunks.findIndex((c) => c.key === key);
+    if (idx >= 0) this._treeChunks[idx] = entry; else this._treeChunks.push(entry);
+  }
+
+  // detect trees that were chopped or regrown since last frame and rebuild just
+  // their chunks (cheap: the depleted list is tiny and changes rarely)
+  _rebuildTreeChunks() {
+    const w = this.game.world;
+    const snap = this._depletedSnapshot;
+    if (!snap) return;
+    const current = new Set(w.depletedTrees);
+    const changed = [];
+    for (const t of current) if (!snap.has(t)) changed.push(t);
+    for (const t of snap) if (!current.has(t)) changed.push(t);
+    if (!changed.length) return;
+    this._depletedSnapshot = current;
+
+    const keys = new Set();
+    for (const t of changed) {
+      const cx = Math.floor(t.x / this._treeChunkSize), cy = Math.floor(t.y / this._treeChunkSize);
+      keys.add(cx + ',' + cy);
+    }
+    for (const key of keys) {
+      const entry = this._treeChunkMap.get(key);
+      if (entry) this._buildTreeChunk(key, entry.trees);
     }
   }
 
@@ -495,6 +535,10 @@ export class World3DRenderer {
       const t = g.time ? g.time.timeOfDay * 60 : 0;
       this._yggGlow.material.opacity = 0.10 + Math.sin(t) * 0.04;
     }
+
+    // rebuild any tree chunks whose trees were chopped or regrown (so chopped
+    // trees disappear from view, and regrown trees come back)
+    this._rebuildTreeChunks();
 
     // distance-cull tree chunks: only render trees near the player (the single
     // biggest 3D perf win — without this all ~100k trees draw every frame)

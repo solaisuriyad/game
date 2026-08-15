@@ -22,11 +22,11 @@ r3.sync();
 const terrainCount = r3._terrain.children.length;
 console.log('terrain children (ground + water + instanced trees + buildings):', terrainCount);
 if (terrainCount < 40) throw new Error('terrain looks too empty: ' + terrainCount);
-// the instanced tree meshes now live in many chunks (thinned + distance-culled)
+// the instanced tree meshes now live in many chunks (full density + distance-culled)
 const trees = r3._terrain.children.filter((c) => c.isInstancedMesh);
 const treeCount = trees.reduce((s, m) => s + m.count, 0);
-console.log('tree instances (thinned, across', trees.length, 'chunks):', treeCount);
-if (treeCount < 50000) throw new Error('expected many thinned trees, got ' + treeCount);
+console.log('tree instances (full density, across', r3._treeChunks.length, 'chunks):', treeCount);
+if (treeCount < 500000) throw new Error('trees were thinned (invisible blocking trees), got ' + treeCount);
 
 // distance culling: only chunks near the player should be visible
 r3.sync();
@@ -35,6 +35,33 @@ const visTrees = visChunks.reduce((s, c) => s + c.trunks.count, 0);
 console.log('visible tree chunks:', visChunks.length, '/', r3._treeChunks.length, '| visible trees:', visTrees, '/', treeCount);
 if (visChunks.length >= r3._treeChunks.length) throw new Error('tree culling not working (all chunks visible)');
 if (visTrees >= treeCount) throw new Error('no trees culled');
+
+// ---- chopping a tree removes it from the 3D view ----
+// find a tree near the player and count trees in its chunk before/after chop
+const playerTree = game.world.collidersNear(game.player.x, game.player.y, 300).find((c) => c.type === 'tree' && !c.depleted);
+if (playerTree) {
+  const cx = Math.floor(playerTree.x / r3._treeChunkSize), cy = Math.floor(playerTree.y / r3._treeChunkSize);
+  const key = cx + ',' + cy;
+  const chunkBefore = r3._treeChunkMap.get(key);
+  const countBefore = chunkBefore.trunks.count;
+  // chop it (same as the game does)
+  playerTree.depleted = true;
+  if (!game.world.depletedTrees.includes(playerTree)) game.world.depletedTrees.push(playerTree);
+  r3.sync();
+  const chunkAfter = r3._treeChunkMap.get(key);
+  const countAfter = chunkAfter.trunks.count;
+  console.log('chunk trees before chop:', countBefore, '| after chop:', countAfter, '(expect one fewer)');
+  if (countAfter !== countBefore - 1) throw new Error('chopped tree did not disappear from 3D view');
+  // regrow it
+  playerTree.depleted = false;
+  game.world.depletedTrees = game.world.depletedTrees.filter((t) => t !== playerTree);
+  r3.sync();
+  const countRegrown = r3._treeChunkMap.get(key).trunks.count;
+  console.log('after regrow:', countRegrown, '(expect back to', countBefore + ')');
+  if (countRegrown !== countBefore) throw new Error('regrown tree did not come back');
+} else {
+  console.log('(no tree near player to test chopping)');
+}
 
 // the Yggdrasil world tree must be present in the 3D scene (it's the centerpiece)
 if (!r3._yggGlow) throw new Error('Yggdrasil missing from 3D scene');

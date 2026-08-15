@@ -713,7 +713,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 6.9 — 3D name & rank labels above monsters (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 7.0 — 3D: no invisible trees, chopped trees disappear (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
