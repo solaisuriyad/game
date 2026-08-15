@@ -172,5 +172,30 @@ r3.sync();
 console.log('rain hidden when sunny:', !r3._rain.visible);
 if (r3._rain.visible) throw new Error('rain not hidden in sunny weather');
 
+// ---- FX: projectiles / drops / nodes / corpses appear in 3D ----
+game.player.x = 2000 * 32; game.player.y = 2000 * 32;
+r3.yaw = 0; r3.pitch = 0.95;
+game.projectiles.push({ x: game.player.x + 100, y: game.player.y, vx: 300, vy: 0, kind: 'arrow', dead: false });
+game.drops.push({ x: game.player.x + 120, y: game.player.y, dead: false });
+game.corpses.push({ x: game.player.x - 100, y: game.player.y });
+r3.sync();
+console.log('FX objects after adding arrow/drop/corpse:', r3.fxRoot.children.length, '(expect >= 3 + nearby nodes)');
+if (r3.fxRoot.children.length < 3) throw new Error('projectiles/drops/corpses not rendered in 3D');
+// clear and re-sync should not leak (fx group is rebuilt each frame)
+const n1 = r3.fxRoot.children.length;
+r3.sync();
+console.log('fx group stable across frames:', r3.fxRoot.children.length === n1);
+if (r3.fxRoot.children.length !== n1) throw new Error('fx group leaking objects');
+game.projectiles.length = 0; game.drops.length = 0; game.corpses.length = 0;
+
+// float text projection should produce finite screen coords
+game.floatTexts.push({ x: game.player.x, y: game.player.y, text: '10', color: '#fff', t: 1 });
+const fakeHud = { width: 800, height: 600, clearRect(){}, getContext(){ return fakeCtx(); } };
+r3.hudCanvas = fakeHud;
+r3.hudCtx = fakeCtx();
+r3._drawFloatTexts(r3.hudCtx);
+console.log('float text draw did not throw ✓');
+game.floatTexts.length = 0;
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

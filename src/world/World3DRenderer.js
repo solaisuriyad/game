@@ -79,6 +79,11 @@ export class World3DRenderer {
     // entity group (rebuilt each frame from game state)
     this.entityRoot = new THREE.Group();
     this.scene.add(this.entityRoot);
+    // fx group (projectiles, corpses, traps, drops, nodes) — cleared each frame
+    this.fxRoot = new THREE.Group();
+    this.scene.add(this.fxRoot);
+    this._fx = this._makeFxShared();
+    this._projVec = new THREE.Vector3(); // reused for float-text projection
 
     this._terrain = null;
     this._terrainKey = '';
@@ -271,6 +276,28 @@ export class World3DRenderer {
     return this._matCache.get(hex);
   }
 
+  // small geometries/materials for FX markers (arrows, orbs, traps, nodes, …)
+  _makeFxShared() {
+    return {
+      arrow: new THREE.BoxGeometry(26, 3, 3),
+      orb: new THREE.SphereGeometry(7, 8, 6),
+      ring: new THREE.TorusGeometry(9, 1.5, 4, 12),
+      disc: new THREE.CylinderGeometry(8, 8, 2, 10),
+      nodeGeo: new THREE.ConeGeometry(6, 14, 6),
+      arrowMat: new THREE.MeshStandardMaterial({ color: 0xc8a06a }),
+      rockMat: new THREE.MeshStandardMaterial({ color: 0x8a8a7a }),
+      webMat: new THREE.MeshStandardMaterial({ color: 0xe8e8e8 }),
+      corpseMat: new THREE.MeshStandardMaterial({ color: 0x6a4a3a }),
+      dropMat: new THREE.MeshBasicMaterial({ color: 0xffd76a }),
+      trapMat: new THREE.MeshStandardMaterial({ color: 0x8a8a90 }),
+      herbMat: new THREE.MeshStandardMaterial({ color: 0x5fbf5f }),
+      mushMat: new THREE.MeshStandardMaterial({ color: 0xc8c8c8 }),
+      berryMat: new THREE.MeshStandardMaterial({ color: 0xd04040 }),
+      flowerMat: new THREE.MeshStandardMaterial({ color: 0xe8a0d0 }),
+      oreMat: new THREE.MeshStandardMaterial({ color: 0x9a9a98 })
+    };
+  }
+
   _addWings(g, mat, scale = 1) {
     // two triangular wing membranes
     const wingGeo = new THREE.BufferGeometry();
@@ -460,6 +487,9 @@ export class World3DRenderer {
       if (!seen.has(key)) { this.entityRoot.remove(entry.group); this._meshCache.delete(key); }
     }
 
+    // ---- FX pass: projectiles, corpses, traps, drops, bait, resource nodes ----
+    this._syncFx(px, py);
+
     // pulse the Yggdrasil's glow
     if (this._yggGlow) {
       const t = g.time ? g.time.timeOfDay * 60 : 0;
@@ -573,6 +603,70 @@ export class World3DRenderer {
       pos[i * 3 + 2] = base[i * 3 + 2];
     }
     this._rain.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // rebuild the FX group each frame (these are few + transient, so clearing is
+  // cheaper than per-object caching). Distance-culled to the player.
+  _syncFx(px, py) {
+    const g = this.game;
+    const F = this._fx;
+    // clear
+    for (const c of [...this.fxRoot.children]) this.fxRoot.remove(c);
+    const CULL_FX = 1800;
+
+    const add = (mesh, wx, wy, elev = 0) => {
+      const p = this._worldToLocal(wx, wy);
+      mesh.position.set(p.x, elev, p.z);
+      if (Math.hypot(wx - px, wy - py) <= CULL_FX) this.fxRoot.add(mesh);
+    };
+
+    // arrows / rocks / webs (flying projectiles)
+    for (const pr of g.projectiles) {
+      if (pr.dead) continue;
+      const elev = 20;
+      if (pr.kind === 'arrow') {
+        const m = new THREE.Mesh(F.arrow, F.arrowMat);
+        const p = this._worldToLocal(pr.x, pr.y);
+        m.position.set(p.x, elev, p.z);
+        // point the arrow along its velocity (vx east, vy south→+z)
+        m.rotation.y = -Math.atan2(pr.vy, pr.vx);
+        if (Math.hypot(pr.x - px, pr.y - py) <= CULL_FX) this.fxRoot.add(m);
+      } else {
+        const m = new THREE.Mesh(F.orb, pr.kind === 'web' ? F.webMat : F.rockMat);
+        add(m, pr.x, pr.y, elev);
+      }
+    }
+
+    // corpses (harvestable dead animals) — a flat disc lying on the ground
+    for (const c of g.corpses) {
+      const m = new THREE.Mesh(F.disc, F.corpseMat);
+      add(m, c.x, c.y, 1);
+    }
+    // traps + bait
+    for (const t of g.traps) {
+      const m = new THREE.Mesh(F.ring, F.trapMat);
+      m.rotation.x = Math.PI / 2;
+      add(m, t.x, t.y, 2);
+    }
+    for (const b of g.baitPiles) {
+      const m = new THREE.Mesh(F.orb, F.berryMat);
+      m.scale.setScalar(0.6);
+      add(m, b.x, b.y, 3);
+    }
+    // loot drops (glowing orbs)
+    for (const d of g.drops) {
+      if (d.dead) continue;
+      const m = new THREE.Mesh(F.orb, F.dropMat);
+      add(m, d.x, d.y, 16);
+    }
+    // resource nodes (herbs / mushrooms / berries / flowers / ore)
+    const nodes = g.multiplayer.connected ? g.remoteResources : g.world.nodes;
+    for (const n of nodes) {
+      if (n.depleted) continue;
+      const mat = { herb: F.herbMat, mushroom: F.mushMat, berry: F.berryMat, flower: F.flowerMat, ore: F.oreMat }[n.kind] || F.herbMat;
+      const m = new THREE.Mesh(F.nodeGeo, mat);
+      add(m, n.x, n.y, 7);
+    }
   }
 
   // ---- 3D controls: camera-relative movement + facing ----
@@ -727,8 +821,35 @@ export class World3DRenderer {
       try {
         this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);
         this.game.hud.render(this.hudCtx);
+        this._drawFloatTexts(this.hudCtx);
         if (this.game.deathInfo) this.game.hud.renderDeathScreen(this.hudCtx);
       } catch (e) {}
     }
+  }
+
+  // project floating combat text (damage numbers, +XP) onto the HUD overlay so
+  // combat feedback is visible in 3D (these were only drawn on the 2D canvas)
+  _drawFloatTexts(ctx) {
+    const g = this.game;
+    if (!g.floatTexts || !g.floatTexts.length) return;
+    const W = this.hudCanvas.width, H = this.hudCanvas.height;
+    const p = this._worldToLocal(g.player.x, g.player.y);
+    ctx.save();
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    for (const ft of g.floatTexts) {
+      const local = this._worldToLocal(ft.x, ft.y);
+      this._projVec.set(local.x, 26, local.z).project(this.camera);
+      // only draw if in front of the camera and on screen
+      if (this._projVec.z > 1) continue;
+      const sx = (this._projVec.x * 0.5 + 0.5) * W;
+      const sy = (-this._projVec.y * 0.5 + 0.5) * H;
+      if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
+      ctx.globalAlpha = Math.max(0, Math.min(1, ft.t));
+      ctx.fillStyle = ft.color || '#fff';
+      ctx.fillText(ft.text, sx, sy);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 }
