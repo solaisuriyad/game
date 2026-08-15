@@ -1,15 +1,33 @@
 // Day/night clock. timeOfDay 0..1 (0 = midnight, 0.25 = dawn, 0.5 = noon,
 // 0.75 = dusk). 1 in-game day = `dayLength` seconds (default 300).
+// Seasons cycle every `seasonLength` seconds (default 180 = 3 minutes each):
+// Spring → Summer → Autumn → Winter, each changing terrain, weather and snow.
+export const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+
 export class TimeSystem {
-  constructor(dayLength = 300) {
+  constructor(dayLength = 300, seasonLength = 180) {
     this.dayLength = dayLength;
+    this.seasonLength = seasonLength;
     this.timeOfDay = 0.3; // start mid-morning
     this.day = 1;
+    this.seasonIndex = 0; // 0..3
+    this.seasonTimer = 0;
   }
   update(dt) {
     this.timeOfDay += dt / this.dayLength;
     if (this.timeOfDay >= 1) { this.timeOfDay -= 1; this.day++; }
+    // season cycle
+    this.seasonTimer += dt;
+    if (this.seasonTimer >= this.seasonLength) {
+      this.seasonTimer -= this.seasonLength;
+      this.seasonIndex = (this.seasonIndex + 1) % SEASONS.length;
+    }
   }
+  get seasonName() { return SEASONS[this.seasonIndex]; }
+  get isWinter() { return this.seasonIndex === 3; }
+  get isAutumn() { return this.seasonIndex === 2; }
+  get isSummer() { return this.seasonIndex === 1; }
+  get isSpring() { return this.seasonIndex === 0; }
   get phase() {
     const t = this.timeOfDay;
     if (t < 0.15 || t >= 0.92) return 'night';
@@ -39,6 +57,6 @@ export class TimeSystem {
     const hh = ((h + 11) % 12) + 1;
     return `${hh}:${String(m).padStart(2, '0')} ${ampm}`;
   }
-  serialize() { return { timeOfDay: this.timeOfDay, day: this.day }; }
-  deserialize(d) { this.timeOfDay = d.timeOfDay; this.day = d.day; }
+  serialize() { return { timeOfDay: this.timeOfDay, day: this.day, seasonIndex: this.seasonIndex, seasonTimer: this.seasonTimer }; }
+  deserialize(d) { this.timeOfDay = d.timeOfDay; this.day = d.day; this.seasonIndex = d.seasonIndex || 0; this.seasonTimer = d.seasonTimer || 0; }
 }

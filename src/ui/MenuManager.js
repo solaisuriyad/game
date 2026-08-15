@@ -8,6 +8,30 @@ import { HAIR_COLORS, SKIN_TONES, CLOTH_COLORS } from '../data/npcData.js';
 import { LORE } from '../data/lore.js';
 import { ACTIVE_SKILLS } from '../data/activeSkills.js';
 
+// HSV ↔ hex color helpers for the character color picker
+export function hsvToHex(h, s, v) {
+  const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+  const to = (n) => Math.round((n + m) * 255);
+  return '#' + ((1 << 24) + (to(r) << 16) + (to(g) << 8) + to(b)).toString(16).slice(1);
+}
+export function hexToHsv(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g - b) / d) % 6);
+    else if (max === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+  }
+  if (h < 0) h += 360;
+  return { h, s: max === 0 ? 0 : d / max, v: max };
+}
+
 export class MenuManager {
   constructor(game) {
     this.game = game;
@@ -73,6 +97,7 @@ export class MenuManager {
     this.setOpen(true);
   }
   close() {
+    if (this._picker) { this._picker.remove(); this._picker = null; }
     this.root.innerHTML = '';
     this.setOpen(false);
     this.currentNPC = null;
@@ -103,6 +128,7 @@ export class MenuManager {
       case 'giftgive': this._giveGift(arg); break;
       case 'testsfx': g.audio.sfx('pickup'); break;
       case 'setgender': this._cust.gender = arg; this._highlightGender(); break;
+      case 'pickcolor': this._openColorPicker(arg); break;
       case 'skill': g.activeSkills.select(arg); this.showSkillSelection(); break;
       case 'unskill': g.activeSkills.deselect(arg); this.showSkillSelection(); break;
       case 'starthunt': this.close(); break;
@@ -713,16 +739,16 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 7.2 — refined 3D people: faces, outfits & walking (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 7.3 — seasons · sun & moon · snow · color picker</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
           <span class="muted">Body:</span>
           ${['male', 'female', 'neutral'].map((g2) => `<button class="btn gender-btn" data-act="setgender" data-arg="${g2}">${g2}</button>`).join('')}
         </div>
-        <div class="opt-row"><span class="muted">Skin:</span><span id="skintones"></span></div>
-        <div class="opt-row"><span class="muted">Hair color:</span><span id="haircolors"></span></div>
-        <div class="opt-row"><span class="muted">Clothing:</span><span id="clothcolors"></span></div>
+        <div class="opt-row"><span class="muted">Skin:</span><span id="skintones"></span><button class="btn" data-act="pickcolor" data-arg="skinTone">🎨 Custom</button></div>
+        <div class="opt-row"><span class="muted">Hair:</span><span id="haircolors"></span><button class="btn" data-act="pickcolor" data-arg="hairColor">🎨 Custom</button></div>
+        <div class="opt-row"><span class="muted">Dress:</span><span id="clothcolors"></span><button class="btn" data-act="pickcolor" data-arg="clothColor">🎨 Custom</button></div>
         <button class="btn gold big" data-act="newgame" style="margin-top:12px">Begin Adventure</button>
         <div class="opt-row" style="margin-top:10px">
           <span class="muted">Server:</span>
@@ -739,28 +765,148 @@ export class MenuManager {
     </div>`;
     this.root.appendChild(panel);
 
-    // customization state
-    this._cust = { name: '', gender: 'male', skin: 1, hair: 1, cloth: 0 };
+    // customization state (store actual hex colors)
+    this._cust = { name: '', gender: 'male', skinTone: SKIN_TONES[1], hairColor: HAIR_COLORS[1], clothColor: CLOTH_COLORS[0] };
     const renderSwatches = (sel, arr, key) => {
       const el = document.getElementById(sel);
+      if (!el) return;
       el.innerHTML = '';
-      arr.forEach((c, i) => {
+      arr.forEach((c) => {
         const d = document.createElement('div');
-        d.className = 'swatch' + (i === this._cust[key] ? ' sel' : '');
+        d.className = 'swatch' + (c === this._cust[key] ? ' sel' : '');
         d.style.background = c;
-        d.addEventListener('click', () => { this._cust[key] = i; renderSwatches(sel, arr, key); });
+        d.title = c;
+        d.addEventListener('click', () => { this._cust[key] = c; renderSwatches(sel, arr, key); });
         el.appendChild(d);
       });
     };
-    renderSwatches('skintones', SKIN_TONES, 'skin');
-    renderSwatches('haircolors', HAIR_COLORS, 'hair');
-    renderSwatches('clothcolors', CLOTH_COLORS, 'cloth');
+    renderSwatches('skintones', SKIN_TONES, 'skinTone');
+    renderSwatches('haircolors', HAIR_COLORS, 'hairColor');
+    renderSwatches('clothcolors', CLOTH_COLORS, 'clothColor');
     // restore the last-used server address
     try {
       const saved = localStorage.getItem('verdant-hollow:server');
       if (saved) { const el = document.getElementById('server-input'); if (el) el.value = saved; }
     } catch (e) {}
     this._highlightGender();
+  }
+
+  // ---- color picker popup (drag a circle over a hue/square field) ----
+  _openColorPicker(key) {
+    if (typeof document === 'undefined') return;
+    // remove any existing picker
+    if (this._picker) { this._picker.remove(); this._picker = null; }
+
+    const cur = this._cust[key] || '#808080';
+    const hsv = hexToHsv(cur);
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) { overlay.remove(); this._picker = null; } });
+
+    const panel = document.createElement('div');
+    panel.style.cssText = 'background:linear-gradient(#2a2118,#1d1710);border:2px solid #6a4a2a;border-radius:10px;padding:16px;color:#f0e6d0;box-shadow:0 12px 40px rgba(0,0,0,.6);';
+    panel.addEventListener('mousedown', (e) => e.stopPropagation());
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:700;margin-bottom:12px;text-align:center;';
+    title.textContent = { skinTone: 'Skin color', hairColor: 'Hair color', clothColor: 'Dress color' }[key] || 'Color';
+    panel.appendChild(title);
+
+    // ---- saturation/value square (hue fixed) ----
+    const sq = document.createElement('canvas');
+    sq.width = 220; sq.height = 220;
+    sq.style.cssText = 'display:block;cursor:crosshair;border:1px solid #6a4a2a;border-radius:6px;';
+    const sqc = sq.getContext('2d');
+    const drawSquare = (h) => {
+      for (let y = 0; y < 220; y++) {
+        for (let x = 0; x < 220; x++) {
+          const s = x / 219, v = 1 - y / 219;
+          sqc.fillStyle = hsvToHex(h, s, v);
+          sqc.fillRect(x, y, 1, 1);
+        }
+      }
+      // marker circle
+      sqc.strokeStyle = '#fff'; sqc.lineWidth = 2;
+      sqc.beginPath(); sqc.arc(hsv.s * 219, (1 - hsv.v) * 219, 8, 0, Math.PI * 2); sqc.stroke();
+      sqc.strokeStyle = '#000'; sqc.lineWidth = 1;
+      sqc.beginPath(); sqc.arc(hsv.s * 219, (1 - hsv.v) * 219, 10, 0, Math.PI * 2); sqc.stroke();
+    };
+
+    // ---- hue slider ----
+    const hue = document.createElement('canvas');
+    hue.width = 220; hue.height = 22;
+    hue.style.cssText = 'display:block;margin-top:10px;cursor:crosshair;border:1px solid #6a4a2a;border-radius:6px;';
+    const hc = hue.getContext('2d');
+    const drawHue = () => {
+      for (let x = 0; x < 220; x++) {
+        hc.fillStyle = hsvToHex((x / 219) * 360, 1, 1);
+        hc.fillRect(x, 0, 1, 22);
+      }
+      hc.strokeStyle = '#fff'; hc.lineWidth = 2;
+      hc.beginPath(); hc.arc((hsv.h / 360) * 219, 11, 7, 0, Math.PI * 2); hc.stroke();
+    };
+
+    // preview + hex + done
+    const preview = document.createElement('div');
+    preview.style.cssText = 'margin-top:12px;display:flex;align-items:center;gap:10px;justify-content:center;';
+    const sw = document.createElement('div');
+    sw.style.cssText = 'width:44px;height:44px;border-radius:8px;border:2px solid #6a4a2a;';
+    const hexLabel = document.createElement('div');
+    hexLabel.style.cssText = 'font-family:monospace;font-size:15px;';
+    const done = document.createElement('button');
+    done.className = 'btn green';
+    done.textContent = 'Done';
+    preview.appendChild(sw); preview.appendChild(hexLabel); preview.appendChild(done);
+    panel.appendChild(preview);
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    this._picker = overlay;
+
+    const update = () => {
+      const hex = hsvToHex(hsv.h, hsv.s, hsv.v);
+      sw.style.background = hex;
+      hexLabel.textContent = hex;
+      drawSquare(hsv.h);
+      drawHue();
+      this._cust[key] = hex;
+    };
+
+    // pointer interaction
+    const pickSquare = (e) => {
+      const r = sq.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      const y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      hsv.s = x; hsv.v = 1 - y;
+      update();
+    };
+    const pickHue = (e) => {
+      const r = hue.getBoundingClientRect();
+      hsv.h = Math.max(0, Math.min(360, ((e.clientX - r.left) / r.width) * 360));
+      update();
+    };
+    let dragging = null;
+    sq.addEventListener('mousedown', (e) => { dragging = 'sq'; pickSquare(e); });
+    hue.addEventListener('mousedown', (e) => { dragging = 'hue'; pickHue(e); });
+    window.addEventListener('mousemove', (e) => { if (dragging === 'sq') pickSquare(e); else if (dragging === 'hue') pickHue(e); });
+    window.addEventListener('mouseup', () => { dragging = null; });
+    done.addEventListener('click', () => {
+      overlay.remove(); this._picker = null;
+      // refresh the swatch row so the selection is highlighted
+      const sel = { skinTone: 'skintones', hairColor: 'haircolors', clothColor: 'clothcolors' }[key];
+      if (sel) this._refreshSwatches(sel, key);
+    });
+
+    update();
+  }
+
+  _refreshSwatches(sel, key) {
+    const arr = { skinTone: SKIN_TONES, hairColor: HAIR_COLORS, clothColor: CLOTH_COLORS }[key];
+    if (!arr) return;
+    const el = document.getElementById(sel);
+    if (!el) return;
+    [...el.children].forEach((d) => d.classList.toggle('sel', d.style.background === this._cust[key] || d.title === this._cust[key]));
   }
 
   _highlightGender() {
@@ -803,8 +949,8 @@ export class MenuManager {
       localStorage.setItem('verdant-hollow:server', document.getElementById('server-input') ? document.getElementById('server-input').value.trim() : '');
     } catch (e) {}
     this.game.newGame({
-      name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
-      hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
+      name: c.name, gender: c.gender, skinTone: c.skinTone,
+      hairColor: c.hairColor, clothColor: c.clothColor, hairStyle: 0
     });
     this.game.toast('Connecting to the shared world...');
     this.game.multiplayer.connect(url, c.name, password).then((r) => {
@@ -836,8 +982,8 @@ export class MenuManager {
     if (err) { this._showFieldError(err); return; }
     const c = this._cust;
     this.game.newGame({
-      name: c.name, gender: c.gender, skinTone: SKIN_TONES[c.skin],
-      hairColor: HAIR_COLORS[c.hair], clothColor: CLOTH_COLORS[c.cloth], hairStyle: 0
+      name: c.name, gender: c.gender, skinTone: c.skinTone,
+      hairColor: c.hairColor, clothColor: c.clothColor, hairStyle: 0
     });
     this.showSkillSelection();
   }

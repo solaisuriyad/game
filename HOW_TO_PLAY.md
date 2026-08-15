@@ -36,10 +36,8 @@ When the game opens you'll see **VERDANT HOLLOW** with these things:
 
 1. **Name box** — click it and type your character's name.
 2. **Body** — pick `male`, `female`, or `neutral` (the button highlights green when selected, and your character's figure + hair changes to match).
-3. **Skin** — click a colored circle to choose skin tone.
-4. **Hair color** — click a circle.
-5. **Clothing** — click a circle.
-6. Buttons:
+3. **Skin / Hair / Dress** — click a colored circle for a quick pick, or press **🎨 Custom** to open a **color picker**: a square of every color shade with a circle you can drag to choose any color combination, plus a rainbow hue bar and a live preview.
+4. Buttons:
    - **Begin Adventure** (gold) — start a NEW game.
    - **Play Online (co-op)** — start a new game and join the shared online world (needs friends on the same server).
    - **Continue** — load your most recent save.
@@ -282,11 +280,14 @@ If you reach 0 health, a **"💀 YOU DIED" screen** appears showing **what kille
 
 ---
 
-## PART 10 — WEATHER & DAY/NIGHT
+## PART 10 — SEASONS, WEATHER & DAY/NIGHT
 
+- **Seasons** — the world cycles through **Spring → Summer → Autumn → Winter**, each lasting **3 minutes**. Trees turn green in spring/summer, orange in autumn, and bare + snowy in winter.
+- **Sun & Moon** — the sun crosses the sky by day and the moon by night (visible in 3D mode).
 - **Day** — safer, villagers are out, normal animals.
 - **Night** — shops close, dangerous monsters appear, rare creatures spawn, vision is limited.
 - **Rain/Fog** — reduces visibility and makes tracking harder.
+- **Snow** — in **winter**, rain becomes falling snow and the ground turns white.
 - **Storms** — can bring out rare monsters.
 
 ---

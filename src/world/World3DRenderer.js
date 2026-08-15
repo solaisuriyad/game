@@ -77,6 +77,13 @@ export class World3DRenderer {
     this._rain = null;       // Points object (created lazily when it rains)
     this._rainBase = null;   // base x/y/z per raindrop
     this._rainPos = null;    // live position attribute
+    this._snow = null;       // Points object (winter snow, lazy)
+    this._snowBase = null;
+    this._snowPos = null;
+    this._skySun = null;     // sun mesh (orbits the sky by day)
+    this._skyMoon = null;    // moon mesh (orbits the sky by night)
+    this._groundMat = null;  // ground material (tinted per season)
+    this._season = -1;       // last applied season index (for canopy tint)
 
     // entity group (rebuilt each frame from game state)
     this.entityRoot = new THREE.Group();
@@ -108,6 +115,15 @@ export class World3DRenderer {
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = false;
     root.add(ground);
+    this._groundMat = S.ground;
+
+    // sun + moon (billboarded spheres that orbit the sky, far away)
+    this._skySun = new THREE.Mesh(new THREE.SphereGeometry(400, 12, 10), new THREE.MeshBasicMaterial({ color: 0xfff2a0, fog: false }));
+    this._skySun.frustumCulled = false;
+    this.scene.add(this._skySun);
+    this._skyMoon = new THREE.Mesh(new THREE.SphereGeometry(300, 12, 10), new THREE.MeshBasicMaterial({ color: 0xdfe8ff, fog: false }));
+    this._skyMoon.frustumCulled = false;
+    this.scene.add(this._skyMoon);
 
     // water river + pond as a single strip + one quad (cheap)
     this._addTileOverlays(root, S);
@@ -591,11 +607,26 @@ export class World3DRenderer {
     this._applyEnvironment(pp);
   }
 
-  // ---- day/night + weather ----
+  // ---- day/night + weather + seasons ----
   _applyEnvironment(pp) {
     const g = this.game;
     const dark = g.time ? g.time.darkness : 0;
     const w = g.weather;
+    const t = g.time ? g.time.timeOfDay : 0.3;
+
+    // sun + moon orbit the sky (sun by day, moon by night)
+    const ang = t * Math.PI * 2;
+    const R = 60000;
+    this._skySun.position.set(pp.x + Math.cos(ang) * R, Math.sin(ang) * R, pp.z + 40000);
+    this._skyMoon.position.set(pp.x + Math.cos(ang + Math.PI) * R, Math.sin(ang + Math.PI) * R, pp.z + 40000);
+    this._skySun.visible = !g.time || g.time.isDay;
+    this._skyMoon.visible = !this._skySun.visible;
+
+    // season tint (trees + ground change with the season)
+    if (g.time && g.time.seasonIndex !== this._season) {
+      this._season = g.time.seasonIndex;
+      this._applySeason(g.time.seasonIndex);
+    }
 
     // sky + fog interpolate from day → night
     this.scene.background.lerpColors(this._skyDay, this._skyNight, dark);
@@ -624,16 +655,27 @@ export class World3DRenderer {
         this.scene.fog.far = 20000;
       }
 
-      // rain / heavy rain / storm → falling rain particles
-      if (w.raining && w.intensity > 0.05) {
-        this._ensureRain();
-        this._rain.visible = true;
-        this._rain.material.opacity = 0.25 + w.intensity * 0.45;
-        this._rain.material.size = w.isStorm ? 9 : 6;
-        this._animateRain();
-        this._rain.position.set(pp.x, 0, pp.z);
-      } else if (this._rain) {
-        this._rain.visible = false;
+      // winter → snow instead of rain; other seasons → rain
+      if (g.time && g.time.isWinter && (w.raining || w.state === 'cloudy')) {
+        this._ensureSnow();
+        this._snow.visible = true;
+        this._snow.material.opacity = 0.5 + w.intensity * 0.4;
+        this._animateSnow();
+        this._snow.position.set(pp.x, 0, pp.z);
+        if (this._rain) this._rain.visible = false;
+      } else {
+        if (this._snow) this._snow.visible = false;
+        // rain / heavy rain / storm → falling rain particles
+        if (w.raining && w.intensity > 0.05) {
+          this._ensureRain();
+          this._rain.visible = true;
+          this._rain.material.opacity = 0.25 + w.intensity * 0.45;
+          this._rain.material.size = w.isStorm ? 9 : 6;
+          this._animateRain();
+          this._rain.position.set(pp.x, 0, pp.z);
+        } else if (this._rain) {
+          this._rain.visible = false;
+        }
       }
     }
   }
@@ -671,6 +713,54 @@ export class World3DRenderer {
       pos[i * 3 + 2] = base[i * 3 + 2];
     }
     this._rain.geometry.attributes.position.needsUpdate = true;
+  }
+
+  _ensureSnow() {
+    if (this._snow) return;
+    const N = 900, SPAN = 4200, H = 700;
+    const base = new Float32Array(N * 3);
+    const pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      base[i * 3] = (Math.random() - 0.5) * SPAN;
+      base[i * 3 + 1] = Math.random() * H;
+      base[i * 3 + 2] = (Math.random() - 0.5) * SPAN;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 9, transparent: true, opacity: 0.7, depthWrite: false });
+    this._snow = new THREE.Points(geo, mat);
+    this._snow.frustumCulled = false;
+    this._snowBase = base;
+    this._snowPos = pos;
+    this.scene.add(this._snow);
+  }
+
+  _animateSnow() {
+    // snow drifts down slowly and sways side to side
+    const t = performance.now() * 0.001;
+    const fall = 260;
+    const H = 700;
+    const base = this._snowBase, pos = this._snowPos;
+    for (let i = 0; i < base.length / 3; i++) {
+      const sway = Math.sin(t * 0.6 + i) * 90;
+      pos[i * 3] = base[i * 3] + sway;
+      let y = base[i * 3 + 1] - fall * t;
+      pos[i * 3 + 1] = ((y % H) + H) % H;
+      pos[i * 3 + 2] = base[i * 3 + 2];
+    }
+    this._snow.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // change tree canopy + ground color per season
+  _applySeason(index) {
+    const S = shared();
+    const GROUND = [0x4a8a3a, 0x4f8a3a, 0x9a7a3a, 0xe8ecee]; // spring, summer, autumn, winter
+    const CANOPY = [0x4a9a3a, 0x3f7a35, 0xc0682a, 0xd8d8d0]; // spring green, summer, autumn, winter (bare)
+    if (S.canopy) S.canopy.color.setHex(CANOPY[index] ?? 0x3f7a35);
+    if (S.canopyDark) S.canopyDark.color.setHex(CANOPY[index] ?? 0x2a5a33);
+    if (this._groundMat) this._groundMat.color.setHex(GROUND[index] ?? 0x3f7033);
+    // update the instanced tree canopies (they share S.canopy)
+    if (this._treeChunks) for (const c of this._treeChunks) { c.canopies.material = S.canopy; }
   }
 
   // rebuild the FX group each frame (these are few + transient, so clearing is
