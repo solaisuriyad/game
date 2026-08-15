@@ -822,9 +822,65 @@ export class World3DRenderer {
         this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);
         this.game.hud.render(this.hudCtx);
         this._drawFloatTexts(this.hudCtx);
+        this._drawNameLabels(this.hudCtx);
         if (this.game.deathInfo) this.game.hud.renderDeathScreen(this.hudCtx);
       } catch (e) {}
     }
+  }
+
+  // name + rank labels floating above monsters and NPCs (projected from 3D)
+  _drawNameLabels(ctx) {
+    const g = this.game;
+    const W = this.hudCanvas.width, H = this.hudCanvas.height;
+    const px = g.player.x, py = g.player.y;
+
+    // gather nearby labelable entities
+    const list = [];
+    const mons = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
+    for (const m of mons) {
+      if (m.dead) continue;
+      if (Math.hypot(m.x - px, m.y - py) <= 1200) list.push({ name: m.name, rank: m.rank, boss: m.boss, x: m.x, y: m.y, yOff: 46 });
+    }
+    for (const n of g.npcs) {
+      if (Math.hypot(n.x - px, n.y - py) <= 1200) list.push({ name: n.name, rank: null, boss: false, x: n.x, y: n.y, yOff: 40 });
+    }
+    if (!list.length) return;
+
+    const RANK_COLORS = { 'F': '#c8c8c8', 'E': '#7ac87a', 'D': '#7ac8e0', 'C': '#5a9ae0', 'B': '#a05ae0', 'A': '#e07a5a', 'S': '#ffd76a', 'A+': '#ff5ae0' };
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const e of list) {
+      const local = this._worldToLocal(e.x, e.y);
+      this._projVec.set(local.x, e.yOff, local.z).project(this.camera);
+      if (this._projVec.z > 1) continue; // behind the camera
+      const sx = (this._projVec.x * 0.5 + 0.5) * W;
+      const sy = (-this._projVec.y * 0.5 + 0.5) * H;
+      if (sx < -120 || sx > W + 120 || sy < -120 || sy > H + 120) continue;
+
+      const nm = e.name.length > 16 ? e.name.slice(0, 15) + '…' : e.name;
+      ctx.font = 'bold 11px sans-serif';
+      const w = ctx.measureText(nm).width + 8;
+      // pill background
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(sx - w / 2, sy - 9, w, 16, 4); else ctx.rect(sx - w / 2, sy - 9, w, 16);
+      ctx.fill();
+      ctx.fillStyle = e.boss ? '#ffd76a' : '#fff';
+      ctx.fillText(nm, sx, sy - 1);
+
+      // rank badge below the name
+      if (e.rank) {
+        ctx.font = 'bold 10px sans-serif';
+        const rw = 14;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(sx - rw / 2, sy + 8, rw, 13);
+        ctx.fillStyle = RANK_COLORS[e.rank] || '#fff';
+        ctx.fillText(e.rank, sx, sy + 15);
+      }
+    }
+    ctx.restore();
   }
 
   // project floating combat text (damage numbers, +XP) onto the HUD overlay so

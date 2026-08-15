@@ -197,5 +197,16 @@ r3._drawFloatTexts(r3.hudCtx);
 console.log('float text draw did not throw ✓');
 game.floatTexts.length = 0;
 
+// ---- name/rank labels above monsters + NPCs ----
+game.player.x = 2000 * 32; game.player.y = 2000 * 32;
+r3.yaw = 0; r3.pitch = 0.95; r3.sync();
+r3._drawNameLabels(r3.hudCtx);
+console.log('name labels draw did not throw ✓');
+// a monster near the player should be labelable (verify the gather logic)
+const near = game.monsters.find(m => !m.dead && Math.hypot(m.x - game.player.x, m.y - game.player.y) <= 1200);
+console.log('nearby monster for label:', near ? near.name + ' (' + near.rank + ')' : 'none');
+if (!near) throw new Error('no nearby monster to label (test setup issue)');
+if (!near.rank) throw new Error('monster missing rank for label');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);
