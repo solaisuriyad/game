@@ -989,17 +989,18 @@ export class World3DRenderer {
     return { x: Math.cos(f), y: Math.sin(f) };
   }
 
-  // WASD, rotated so W = forward (where you look), S = back, A/D = strafe.
+  // WASD in 3D: W = forward, S = backward. (A/D TURN the player left/right —
+  // handled in main.js, not here — so "left becomes the front screen".)
   cameraDirVector() {
-    const raw = this.game.input.dirVector(); // { x: ±1 (right), y: ±1 (down/south) }
+    const raw = this.game.input.dirVector(); // { x: ±1, y: ±1 }
     const F = this.cameraForward();
-    const R = { x: -F.y, y: F.x }; // camera-right
-    let dx = F.x * -raw.y + R.x * raw.x;
-    let dy = F.y * -raw.y + R.y * raw.x;
-    const mag = Math.hypot(dx, dy);
-    if (mag > 1) { dx /= mag; dy /= mag; }
-    return { x: dx, y: dy };
+    // -raw.y: W (up) = +1 forward, S (down) = -1 backward
+    return { x: F.x * -raw.y, y: F.y * -raw.y };
   }
+
+  // zoom the third-person camera in/out (clamped)
+  zoomIn() { this.distance = Math.max(160, this.distance - 70); }
+  zoomOut() { this.distance = Math.min(1000, this.distance + 70); }
 
   // the direction the player should face when idle (the look yaw)
   facingAngle() { return this.lookYaw; }
@@ -1106,8 +1107,27 @@ export class World3DRenderer {
     try {
       const hint = document.createElement('div');
       hint.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,8,6,0.7);color:#e8e0c8;font:12px sans-serif;padding:4px 12px;border-radius:6px;pointer-events:none;';
-      hint.textContent = '3D · WASD move · mouse to look around · scroll to look up/down · click to attack · Esc menu';
+      hint.textContent = '3D · W/S move · A/D turn · mouse look · R×2 auto-run · Esc menu';
       document.body.appendChild(hint);
+    } catch (e) {}
+    // zoom in/out buttons (bottom-right)
+    try {
+      const mkBtn = (label, fn) => {
+        const b = document.createElement('button');
+        b.textContent = label;
+        b.style.cssText = 'position:fixed;z-index:40;width:40px;height:40px;font-size:20px;line-height:1;cursor:pointer;background:rgba(30,25,20,0.75);border:1px solid #6a4a2a;border-radius:8px;color:#f0e6d0;';
+        b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+        return b;
+      };
+      const zin = mkBtn('+', () => this.zoomIn());
+      zin.style.right = '14px'; zin.style.bottom = '64px';
+      zin.title = 'Zoom in';
+      const zout = mkBtn('−', () => this.zoomOut());
+      zout.style.right = '14px'; zout.style.bottom = '14px';
+      zout.title = 'Zoom out';
+      document.body.appendChild(zin);
+      document.body.appendChild(zout);
+      this._zoomButtons = [zin, zout];
     } catch (e) {}
   }
 

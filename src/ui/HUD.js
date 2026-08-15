@@ -140,7 +140,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v8.1 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v8.2 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -181,6 +181,7 @@ export class HUD {
     if (p.hasStatus('root')) status.push('🕸️ Rooted');
     if (p.flying) status.push(`✈️ Flying ${Math.round(p.altitude)}ft`);
     if (p.sprinting) status.push('🏃 Running');
+    if (p.runLocked) status.push('🔒 Auto-run');
     if (p.crouching) status.push('🕵️ Sneaking');
     if (p.tracking) status.push('👣 Tracking');
     if (p.yggBlessing > 0) status.push('🌳 Blessed (invincible)');

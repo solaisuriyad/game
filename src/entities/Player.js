@@ -67,6 +67,8 @@ export class Player extends Entity {
     // stealth / movement state
     this.crouching = false;
     this.sprinting = false;
+    this.runLocked = false;   // double-press R toggles auto-run (no need to hold)
+    this._rTapTime = 0;       // double-tap window timer
     this.tracking = false;
     this.moving = false;
     this.working = 0;
@@ -154,9 +156,20 @@ export class Player extends Entity {
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
     this.crouching = game.input.held('shift');
-    // Sprint: hold R while moving (never blocked by low stamina — movement is
-    // independent of stamina so the player never gets slowed down by it)
-    this.sprinting = game.input.held('r') && moving && !this.crouching && !this.blocking;
+    // Sprint: hold R while moving, OR double-press R to LOCK auto-run (so you
+    // don't have to keep holding it). Movement is independent of stamina so the
+    // player never gets slowed down by it.
+    if (game.input.pressed('r')) {
+      if (this._rTapTime > 0) {
+        this.runLocked = !this.runLocked;
+        game.toast(this.runLocked ? '🏃 Auto-run LOCKED — press R twice to unlock' : '🚶 Auto-run unlocked');
+        this._rTapTime = 0;
+      } else {
+        this._rTapTime = 0.3; // 300ms window for the second tap
+      }
+    }
+    if (this._rTapTime > 0) this._rTapTime -= dt;
+    this.sprinting = (game.input.held('r') || this.runLocked) && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
     // ---- flying: X cycles 50ft -> 75ft -> 50ft -> land; auto-timer at 75ft ----

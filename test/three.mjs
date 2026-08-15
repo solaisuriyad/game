@@ -91,10 +91,25 @@ let d = r3.cameraDirVector();
 console.log('W (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
 if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('W not mapped to forward');
 
-game.input.dirVector = () => ({ x: 1, y: 0 }); // D
+game.input.dirVector = () => ({ x: 1, y: 0 }); // D (now TURNS, no strafe)
 d = r3.cameraDirVector();
-console.log('D (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('D not mapped to camera-right');
+console.log('D (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect 0,0 — D now turns, not strafes)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('D should no longer strafe (A/D now turn)');
+
+// S = backward
+game.input.dirVector = () => ({ x: 0, y: 1 }); // S
+d = r3.cameraDirVector();
+console.log('S (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈-1, y≈0 = west/backward)');
+if (Math.abs(d.x + 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('S not mapped to backward');
+
+// zoom in/out clamp correctly
+r3.distance = 440;
+r3.zoomIn(); r3.zoomIn();
+console.log('zoomIn twice -> distance:', r3.distance, '(expect 300)');
+if (r3.distance !== 300) throw new Error('zoomIn wrong');
+r3.zoomOut();
+console.log('zoomOut once -> distance:', r3.distance, '(expect 370)');
+if (r3.distance !== 370) throw new Error('zoomOut wrong');
 
 // turn to face south (π/2): W should now move south
 r3.lookYaw = Math.PI / 2;
