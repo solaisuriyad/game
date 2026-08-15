@@ -704,12 +704,12 @@ export class World3DRenderer {
       }
     }
 
-    // ---- third-person camera (follows the player's facing) ----
-    // The player faces the mouse cursor (full 360°); the camera sits behind them.
+    // ---- Minecraft-style third-person camera ----
+    // The camera sits BEHIND the player and looks along lookYaw/lookPitch (set by
+    // mouse movement). The player body faces the same lookYaw (in main.js).
     const pp = this._worldToLocal(px, py);
     const elev = g.player.altitude ? g.player.altitude * 3 : 0;
-    const facing = g.player.facing;
-    const fwdX = Math.cos(facing), fwdZ = Math.sin(facing);
+    const fwdX = Math.cos(this.lookYaw), fwdZ = Math.sin(this.lookYaw);
     const lookP = this.lookPitch;
     const dist = this.distance;
     const shoulder = 46;
@@ -982,10 +982,10 @@ export class World3DRenderer {
   }
 
   // ---- 3D controls: mouse-look + camera-relative movement ----
-  // unit vector in the direction the player FACES (world x/y) — used to rotate
-  // WASD into "camera space". The player faces the mouse cursor (full 360°).
+  // unit vector in the look direction (world x/y) — used to rotate WASD into
+  // "camera space". W = forward (where you look).
   cameraForward() {
-    const f = this.game.player.facing;
+    const f = this.lookYaw;
     return { x: Math.cos(f), y: Math.sin(f) };
   }
 
@@ -1001,8 +1001,8 @@ export class World3DRenderer {
     return { x: dx, y: dy };
   }
 
-  // the direction the player should face when idle (the mouse-cursor direction)
-  facingAngle() { return this.game.player.facing; }
+  // the direction the player should face when idle (the look yaw)
+  facingAngle() { return this.lookYaw; }
 
   // cast the mouse cursor onto the ground plane; returns the world point {x,y}
   // the player is aiming at, or null if the cursor points above the horizon.
@@ -1015,10 +1015,12 @@ export class World3DRenderer {
     return null;
   }
 
-  // browser-only controls. The player FACES the mouse cursor (full 360°), scroll
-  // looks up/down, and left-click attacks. When a menu/popup is open these are
-  // fully ignored so the mouse never affects the background screen, and scroll
-  // is left alone so popups can scroll their own content.
+  // browser-only controls — Minecraft-style third-person navigation.
+  // Mouse MOVEMENT (delta, not position) rotates the view: moving the mouse
+  // right turns right, left turns left, up/down tilts the camera. This can never
+  // spin out of control (no feedback loop, unlike "face the cursor"). Scroll
+  // also looks up/down. Left-click attacks. When a menu/popup is open these are
+  // all ignored so the mouse/scroll only affect the popup, not the game.
   attachControls() {
     if (this._controlsAttached) return;
     this._controlsAttached = true;
@@ -1037,18 +1039,27 @@ export class World3DRenderer {
       }
     };
     const onMove = (e) => {
+      // update the shared mouse position (for 2D logic / aim raycast)
       const rect = el.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      // track the cursor (NDC for the aim raycast + shared mouse for 2D logic).
-      // The actual facing is computed from the aim point in main.js each frame.
       const m = this.game.input.mouse; m.x = mx; m.y = my;
       this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
+      if (uiBlocked()) return; // don't rotate the view while a popup is open
+
+      // Minecraft delta look: rotate by how far the mouse MOVED (not where it is).
+      const dx = e.movementX ?? 0;
+      const dy = e.movementY ?? 0;
+      if (dx !== 0 || dy !== 0) {
+        const s = this.lookSens;
+        // mouse RIGHT = look RIGHT (this sign was confirmed correct by the player)
+        this.lookYaw -= dx * 0.0032 * s;
+        // mouse UP = look UP
+        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032 * s);
+      }
     };
     const onWheel = (e) => {
-      // while a popup is open, do NOT touch the wheel so the popup can scroll
-      if (uiBlocked()) return;
-      // scroll up = look up (sky), scroll down = look down (ground)
-      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09) * this.lookSens);
+      if (uiBlocked()) return; // let the popup scroll its own content
+      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09));
       e.preventDefault();
     };
     window.addEventListener('mousedown', onDown);

@@ -83,34 +83,34 @@ const ents2 = r3.entityRoot.children.length;
 console.log('entity meshes after moving far:', ents2, '(expect fewer, since far from town)');
 if (ents2 > ents) throw new Error('expected fewer nearby entities after moving away');
 
-// ---- camera-relative movement (W = forward = player facing = cursor dir) ----
-game.player.facing = 0;  // facing east
+// ---- camera-relative movement (W = forward = look yaw) ----
+r3.lookYaw = 0;  // look east
 r3.lookPitch = 0.2;
 game.input.dirVector = () => ({ x: 0, y: -1 }); // W
 let d = r3.cameraDirVector();
-console.log('W (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
+console.log('W (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
 if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('W not mapped to forward');
 
 game.input.dirVector = () => ({ x: 1, y: 0 }); // D
 d = r3.cameraDirVector();
-console.log('D (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
+console.log('D (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
 if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('D not mapped to camera-right');
 
 // turn to face south (π/2): W should now move south
-game.player.facing = Math.PI / 2;
+r3.lookYaw = Math.PI / 2;
 game.input.dirVector = () => ({ x: 0, y: -1 });
 d = r3.cameraDirVector();
-console.log('W (facing π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with facing');
+console.log('W (lookYaw π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with look yaw');
 
-// facingAngle = the player's facing
-game.player.facing = 1.2;
+// facingAngle = the look yaw
+r3.lookYaw = 1.2;
 console.log('facingAngle:', r3.facingAngle().toFixed(2), '(expect 1.20)');
-if (Math.abs(r3.facingAngle() - 1.2) > 0.001) throw new Error('facingAngle not the player facing');
+if (Math.abs(r3.facingAngle() - 1.2) > 0.001) throw new Error('facingAngle not the look yaw');
 
 // ---- third-person camera: behind the player + follows altitude ----
 game.player.x = 2000 * 32; game.player.y = 2000 * 32;
-game.player.facing = 0; game.player.altitude = 0;
+r3.lookYaw = 0; game.player.altitude = 0;
 r3.lookPitch = 0.2; r3.sync();
 const cam0 = r3.camera.position.clone();
 // flying: camera should rise with the player
@@ -128,7 +128,7 @@ console.log('look-up camera y:', r3.camera.position.y.toFixed(0), '(higher than 
 if (!(r3.camera.position.y > cam0.y)) throw new Error('look up did not raise the camera/view');
 
 // ---- camera never goes underground (even looking straight down) ----
-game.player.altitude = 0; game.player.facing = 0;
+game.player.altitude = 0; r3.lookYaw = 0;
 r3.lookPitch = -0.7; // scroll way down
 r3.sync();
 console.log('camera y looking straight down:', r3.camera.position.y.toFixed(0), '(must be >= 16, above ground)');

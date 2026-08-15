@@ -739,7 +739,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 8.0 — cursor-facing player (360°) + popup mouse/scroll isolation (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 8.1 — true Minecraft mouse-look (delta), no spin-out (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
