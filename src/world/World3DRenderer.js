@@ -619,10 +619,12 @@ export class World3DRenderer {
     const shoulder = 46;
     const camX = pp.x - fwdX * dist;
     const camZ = pp.z - fwdZ * dist;
-    const camY = elev + shoulder + this.lookPitch * dist * 0.55;
+    // Camera stays BEHIND the player at their level and — critically — is always
+    // clamped ABOVE the ground, so looking down can never put it underground.
+    const camY = Math.max(elev + 16, elev + shoulder + this.lookPitch * dist * 0.55);
     const lookX = pp.x + fwdX * 320;
     const lookZ = pp.z + fwdZ * 320;
-    const lookY = elev + 12 + this.lookPitch * 260;
+    const lookY = Math.max(elev + 6, elev + 12 + this.lookPitch * 260);
     this.camera.position.set(camX, camY, camZ);
     this.camera.lookAt(lookX, lookY, lookZ);
     // keep the camera's world matrix current
@@ -924,7 +926,8 @@ export class World3DRenderer {
       const ex = nx > DZ ? (nx - DZ) / (1 - DZ) : nx < -DZ ? (nx + DZ) / (1 - DZ) : 0;
       const ey = ny > DZ ? (ny - DZ) / (1 - DZ) : ny < -DZ ? (ny + DZ) / (1 - DZ) : 0;
       if (ex !== 0 || ey !== 0) {
-        this.lookYaw -= ex * 0.045;
+        // mouse RIGHT = turn right, mouse LEFT = turn left (matches the screen)
+        this.lookYaw += ex * 0.045;
         this.lookPitch = clampPitch(this.lookPitch - ey * 0.035);
       }
     };

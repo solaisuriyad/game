@@ -128,6 +128,14 @@ r3.lookPitch = 0.8; r3.sync();
 console.log('look-up camera y:', r3.camera.position.y.toFixed(0), '(higher than level view)');
 if (!(r3.camera.position.y > cam0.y)) throw new Error('look up did not raise the camera/view');
 
+// ---- camera never goes underground (even looking straight down) ----
+game.player.altitude = 0; game.player.facing = 0;
+r3.lookPitch = -0.7; // scroll way down
+r3.sync();
+console.log('camera y looking straight down:', r3.camera.position.y.toFixed(0), '(must be >= 16, above ground)');
+if (r3.camera.position.y < 16) throw new Error('camera went underground when looking down');
+r3.lookPitch = 0.2; r3.sync(); // restore
+
 // ---- distinct 3D models ----
 // a dragon should have WINGS (more parts than a generic beast)
 const dragon = game.monsters.find((m) => m.family === 'dragon' && !m.dead);
