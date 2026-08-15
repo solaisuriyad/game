@@ -348,11 +348,15 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     // 3D mode: A/D TURN the player left/right (so the side you turn to becomes
-    // your new "front"), matching the mouse-look direction.
+    // your new "front"), and the mouse cursor steers the view by position (right
+    // edge → turn right). The camera trails smoothly behind so the turn is
+    // visible on the player's body, not just the screen.
     if (this.mode3d && this.renderer3d) {
       const TURN = 2.8; // radians per second
       if (this.input.held('a')) this.renderer3d.lookYaw += TURN * dt;
       if (this.input.held('d')) this.renderer3d.lookYaw -= TURN * dt;
+      this.renderer3d.applySteer(dt);
+      this.renderer3d.updateCameraFollow(dt);
     }
     this.player.update(dt, this);
     // 3D mode: the player BODY faces the look direction (set by mouse movement

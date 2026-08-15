@@ -56,9 +56,15 @@ export class World3DRenderer {
     this._lastMx = null;  // last mouse position (for Minecraft-style delta look)
     this._lastMy = null;
     this._clouds = null;
-    // smooth look (lightly eased to remove jitter — still responsive, no "lag")
-    this._sYaw = 0;
-    this._sPitch = 0.15;
+    // smoothed camera yaw/pitch: the CAMERA lags slightly behind lookYaw so the
+    // player's turn is VISIBLE (the body rotates a little before the camera
+    // swings behind). lookYaw/lookPitch stay the player's true facing.
+    this._camYaw = 0;
+    this._camPitch = 0.15;
+    // cursor steering: normalized mouse position (-1..1), used to turn the view
+    // when the cursor sits near a screen edge (right side → turn right).
+    this._steerX = 0;
+    this._steerY = 0;
     // look settings (loaded from the saved settings)
     this.lookSens = 1.0;   // mouse sensitivity multiplier (0.3 .. 2.5)
     this.invertX = false;  // flip horizontal look
@@ -704,13 +710,16 @@ export class World3DRenderer {
       }
     }
 
-    // ---- Minecraft-style third-person camera ----
-    // The camera sits BEHIND the player and looks along lookYaw/lookPitch (set by
-    // mouse movement). The player body faces the same lookYaw (in main.js).
+    // ---- third-person camera (smoothly trails the player) ----
+    // The camera uses the SMOOTHED _camYaw/_camPitch (updated each frame by
+    // updateCameraFollow), which lag slightly behind lookYaw. That makes the
+    // player's turn VISIBLE: the body rotates a little before the camera swings
+    // behind it, instead of the two turning in lockstep (which looks like only
+    // the world/screen is turning and the player never moves).
     const pp = this._worldToLocal(px, py);
     const elev = g.player.altitude ? g.player.altitude * 3 : 0;
-    const fwdX = Math.cos(this.lookYaw), fwdZ = Math.sin(this.lookYaw);
-    const lookP = this.lookPitch;
+    const fwdX = Math.cos(this._camYaw), fwdZ = Math.sin(this._camYaw);
+    const lookP = this._camPitch;
     const dist = this.distance;
     const shoulder = 46;
     const camX = pp.x - fwdX * dist;
@@ -998,6 +1007,32 @@ export class World3DRenderer {
     return { x: F.x * -raw.y, y: F.y * -raw.y };
   }
 
+  // Cursor steering (called each frame from the game loop): when the mouse sits
+  // near the LEFT or RIGHT edge of the screen, the view turns that way — move
+  // the cursor to the right side to turn right, left side to turn left, and keep
+  // it near the middle to stop. This replaces delta mouse-look (no pointer lock,
+  // so the cursor can sit at an edge and keep turning without running out of
+  // desk). A dead zone in the center keeps aiming stable.
+  applySteer(dt) {
+    const sx = this._steerX || 0;
+    const DEAD = 0.18;               // center dead zone (fraction of half-width)
+    const a = Math.abs(sx);
+    if (a > DEAD) {
+      const k = (a - DEAD) / (1 - DEAD); // 0..1 across the steering band
+      const rate = k * k * 2.6;          // quadratic ramp, radians/sec
+      this.lookYaw -= Math.sign(sx) * rate * dt; // cursor RIGHT → turn RIGHT
+    }
+    // (vertical tilt stays on the scroll wheel, so the cursor never nudges pitch)
+  }
+
+  // Smoothly swing the camera toward the player's facing. A small lag makes the
+  // turn visible (frame-rate independent via exponential smoothing).
+  updateCameraFollow(dt) {
+    const k = 1 - Math.exp(-dt * 10);
+    this._camYaw += (this.lookYaw - this._camYaw) * k;
+    this._camPitch += (this.lookPitch - this._camPitch) * k;
+  }
+
   // zoom the third-person camera in/out (clamped)
   zoomIn() { this.distance = Math.max(160, this.distance - 70); }
   zoomOut() { this.distance = Math.min(1000, this.distance + 70); }
@@ -1016,10 +1051,9 @@ export class World3DRenderer {
     return null;
   }
 
-  // browser-only controls — Minecraft-style third-person navigation.
-  // Mouse MOVEMENT (delta, not position) rotates the view: moving the mouse
-  // right turns right, left turns left, up/down tilts the camera. This can never
-  // spin out of control (no feedback loop, unlike "face the cursor"). Scroll
+  // browser-only controls — third-person navigation.
+  // The mouse cursor STEERS the view by position (right edge → turn right, left
+  // edge → turn left, center → stop), applied in applySteer() each frame. Scroll
   // also looks up/down. Left-click attacks. When a menu/popup is open these are
   // all ignored so the mouse/scroll only affect the popup, not the game.
   attachControls() {
@@ -1045,18 +1079,11 @@ export class World3DRenderer {
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
       const m = this.game.input.mouse; m.x = mx; m.y = my;
       this._mouseNdc = { x: (mx / rect.width) * 2 - 1, y: -(my / rect.height) * 2 + 1 };
-      if (uiBlocked()) return; // don't rotate the view while a popup is open
-
-      // Minecraft delta look: rotate by how far the mouse MOVED (not where it is).
-      const dx = e.movementX ?? 0;
-      const dy = e.movementY ?? 0;
-      if (dx !== 0 || dy !== 0) {
-        const s = this.lookSens;
-        // mouse RIGHT = look RIGHT (this sign was confirmed correct by the player)
-        this.lookYaw -= dx * 0.0032 * s;
-        // mouse UP = look UP
-        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032 * s);
-      }
+      // cursor steering: record where the cursor is so applySteer() (called each
+      // frame from the game loop) can turn the view while it sits near an edge.
+      this._steerX = (mx / rect.width) * 2 - 1;   // -1 = left edge, +1 = right edge
+      this._steerY = (my / rect.height) * 2 - 1;  // -1 = top edge, +1 = bottom edge
+      if (uiBlocked()) return; // don't react to the cursor while a popup is open
     };
     const onWheel = (e) => {
       if (uiBlocked()) return; // let the popup scroll its own content
@@ -1107,7 +1134,7 @@ export class World3DRenderer {
     try {
       const hint = document.createElement('div');
       hint.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,8,6,0.7);color:#e8e0c8;font:12px sans-serif;padding:4px 12px;border-radius:6px;pointer-events:none;';
-      hint.textContent = '3D · W/S move · A/D turn · mouse look · R×2 auto-run · Esc menu';
+      hint.textContent = '3D · W/S move · A/D turn · mouse to edge steers · scroll look · R×2 run';
       document.body.appendChild(hint);
     } catch (e) {}
     // zoom in/out buttons (bottom-right)

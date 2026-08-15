@@ -739,7 +739,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 8.2 — A/D turn, zoom buttons, double-tap R auto-run (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 8.3 — A/D turns the player (body visible), mouse steers by edge (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
