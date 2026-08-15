@@ -235,5 +235,34 @@ console.log('nearby monster for label:', near ? near.name + ' (' + near.rank + '
 if (!near) throw new Error('no nearby monster to label (test setup issue)');
 if (!near.rank) throw new Error('monster missing rank for label');
 
+// ---- third-person follow camera (behind the player's back) ----
+const { makeFigure } = await import('../src/world/Figure3D.js');
+game.player.facing = 0;           // facing east
+r3.yaw = 0; r3.follow = true; r3._dragging = false;
+for (let i = 0; i < 120; i++) r3.sync();
+// camera should end up BEHIND the player (opposite facing), i.e. yaw ≈ π
+console.log('follow camera yaw after easing:', r3.yaw.toFixed(2), '(expect ≈ 3.14 = behind)');
+if (Math.abs(Math.abs(r3.yaw) - Math.PI) > 0.3) throw new Error('camera did not follow behind the player');
+
+// while dragging, follow is overridden (manual 360° orbit)
+r3._dragging = true; r3.yaw = 1.0; r3.sync();
+console.log('orbit while dragging holds yaw:', r3.yaw.toFixed(2), '(expect ≈ 1.00)');
+if (Math.abs(r3.yaw - 1.0) > 0.01) throw new Error('follow overrode manual orbit');
+
+// ---- gender-distinct figures ----
+const male = makeFigure({ gender: 'male', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a' });
+const female = makeFigure({ gender: 'female', skinTone: '#e8c39a', hairColor: '#a04040', clothColor: '#7a4a6a' });
+const neutral = makeFigure({ gender: 'neutral', skinTone: '#e8c39a', hairColor: '#4a3624', clothColor: '#7a6a4a' });
+const countParts = (grp) => { let n = 0; grp.traverse((o) => { if (o.isMesh) n++; }); return n; };
+console.log('figure parts — male:', countParts(male), '| female:', countParts(female), '| neutral:', countParts(neutral));
+if (countParts(male) >= countParts(female)) throw new Error('female should have more parts than male (dress + bust + long hair)');
+if (countParts(male) === countParts(neutral)) throw new Error('male and neutral should differ (hair length)');
+
+// no NaN in any figure
+for (const f of [male, female, neutral]) {
+  f.traverse((o) => { if (o.isMesh && (isNaN(o.position.x)||isNaN(o.position.y)||isNaN(o.position.z))) throw new Error('NaN in figure'); });
+}
+console.log('figures have no NaN positions ✓');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

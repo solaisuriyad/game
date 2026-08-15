@@ -6,6 +6,7 @@
 //
 // It shares the World3DRenderer's WebGL canvas + HUD overlay (passed in).
 import * as THREE from '../../vendor/three.module.js';
+import { makeFigure } from './Figure3D.js';
 
 const RW = 1200;   // logical room width (matches BuildingInterior)
 const RH = 800;    // logical room height
@@ -93,15 +94,16 @@ export class Interior3DRenderer {
     return { x: lx - RW / 2, z: ly - RH / 2 };
   }
 
-  _makeFigure(mat, skin, scale = 1) {
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(9 * scale, 18 * scale, 4, 8), mat);
-    body.position.y = 16 * scale;
-    g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(8 * scale, 10, 8), skin);
-    head.position.y = 34 * scale;
-    g.add(head);
-    return g;
+  // shared human figure builder (gender-distinct), scaled up for the room camera
+  _makeFigure(entity, scale = 1.25) {
+    return makeFigure({
+      gender: entity.gender || 'neutral',
+      skinTone: entity.skinTone,
+      hairColor: entity.hairColor,
+      clothColor: entity.clothColor,
+      age: entity.age,
+      scale
+    });
   }
 
   _makeCounter(s) {
@@ -144,8 +146,7 @@ export class Interior3DRenderer {
       if (s.occ) {
         const npc = this.game.npcs.find((n) => n.occupation === s.occ);
         if (npc) {
-          const mat = new THREE.MeshStandardMaterial({ color: parseInt((npc.clothColor || '#7a6a4a').slice(1), 16) });
-          const fig = this._makeFigure(mat, this._skin);
+          const fig = this._makeFigure(npc);
           const fx = s.cw > 0 ? s.cx + s.cw / 2 : s.ix;
           const fy = s.cw > 0 ? s.cy - 44 : s.iy - 40;
           const p = this._worldToLocal(fx, fy);
@@ -477,8 +478,7 @@ export class Interior3DRenderer {
     const pKey = 'player';
     let playerMesh = this._meshCache.get(pKey);
     if (!playerMesh) {
-      const mat = new THREE.MeshStandardMaterial({ color: parseInt((this.game.player.clothColor || '#7a6a4a').slice(1), 16) });
-      playerMesh = { group: this._makeFigure(mat, this._skin, 1.05), kind: 'player', color: this.game.player.clothColor };
+      playerMesh = { group: this._makeFigure(this.game.player, 1.3), kind: 'player', color: this.game.player.clothColor };
       this._meshCache.set(pKey, playerMesh);
       this.entityRoot.add(playerMesh.group);
     }

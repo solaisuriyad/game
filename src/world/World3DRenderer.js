@@ -6,6 +6,7 @@
 // view reads the same entities the 2D game simulates, so logic is untouched.
 import * as THREE from '../../vendor/three.module.js';
 import { TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY } from './WorldSystem.js';
+import { makeFigure } from './Figure3D.js';
 // only render entities within this world-pixel radius of the player (perf)
 const CULL = 2600;
 
@@ -45,6 +46,7 @@ export class World3DRenderer {
     this.yaw = 0;        // horizontal angle around the player
     this.pitch = 0.95;   // downward tilt (radians)
     this.distance = 440; // zoom distance
+    this.follow = false; // true → camera auto-follows behind the player's back
     this._dragging = false;
     this._last = { x: 0, y: 0 };
 
@@ -365,10 +367,14 @@ export class World3DRenderer {
     const boss = e.boss === true;
 
     if (kind === 'player' || kind === 'npc') {
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(6, 12, 4, 8), mat);
-      body.position.y = 12; g.add(body);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(6, 10, 8), skin);
-      head.position.y = 24; g.add(head);
+      // human figure — full body with gender-distinct build, hair and clothing
+      return makeFigure({
+        gender: e.gender || 'neutral',
+        skinTone: e.skinTone,
+        hairColor: e.hairColor,
+        clothColor: e.clothColor || color,
+        age: e.age
+      });
     } else if (kind === 'slime') {
       const b = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 9), mat);
       b.scale.y = 0.6; b.position.y = 6; g.add(b);
@@ -550,6 +556,17 @@ export class World3DRenderer {
         c.trunks.visible = vis;
         c.canopies.visible = vis;
       }
+    }
+
+    // auto-follow: ease the camera to sit BEHIND the player's back (opposite their
+    // facing) so the view is a classic third-person "over the shoulder". Manual
+    // right-drag orbit (360°) overrides this while dragging.
+    if (this.follow && !this._dragging && g.player) {
+      let targetYaw = g.player.facing + Math.PI;
+      let dy = targetYaw - this.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      this.yaw += dy * 0.08;
     }
 
     // camera follows the player at a comfortable third-person angle

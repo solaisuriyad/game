@@ -135,7 +135,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v7.0 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v7.1 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----

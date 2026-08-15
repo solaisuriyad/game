@@ -121,6 +121,8 @@ class Game {
       try {
         this.renderer3d = new World3DRenderer(this);
         this.interior3d = new Interior3DRenderer(this);
+        // third-person camera: follow behind the player's back, 360° orbit via right-drag
+        this.renderer3d.follow = true;
         // 3D: movement is camera-relative (W = away from camera), and the player
         // faces where the camera looks. This replaces the 2D top-down dirVector.
         this._dirFn = () => this.renderer3d.cameraDirVector();
