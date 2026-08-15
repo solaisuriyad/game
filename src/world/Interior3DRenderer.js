@@ -155,17 +155,53 @@ export class Interior3DRenderer {
       }
     }
 
-    // special: the temple gets the Shiva Lingam (stone pillar + glow)
-    if (bi.building && bi.building.func === 'temple') {
-      this._addLingam();
-    }
-    // beds in the inn / home / healing center
-    if (bi.building && ['inn', 'home', 'healing'].includes(bi.building.func)) {
-      this._addBeds(bi);
-    }
-    // tables + chairs in guild / tavern
-    if (bi.building && ['guild', 'tavern', 'community'].includes(bi.building.func)) {
-      this._addTables(bi);
+    // ---- furniture parity with the 2D interiors ----
+    if (bi.building) this._addFurniture(bi.building.func);
+  }
+
+  // add the right 3D furniture for each building type (matches the 2D interiors)
+  _addFurniture(func) {
+    switch (func) {
+      case 'temple':
+        this._addLingam();
+        break;
+      case 'inn': case 'home': case 'healing':
+        this._addBeds(func);
+        break;
+      case 'guild': case 'tavern': case 'community': case 'foodshop':
+        this._addTables(func);
+        break;
+      case 'blacksmith': case 'weaponshop': case 'training': case 'guard':
+        this._addWeaponRacks(func);
+        break;
+      case 'armorshop': case 'tailor':
+        this._addMannequins(func);
+        break;
+      case 'general': case 'foodshop': case 'healer': case 'carpenter':
+      case 'gearshop': case 'storage':
+        this._addShelves(func);
+        break;
+      case 'lodge': case 'chief': case 'house': case 'home':
+        this._addHearthAndSofa(func);
+        break;
+      case 'stable':
+        this._addStalls();
+        break;
+      case 'school':
+        this._addSchoolDesks();
+        break;
+      case 'shrine':
+        this._addShrineAltar();
+        break;
+      case 'crafting':
+        this._addWorkbench();
+        break;
+      case 'market':
+        this._addMarketStalls();
+        break;
+      case 'well':
+        this._addWell();
+        break;
     }
   }
 
@@ -184,11 +220,12 @@ export class Interior3DRenderer {
     this.entityRoot.add(glow);
   }
 
-  _addBeds(bi) {
+  _addBeds(func) {
     const positions = { inn: [[520, 260], [760, 260]], home: [[340, 300]], healing: [[360, 280], [560, 280], [760, 280]] };
-    const list = positions[bi.building.func] || [];
+    const list = positions[func] || [];
     const wood = this._wood;
     const sheet = new THREE.MeshStandardMaterial({ color: 0xe8e8e0 });
+    const blanket = new THREE.MeshStandardMaterial({ color: 0xc84a3a });
     for (const [lx, ly] of list) {
       const p = this._worldToLocal(lx, ly);
       const frame = new THREE.Mesh(new THREE.BoxGeometry(120, 10, 60), wood);
@@ -197,20 +234,236 @@ export class Interior3DRenderer {
       const mattress = new THREE.Mesh(new THREE.BoxGeometry(110, 8, 52), sheet);
       mattress.position.set(p.x, 14, p.z);
       this.entityRoot.add(mattress);
+      const bl = new THREE.Mesh(new THREE.BoxGeometry(100, 4, 50), blanket);
+      bl.position.set(p.x, 19, p.z + 2);
+      this.entityRoot.add(bl);
+      // headboard
+      const head = new THREE.Mesh(new THREE.BoxGeometry(8, 40, 56), wood);
+      head.position.set(p.x - 55, 30, p.z);
+      this.entityRoot.add(head);
     }
   }
 
-  _addTables(bi) {
+  _addTables(func) {
     const wood = this._wood;
-    const spots = [[760, 560], [950, 560], [600, 520]];
-    for (const [lx, ly] of spots.slice(0, bi.building.func === 'guild' ? 1 : 3)) {
+    const spots = { guild: [[760, 560]], tavern: [[700, 560], [950, 560]], community: [[560, 520]], foodshop: [[860, 520]] };
+    const list = spots[func] || [[760, 560]];
+    for (const [lx, ly] of list) {
       const p = this._worldToLocal(lx, ly);
-      const table = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 10, 12), wood);
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 10, 14), wood);
       table.position.set(p.x, 34, p.z);
       this.entityRoot.add(table);
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 34, 8), wood);
       leg.position.set(p.x, 17, p.z);
       this.entityRoot.add(leg);
+      // two chairs
+      for (const [cx, cz] of [[lx - 50, ly], [lx + 50, ly]]) {
+        const cp = this._worldToLocal(cx, cz);
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(28, 8, 28), wood);
+        seat.position.set(cp.x, 22, cp.z);
+        this.entityRoot.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(28, 26, 6), wood);
+        back.position.set(cp.x, 40, cp.z + 14);
+        this.entityRoot.add(back);
+      }
+    }
+  }
+
+  _addWeaponRacks(func) {
+    const wood = this._wood;
+    const metal = new THREE.MeshStandardMaterial({ color: 0xc8d0d8 });
+    const spots = { blacksmith: [[260, 300], [900, 300]], weaponshop: [[260, 260], [430, 260], [900, 260]], training: [[900, 300]], guard: [[900, 280]] };
+    for (const [lx, ly] of (spots[func] || [])) {
+      const p = this._worldToLocal(lx, ly);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 50, 6), wood);
+      post.position.set(p.x - 22, 25, p.z);
+      this.entityRoot.add(post);
+      const post2 = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 50, 6), wood);
+      post2.position.set(p.x + 22, 25, p.z);
+      this.entityRoot.add(post2);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(44, 3, 4), wood);
+      bar.position.set(p.x, 48, p.z);
+      this.entityRoot.add(bar);
+      // hanging blades
+      for (let i = -1; i <= 1; i++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(3, 26, 3), metal);
+        blade.position.set(p.x + i * 12, 33, p.z);
+        this.entityRoot.add(blade);
+      }
+    }
+  }
+
+  _addMannequins(func) {
+    const wood = this._wood;
+    const cloth = new THREE.MeshStandardMaterial({ color: func === 'tailor' ? 0xc8b0c8 : 0x5a6a7a });
+    const spots = func === 'armorshop' ? [[300, 300], [500, 300], [700, 300]] : [[280, 300], [460, 300]];
+    for (const [lx, ly] of spots) {
+      const p = this._worldToLocal(lx, ly);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 44, 6), wood);
+      pole.position.set(p.x, 22, p.z);
+      this.entityRoot.add(pole);
+      const arms = new THREE.Mesh(new THREE.BoxGeometry(32, 3, 3), wood);
+      arms.position.set(p.x, 34, p.z);
+      this.entityRoot.add(arms);
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(8, 12, 4, 8), cloth);
+      torso.position.set(p.x, 24, p.z);
+      this.entityRoot.add(torso);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(6, 8, 6), cloth);
+      head.position.set(p.x, 40, p.z);
+      this.entityRoot.add(head);
+    }
+  }
+
+  _addShelves(func) {
+    const wood = this._wood;
+    const itemColor = { general: 0xd8b86a, foodshop: 0xc86a3a, healer: 0x5a9a5a, carpenter: 0xd0a05a, gearshop: 0x8aa8d8, storage: 0xc0a86a }[func] || 0xd8b86a;
+    const spots = func === 'storage' ? [[300, 300], [400, 300], [300, 420], [400, 420]] : [[880, 240]];
+    for (const [lx, ly] of spots) {
+      const p = this._worldToLocal(lx, ly);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(90, 70, 8), wood);
+      back.position.set(p.x, 35, p.z);
+      this.entityRoot.add(back);
+      for (let row = 0; row < 3; row++) {
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(84, 3, 22), wood);
+        shelf.position.set(p.x, 14 + row * 22, p.z + 6);
+        this.entityRoot.add(shelf);
+        // items on the shelf
+        for (let i = 0; i < 4; i++) {
+          const mat = new THREE.MeshStandardMaterial({ color: itemColor });
+          const item = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 8), mat);
+          item.position.set(p.x - 30 + i * 20, 20 + row * 22, p.z + 6);
+          this.entityRoot.add(item);
+        }
+      }
+    }
+  }
+
+  _addHearthAndSofa(func) {
+    const wood = this._wood;
+    // sofa
+    const p = this._worldToLocal(720, 480);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(120, 40, 14), new THREE.MeshStandardMaterial({ color: 0x7a4a3a }));
+    back.position.set(p.x, 40, p.z - 14);
+    this.entityRoot.add(back);
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(120, 12, 40), new THREE.MeshStandardMaterial({ color: 0x9a5a48 }));
+    seat.position.set(p.x, 26, p.z);
+    this.entityRoot.add(seat);
+    const arm1 = new THREE.Mesh(new THREE.BoxGeometry(12, 30, 40), wood);
+    arm1.position.set(p.x - 62, 30, p.z);
+    this.entityRoot.add(arm1);
+    const arm2 = new THREE.Mesh(new THREE.BoxGeometry(12, 30, 40), wood);
+    arm2.position.set(p.x + 62, 30, p.z);
+    this.entityRoot.add(arm2);
+    // fireplace (hearth)
+    const hp = this._worldToLocal(560, 620);
+    const hearth = new THREE.Mesh(new THREE.BoxGeometry(120, 70, 20), new THREE.MeshStandardMaterial({ color: 0x4a3a30 }));
+    hearth.position.set(hp.x, 35, hp.z);
+    this.entityRoot.add(hearth);
+    const fire = new THREE.Mesh(new THREE.SphereGeometry(14, 10, 8), new THREE.MeshStandardMaterial({ color: 0xff8030, emissive: 0xff5010, emissiveIntensity: 0.8 }));
+    fire.position.set(hp.x, 18, hp.z + 12);
+    this.entityRoot.add(fire);
+  }
+
+  _addStalls() {
+    const wood = this._wood;
+    for (const [lx, ly] of [[300, 280], [540, 280]]) {
+      const p = this._worldToLocal(lx, ly);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 60, 80), wood);
+      wall.position.set(p.x - 30, 30, p.z);
+      this.entityRoot.add(wall);
+      const wall2 = new THREE.Mesh(new THREE.BoxGeometry(8, 60, 80), wood);
+      wall2.position.set(p.x + 30, 30, p.z);
+      this.entityRoot.add(wall2);
+      const horse = new THREE.Mesh(new THREE.BoxGeometry(40, 26, 16), new THREE.MeshStandardMaterial({ color: 0xc8a86a }));
+      horse.position.set(p.x, 13, p.z);
+      this.entityRoot.add(horse);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(10, 12, 8), new THREE.MeshStandardMaterial({ color: 0xc8a86a }));
+      head.position.set(p.x, 30, p.z + 10);
+      this.entityRoot.add(head);
+    }
+  }
+
+  _addSchoolDesks() {
+    const wood = this._wood;
+    for (let row = 0; row < 2; row++) for (let i = 0; i < 3; i++) {
+      const p = this._worldToLocal(320 + i * 190, 330 + row * 150);
+      const desk = new THREE.Mesh(new THREE.BoxGeometry(50, 5, 30), wood);
+      desk.position.set(p.x, 22, p.z);
+      this.entityRoot.add(desk);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(4, 22, 4), wood);
+      leg.position.set(p.x - 20, 11, p.z);
+      this.entityRoot.add(leg);
+      const leg2 = new THREE.Mesh(new THREE.BoxGeometry(4, 22, 4), wood);
+      leg2.position.set(p.x + 20, 11, p.z);
+      this.entityRoot.add(leg2);
+    }
+  }
+
+  _addShrineAltar() {
+    const p = this._worldToLocal(600, 420);
+    const stone = new THREE.MeshStandardMaterial({ color: 0x6a6a74 });
+    const altar = new THREE.Mesh(new THREE.BoxGeometry(60, 40, 30), stone);
+    altar.position.set(p.x, 20, p.z);
+    this.entityRoot.add(altar);
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(16, 10, 8), this._glow);
+    glow.position.set(p.x, 48, p.z);
+    this.entityRoot.add(glow);
+  }
+
+  _addWorkbench() {
+    const wood = this._wood;
+    const p = this._worldToLocal(700, 500);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(100, 6, 50), wood);
+    top.position.set(p.x, 32, p.z);
+    this.entityRoot.add(top);
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(6, 32, 6), wood);
+    leg.position.set(p.x - 44, 16, p.z - 20);
+    this.entityRoot.add(leg);
+    const leg2 = new THREE.Mesh(new THREE.BoxGeometry(6, 32, 6), wood);
+    leg2.position.set(p.x + 44, 16, p.z + 20);
+    this.entityRoot.add(leg2);
+  }
+
+  _addWell() {
+    const stone = new THREE.MeshStandardMaterial({ color: 0x7a7a78 });
+    const p = this._worldToLocal(600, 430);
+    // stone ring
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(40, 46, 20, 12), stone);
+    ring.position.set(p.x, 10, p.z);
+    this.entityRoot.add(ring);
+    // dark water inside
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(34, 34, 4, 12), new THREE.MeshStandardMaterial({ color: 0x1a3a5a }));
+    water.position.set(p.x, 10, p.z);
+    this.entityRoot.add(water);
+    // two posts + a little roof
+    const wood = this._wood;
+    for (const dx of [-34, 34]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 60, 6), wood);
+      post.position.set(p.x + dx, 40, p.z);
+      this.entityRoot.add(post);
+    }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(90, 5, 50), wood);
+    roof.position.set(p.x, 72, p.z);
+    this.entityRoot.add(roof);
+  }
+
+  _addMarketStalls() {
+    const wood = this._wood;
+    for (const [lx, ly] of [[300, 420], [600, 420], [900, 420]]) {
+      const p = this._worldToLocal(lx, ly);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(80, 6, 40), wood);
+      top.position.set(p.x, 30, p.z);
+      this.entityRoot.add(top);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(4, 30, 4), wood);
+      leg.position.set(p.x - 36, 15, p.z);
+      this.entityRoot.add(leg);
+      const leg2 = new THREE.Mesh(new THREE.BoxGeometry(4, 30, 4), wood);
+      leg2.position.set(p.x + 36, 15, p.z);
+      this.entityRoot.add(leg2);
+      // produce
+      const apple = new THREE.Mesh(new THREE.SphereGeometry(6, 8, 6), new THREE.MeshStandardMaterial({ color: 0xc84a3a }));
+      apple.position.set(p.x, 34, p.z);
+      this.entityRoot.add(apple);
     }
   }
 

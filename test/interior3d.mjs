@@ -61,5 +61,19 @@ i3.sync();
 console.log('rebuilt on new building, player present:', i3._meshCache.has('player'));
 if (!i3._meshCache.has('player')) throw new Error('player missing after switching buildings');
 
+// 5. furniture parity: every building type renders furniture with no NaN
+const funcs = [...new Set(game.world.buildings.map(b=>b.building.func))];
+let badFurn = 0, emptyFurn = 0;
+for (const f of funcs) {
+  const b = game.world.buildings.find(x=>x.building.func===f).building;
+  game.buildingInterior.open(b);
+  i3.sync();
+  if (i3.entityRoot.children.length < 3) { console.log('EMPTY:', f); emptyFurn++; }
+  i3.entityRoot.traverse((o)=>{ if (o.isMesh && (isNaN(o.position.x)||isNaN(o.position.y)||isNaN(o.position.z))) badFurn++; });
+}
+console.log('checked', funcs.length, 'building types | empty:', emptyFurn, '| NaN meshes:', badFurn);
+if (badFurn > 0) throw new Error('NaN position in furniture');
+if (emptyFurn > 0) throw new Error(emptyFurn + ' buildings have no furniture');
+
 console.log('3D INTERIOR TESTS PASSED');
 process.exit(0);
