@@ -264,5 +264,26 @@ for (const f of [male, female, neutral]) {
 }
 console.log('figures have no NaN positions ✓');
 
+// ---- walk animation swings limbs ----
+const walker = makeFigure({ gender: 'male' });
+const a = walker.userData.anim;
+if (!a || !a.lLeg || !a.rArm) throw new Error('figure missing walk pivots');
+const before = a.lLeg.rotation.z;
+walker.userData.walk(1.2);
+console.log('walk swings left leg (rotation.z):', before.toFixed(2), '->', a.lLeg.rotation.z.toFixed(2));
+if (Math.abs(a.lLeg.rotation.z - before) < 0.01) throw new Error('walk did not swing the legs');
+walker.userData.idle();
+if (a.lLeg.rotation.z !== 0 || a.rArm.rotation.z !== 0) throw new Error('idle did not reset limbs');
+
+// ---- occupation clothing ----
+const guard = makeFigure({ gender: 'male', occupation: 'guard' });
+const villager = makeFigure({ gender: 'male' });
+console.log('guard parts:', countParts(guard), '| plain villager parts:', countParts(villager), '(guard should have helmet + breastplate = more)');
+if (countParts(guard) <= countParts(villager)) throw new Error('guard should have more parts (helmet/breastplate)');
+
+const healer = makeFigure({ gender: 'female', occupation: 'healer' });
+console.log('healer robe parts:', countParts(healer), '| plain female parts:', countParts(female));
+if (countParts(healer) <= countParts(female)) throw new Error('healer should have a robe (more parts)');
+
 console.log('3D RENDERER TESTS PASSED');
 process.exit(0);

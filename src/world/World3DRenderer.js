@@ -367,13 +367,14 @@ export class World3DRenderer {
     const boss = e.boss === true;
 
     if (kind === 'player' || kind === 'npc') {
-      // human figure — full body with gender-distinct build, hair and clothing
+      // human figure — full body with gender-distinct build, face, clothing
       return makeFigure({
         gender: e.gender || 'neutral',
         skinTone: e.skinTone,
         hairColor: e.hairColor,
         clothColor: e.clothColor || color,
-        age: e.age
+        age: e.age,
+        occupation: e.occupation
       });
     } else if (kind === 'slime') {
       const b = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 9), mat);
@@ -509,6 +510,12 @@ export class World3DRenderer {
       else if (kind === 'bird') elev = 30;
       entry.group.position.set(p.x, elev, p.z);
       entry.group.rotation.y = -(e.facing || 0);
+      // walking animation (swing arms/legs) for humans that are moving
+      if (entry.group.userData && entry.group.userData.walk) {
+        const moving = e.isPlayer ? e.moving : (e.targetPos != null);
+        if (moving) entry.group.userData.walk(performance.now() * 0.008);
+        else entry.group.userData.idle();
+      }
       entry.group.visible = Math.hypot(e.x - px, e.y - py) <= CULL;
     };
 

@@ -102,6 +102,7 @@ export class Interior3DRenderer {
       hairColor: entity.hairColor,
       clothColor: entity.clothColor,
       age: entity.age,
+      occupation: entity.occupation,
       scale
     });
   }
@@ -483,6 +484,9 @@ export class Interior3DRenderer {
       this.entityRoot.add(playerMesh.group);
     }
     const pp = this._worldToLocal(bi.px, bi.py);
+    // walk animation: animate if the player moved since last frame
+    const moving = this._lastPx != null && (this._lastPx !== bi.px || this._lastPy !== bi.py);
+    this._lastPx = bi.px; this._lastPy = bi.py;
     if (bi.sleeping) {
       // lying down: rotate the figure flat + drop it onto the bed
       playerMesh.group.rotation.x = Math.PI / 2;
@@ -491,6 +495,10 @@ export class Interior3DRenderer {
       playerMesh.group.rotation.x = 0;
       playerMesh.group.position.set(pp.x, 0, pp.z);
       playerMesh.group.rotation.y = -(bi.facing || 0);
+      if (playerMesh.group.userData && playerMesh.group.userData.walk) {
+        if (moving) playerMesh.group.userData.walk(performance.now() * 0.008);
+        else playerMesh.group.userData.idle();
+      }
     }
   }
 
