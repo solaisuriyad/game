@@ -56,6 +56,13 @@ export class World3DRenderer {
     this._lastMx = null;  // last mouse position (for Minecraft-style delta look)
     this._lastMy = null;
     this._clouds = null;
+    // smooth look (lightly eased to remove jitter — still responsive, no "lag")
+    this._sYaw = 0;
+    this._sPitch = 0.15;
+    // look settings (loaded from the saved settings)
+    this.lookSens = 1.0;   // mouse sensitivity multiplier (0.3 .. 2.5)
+    this.invertX = false;  // flip horizontal look
+    this._loadLookSettings();
 
     // aiming: raycast the mouse cursor onto the ground plane
     this._mouseNdc = { x: 0, y: 0 };
@@ -95,9 +102,14 @@ export class World3DRenderer {
     // entity group (rebuilt each frame from game state)
     this.entityRoot = new THREE.Group();
     this.scene.add(this.entityRoot);
-    // fx group (projectiles, corpses, traps, drops, nodes) — cleared each frame
+    // fx group (projectiles, corpses, traps, drops) — cleared each frame
     this.fxRoot = new THREE.Group();
     this.scene.add(this.fxRoot);
+    // resource nodes are static-ish: build once, toggle visibility (no per-frame
+    // mesh churn, which caused GC stutter)
+    this.nodeRoot = new THREE.Group();
+    this.scene.add(this.nodeRoot);
+    this._nodeMeshes = [];
     this._fx = this._makeFxShared();
     this._projVec = new THREE.Vector3(); // reused for float-text projection
 
@@ -109,6 +121,29 @@ export class World3DRenderer {
     // build the static world (ground + trees + buildings + Yggdrasil) once
     this._buildTerrain();
   }
+
+  // load + save the look settings (sensitivity, invert X) in the shared settings
+  _loadLookSettings() {
+    try {
+      const raw = localStorage.getItem('verdant-hollow:settings');
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (typeof s.lookSens === 'number') this.lookSens = Math.max(0.3, Math.min(2.5, s.lookSens));
+        if (typeof s.invertX === 'boolean') this.invertX = s.invertX;
+      }
+    } catch (e) {}
+  }
+  _saveLookSettings() {
+    try {
+      let s = {};
+      try { s = JSON.parse(localStorage.getItem('verdant-hollow:settings') || '{}'); } catch (e) {}
+      s.lookSens = this.lookSens;
+      s.invertX = this.invertX;
+      localStorage.setItem('verdant-hollow:settings', JSON.stringify(s));
+    } catch (e) {}
+  }
+  setLookSens(v) { this.lookSens = Math.max(0.3, Math.min(2.5, v)); this._saveLookSettings(); }
+  setInvertX(v) { this.invertX = !!v; this._saveLookSettings(); }
 
   // ---- static terrain (ground, trees, buildings) ----
   _buildTerrain() {
@@ -670,12 +705,15 @@ export class World3DRenderer {
     }
 
     // ---- Minecraft-style third-person camera ----
-    // The camera uses lookYaw DIRECTLY (instant, no easing) so the view responds
-    // to the mouse immediately — the "lag" people felt was the camera easing
-    // toward a slowly-turning facing. The player BODY still eases (in main.js).
+    // Lightly smooth the look toward the raw mouse target: fast enough to feel
+    // instant, but removes micro-jitter so it reads as "smooth" not "laggy".
+    this._sYaw += (this.lookYaw - this._sYaw) * 0.5;
+    this._sPitch += (this.lookPitch - this._sPitch) * 0.5;
+    const lookF = this._sYaw;
+    const lookP = this._sPitch;
+
     const pp = this._worldToLocal(px, py);
     const elev = g.player.altitude ? g.player.altitude * 3 : 0;
-    const lookF = this.lookYaw;
     const fwdX = Math.cos(lookF), fwdZ = Math.sin(lookF);
     const dist = this.distance;
     const shoulder = 46;
@@ -683,10 +721,10 @@ export class World3DRenderer {
     const camZ = pp.z - fwdZ * dist;
     // Camera stays BEHIND the player at their level and — critically — is always
     // clamped ABOVE the ground, so looking down can never put it underground.
-    const camY = Math.max(elev + 16, elev + shoulder + this.lookPitch * dist * 0.55);
+    const camY = Math.max(elev + 16, elev + shoulder + lookP * dist * 0.55);
     const lookX = pp.x + fwdX * 320;
     const lookZ = pp.z + fwdZ * 320;
-    const lookY = Math.max(elev + 6, elev + 12 + this.lookPitch * 260);
+    const lookY = Math.max(elev + 6, elev + 12 + lookP * 260);
     this.camera.position.set(camX, camY, camZ);
     this.camera.lookAt(lookX, lookY, lookZ);
     // keep the camera's world matrix current
@@ -919,21 +957,39 @@ export class World3DRenderer {
       const m = new THREE.Mesh(F.orb, F.dropMat);
       add(m, d.x, d.y, 16);
     }
-    // resource nodes (herbs / mushrooms / berries / flowers / ore)
+    // resource nodes — toggle visibility of pre-built meshes (no churn)
     const nodes = g.multiplayer.connected ? g.remoteResources : g.world.nodes;
-    for (const n of nodes) {
-      if (n.depleted) continue;
-      const mat = { herb: F.herbMat, mushroom: F.mushMat, berry: F.berryMat, flower: F.flowerMat, ore: F.oreMat }[n.kind] || F.herbMat;
-      const m = new THREE.Mesh(F.nodeGeo, mat);
-      add(m, n.x, n.y, 7);
+    this._syncNodes(nodes, px, py);
+  }
+
+  // build node meshes once, then each frame just toggle visibility by distance
+  // and depleted state (avoids recreating hundreds of meshes every frame)
+  _syncNodes(nodes, px, py) {
+    if (this._nodeMeshes.length !== nodes.length) {
+      // rebuild the cache (cheap, only on load / count change)
+      for (const m of this._nodeMeshes) this.nodeRoot.remove(m.mesh);
+      this._nodeMeshes = nodes.map((n) => {
+        const mat = { herb: this._fx.herbMat, mushroom: this._fx.mushMat, berry: this._fx.berryMat, flower: this._fx.flowerMat, ore: this._fx.oreMat }[n.kind] || this._fx.herbMat;
+        const mesh = new THREE.Mesh(this._fx.nodeGeo, mat);
+        const p = this._worldToLocal(n.x, n.y);
+        mesh.position.set(p.x, 7, p.z);
+        this.nodeRoot.add(mesh);
+        return { node: n, mesh };
+      });
+    }
+    const CULL_NODES = 1800;
+    for (const e of this._nodeMeshes) {
+      const n = e.node;
+      const d = Math.hypot(n.x - px, n.y - py);
+      e.mesh.visible = !n.depleted && d <= CULL_NODES;
     }
   }
 
   // ---- 3D controls: mouse-look + camera-relative movement ----
   // unit vector in the camera's look direction (world x/y) — used to rotate WASD
-  // into "camera space". Uses lookYaw (instant), not the eased body facing.
+  // into "camera space". Uses the SMOOTHED look so movement matches the view.
   cameraForward() {
-    const f = this.lookYaw;
+    const f = this._sYaw;
     return { x: Math.cos(f), y: Math.sin(f) };
   }
 
@@ -995,8 +1051,9 @@ export class World3DRenderer {
         // mouse RIGHT = look RIGHT, mouse LEFT = look LEFT (screen-matched).
         // Note the "-dx": the camera is behind the player, so a rightward mouse
         // swing must rotate the look direction the opposite sign to feel correct.
-        this.lookYaw -= dx * 0.0035;
-        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0035);
+        const s = this.lookSens * (this.invertX ? -1 : 1);
+        this.lookYaw -= dx * 0.0035 * s;
+        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0035 * this.lookSens);
       }
     };
     const onWheel = (e) => {

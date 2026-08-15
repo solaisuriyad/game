@@ -620,8 +620,11 @@ export class MenuManager {
   _renderSettings() {
     const a = this.game.audio;
     const pct = (v) => Math.round(v * 100);
+    const r3 = this.game.renderer3d;
+    const sens = r3 ? Math.round(r3.lookSens * 100) : 100;
+    const inv = r3 ? r3.invertX : false;
     this.show('Settings', `
-      <div class="muted">Adjust game audio. Changes save automatically.</div>
+      <div class="muted">Adjust game audio & 3D look. Changes save automatically.</div>
       <h3>Master Volume — <span id="vol-master">${pct(a.master)}%</span></h3>
       <input type="range" class="vol" min="0" max="100" value="${pct(a.master)}" oninput="window.game.audio.setMasterVolume(this.value/100);document.getElementById('vol-master').textContent=this.value+'%';">
       <h3>Sound Effects — <span id="vol-sfx">${pct(a.sfxVolume)}%</span></h3>
@@ -630,6 +633,12 @@ export class MenuManager {
       <input type="range" class="vol" min="0" max="100" value="${pct(a.musicVolume)}" oninput="window.game.audio.setMusicVolume(this.value/100);document.getElementById('vol-music').textContent=this.value+'%';">
       <h3>Ambient (wind &amp; birds) — <span id="vol-ambient">${pct(a.ambientVolume)}%</span></h3>
       <input type="range" class="vol" min="0" max="100" value="${pct(a.ambientVolume)}" oninput="window.game.audio.setAmbientVolume(this.value/100);document.getElementById('vol-ambient').textContent=this.value+'%';">
+      ${r3 ? `
+      <h3>3D Mouse Sensitivity — <span id="look-sens">${sens}%</span></h3>
+      <input type="range" class="vol" min="30" max="250" value="${sens}" oninput="window.game.renderer3d.setLookSens(this.value/100);document.getElementById('look-sens').textContent=this.value+'%';">
+      <h3>Invert Mouse X (left/right) — <span id="look-inv">${inv ? 'ON' : 'OFF'}</span></h3>
+      <button class="btn" onclick="window.game.renderer3d.setInvertX(!window.game.renderer3d.invertX);document.getElementById('look-inv').textContent=window.game.renderer3d.invertX?'ON':'OFF';">Toggle</button>
+      ` : ''}
       <div class="muted" style="margin-top:10px">Test sound: <button class="btn" data-act="testsfx">Play sound</button></div>
     `);
   }
@@ -739,7 +748,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 7.8 — instant camera, fixed mouse direction & lag (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 7.9 — smooth mouse-look + sensitivity settings (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
