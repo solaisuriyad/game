@@ -348,23 +348,28 @@ class Game {
     this.time.update(dt);
     this.weather.update(dt);
     this.player.update(dt, this);
-    // 3D mode: the player faces where you look (mouse-look), but AUTO-FACES a
-    // monster in combat so fighting never fights the camera. Smooth turn.
+    // 3D mode: the player body faces where you look (locked to the camera,
+    // instant — no lag). When a monster attacks you, the body auto-faces it
+    // (smoothly), so fighting never fights the camera.
     if (this.mode3d && this.renderer3d) {
       const p = this.player;
       const mons = this.multiplayer.connected ? this.remoteMonsters : this.monsters;
-      let target = this.renderer3d.lookYaw;
-      let bestD = 500;
+      let engaged = null, bestD = 500;
       for (const m of mons) {
         if (m.dead) continue;
         const d = Math.hypot(m.x - p.x, m.y - p.y);
         if (d > bestD) continue;
-        if (m.target === p || m.aggroTimer > 0 || d < 180) { bestD = d; target = Math.atan2(m.y - p.y, m.x - p.x); }
+        if (m.target === p || m.aggroTimer > 0 || d < 180) { bestD = d; engaged = m; }
       }
-      let diff = target - p.facing;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      p.facing += diff * Math.min(1, dt * 10);
+      if (engaged) {
+        const target = Math.atan2(engaged.y - p.y, engaged.x - p.x);
+        let diff = target - p.facing;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        p.facing += diff * Math.min(1, dt * 12);
+      } else {
+        p.facing = this.renderer3d.lookYaw; // lock body to camera (instant)
+      }
     }
     this.combat.update(dt);
     this.activeSkills.update(dt);

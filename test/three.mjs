@@ -88,20 +88,20 @@ game.player.facing = 0;  // facing east
 r3.lookYaw = 0; r3.lookPitch = 0.2;
 game.input.dirVector = () => ({ x: 0, y: -1 }); // W
 let d = r3.cameraDirVector();
-console.log('W (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
+console.log('W (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈1, y≈0 = east)');
 if (Math.abs(d.x - 1) > 0.01 || Math.abs(d.y) > 0.01) throw new Error('W not mapped to forward');
 
 game.input.dirVector = () => ({ x: 1, y: 0 }); // D
 d = r3.cameraDirVector();
-console.log('D (facing 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
+console.log('D (lookYaw 0) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south/right)');
 if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('D not mapped to camera-right');
 
 // turn to face south (π/2): W should now move south
-game.player.facing = Math.PI / 2;
+r3.lookYaw = Math.PI / 2;
 game.input.dirVector = () => ({ x: 0, y: -1 });
 d = r3.cameraDirVector();
-console.log('W (facing π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
-if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with facing');
+console.log('W (lookYaw π/2) ->', d.x.toFixed(2), d.y.toFixed(2), '(expect x≈0, y≈1 = south)');
+if (Math.abs(d.x) > 0.01 || Math.abs(d.y - 1) > 0.01) throw new Error('W not rotated with look direction');
 
 // facingAngle returns the look direction (mouse-look target)
 r3.lookYaw = 1.2;

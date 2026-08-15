@@ -661,7 +661,7 @@ export class World3DRenderer {
     // distance-cull tree chunks: only render trees near the player (the single
     // biggest 3D perf win — without this all ~100k trees draw every frame)
     if (this._treeChunks) {
-      const CULL_TREES = 6000;
+      const CULL_TREES = 4500;
       for (const c of this._treeChunks) {
         const dx = c.wx - px, dy = c.wy - py;
         const vis = (dx * dx + dy * dy) <= CULL_TREES * CULL_TREES;
@@ -670,13 +670,13 @@ export class World3DRenderer {
     }
 
     // ---- Minecraft-style third-person camera ----
-    // The camera sits at the player's level, behind their back, looking the same
-    // way they face. When the player FLIES, the camera rises with them; the
-    // vertical look (lookPitch) tilts the view up to the sky or down to the ground.
+    // The camera uses lookYaw DIRECTLY (instant, no easing) so the view responds
+    // to the mouse immediately — the "lag" people felt was the camera easing
+    // toward a slowly-turning facing. The player BODY still eases (in main.js).
     const pp = this._worldToLocal(px, py);
     const elev = g.player.altitude ? g.player.altitude * 3 : 0;
-    const facing = g.player.facing;
-    const fwdX = Math.cos(facing), fwdZ = Math.sin(facing);
+    const lookF = this.lookYaw;
+    const fwdX = Math.cos(lookF), fwdZ = Math.sin(lookF);
     const dist = this.distance;
     const shoulder = 46;
     const camX = pp.x - fwdX * dist;
@@ -930,10 +930,10 @@ export class World3DRenderer {
   }
 
   // ---- 3D controls: mouse-look + camera-relative movement ----
-  // unit vector in the direction the player FACES (world x/y), which equals the
-  // camera's look direction — used to rotate WASD into "camera space".
+  // unit vector in the camera's look direction (world x/y) — used to rotate WASD
+  // into "camera space". Uses lookYaw (instant), not the eased body facing.
   cameraForward() {
-    const f = this.game.player.facing;
+    const f = this.lookYaw;
     return { x: Math.cos(f), y: Math.sin(f) };
   }
 
@@ -992,8 +992,11 @@ export class World3DRenderer {
       const dx = mx - this._lastMx, dy = my - this._lastMy;
       this._lastMx = mx; this._lastMy = my;
       if (dx !== 0 || dy !== 0) {
-        this.lookYaw += dx * 0.0032;
-        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032);
+        // mouse RIGHT = look RIGHT, mouse LEFT = look LEFT (screen-matched).
+        // Note the "-dx": the camera is behind the player, so a rightward mouse
+        // swing must rotate the look direction the opposite sign to feel correct.
+        this.lookYaw -= dx * 0.0035;
+        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0035);
       }
     };
     const onWheel = (e) => {
