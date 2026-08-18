@@ -510,7 +510,7 @@ export class World3DRenderer {
 
     if (kind === 'player' || kind === 'npc') {
       // human figure — full body with gender-distinct build, face, clothing
-      return makeFigure({
+      const fig = makeFigure({
         gender: e.gender || 'neutral',
         skinTone: e.skinTone,
         hairColor: e.hairColor,
@@ -518,6 +518,22 @@ export class World3DRenderer {
         age: e.age,
         occupation: e.occupation
       });
+      if (kind !== 'player') return fig;
+      // Player only: wrap the figure in a group with a "pose" pivot (so the body
+      // can lie HORIZONTAL while flying) plus a pair of wings (visible only in
+      // flight). The outer group holds the yaw (rotation.y), the pose pivot holds
+      // the prone tilt (rotation.z), so the two don't fight each other.
+      const g = new THREE.Group();
+      const pose = new THREE.Group();
+      pose.add(fig);
+      const wingMat = new THREE.MeshStandardMaterial({ color: 0xf4f7fb, roughness: 0.55, side: THREE.DoubleSide });
+      this._addWings(pose, wingMat, 0.9);   // adds [left wing, right wing] to `pose`
+      g.add(pose);
+      g.userData.pose = pose;
+      g.userData.wings = [pose.children[1], pose.children[2]]; // left, right
+      g.userData.walk = fig.userData.walk;
+      g.userData.idle = fig.userData.idle;
+      return g;
     } else if (kind === 'slime') {
       const b = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 9), mat);
       b.scale.y = 0.6; b.position.y = 6; g.add(b);
@@ -652,6 +668,25 @@ export class World3DRenderer {
       else if (kind === 'bird') elev = 30;
       entry.group.position.set(p.x, elev, p.z);
       entry.group.rotation.y = -(e.facing || 0);
+      // Player flight: lie the body HORIZONTAL (Superman pose) + spread/flap the
+      // wings. Smooth tilt each frame so takeoff/landing looks natural.
+      if (e.isPlayer) {
+        const flying = !!e.flying;
+        const pose = entry.group.userData.pose;
+        if (pose) {
+          const target = flying ? -Math.PI / 2 : 0; // -Z tips the head forward (prone)
+          pose.rotation.z += (target - pose.rotation.z) * 0.3;
+        }
+        const wings = entry.group.userData.wings;
+        if (wings) {
+          for (const w of wings) w.visible = flying;
+          if (flying) {
+            const f = Math.sin(performance.now() * 0.012) * 0.4;
+            wings[0].rotation.z = 0.25 + f;   // left wing: spread + flap
+            wings[1].rotation.z = -0.25 - f;  // right wing: mirrored flap
+          }
+        }
+      }
       // walking animation (swing arms/legs) for humans that are moving
       if (entry.group.userData && entry.group.userData.walk) {
         const moving = e.isPlayer ? e.moving : (e.targetPos != null);
