@@ -61,6 +61,11 @@ export class World3DRenderer {
     // swings behind). lookYaw/lookPitch stay the player's true facing.
     this._camYaw = 0;
     this._camPitch = 0.15;
+    // input targets: the mouse/A-D keys write here, and lookYaw/lookPitch ease
+    // toward them each frame. This low-passes the mouse so the view is STABLE
+    // (jitter is damped) while staying responsive (fast time constant).
+    this._targetYaw = 0;
+    this._targetPitch = 0.15;
     // look settings (loaded from the saved settings)
     this.lookSens = 1.0;   // mouse sensitivity multiplier (0.3 .. 2.5)
     this.invertX = false;  // flip horizontal look
@@ -520,17 +525,24 @@ export class World3DRenderer {
       });
       if (kind !== 'player') return fig;
       // Player only: wrap the figure in a group with a "pose" pivot (so the body
-      // can lie HORIZONTAL while flying) plus a pair of wings (visible only in
-      // flight). The outer group holds the yaw (rotation.y), the pose pivot holds
-      // the prone tilt (rotation.z), so the two don't fight each other.
+      // can lie HORIZONTAL while flying) plus a soft ground shadow. The outer
+      // group holds the yaw (rotation.y), the pose pivot holds the prone tilt
+      // (rotation.z), so the two don't fight each other.
       const g = new THREE.Group();
       const pose = new THREE.Group();
       pose.add(fig);
-      const wingMat = new THREE.MeshStandardMaterial({ color: 0xf4f7fb, roughness: 0.55, side: THREE.DoubleSide });
-      this._addWings(pose, wingMat, 0.9);   // adds [left wing, right wing] to `pose`
       g.add(pose);
+      // soft shadow on the ground under the player (stays on the floor even while
+      // flying — its local Y is pushed down by the flight altitude each frame)
+      const shadow = new THREE.Mesh(
+        new THREE.CircleGeometry(15, 20),
+        new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false })
+      );
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = -0.1;
+      g.add(shadow);
       g.userData.pose = pose;
-      g.userData.wings = [pose.children[1], pose.children[2]]; // left, right
+      g.userData.shadow = shadow;
       g.userData.walk = fig.userData.walk;
       g.userData.idle = fig.userData.idle;
       return g;
@@ -668,24 +680,20 @@ export class World3DRenderer {
       else if (kind === 'bird') elev = 30;
       entry.group.position.set(p.x, elev, p.z);
       entry.group.rotation.y = -(e.facing || 0);
-      // Player flight: lie the body HORIZONTAL (Superman pose) + spread/flap the
-      // wings. Smooth tilt each frame so takeoff/landing looks natural.
+      // Player flight: lie the body HORIZONTAL (prone glide) and tilt with the
+      // look direction so climbing/diving looks natural. Smooth each frame so
+      // takeoff/landing eases in. The ground shadow stays on the floor.
       if (e.isPlayer) {
         const flying = !!e.flying;
         const pose = entry.group.userData.pose;
         if (pose) {
-          const target = flying ? -Math.PI / 2 : 0; // -Z tips the head forward (prone)
+          // -Z tips the head forward (prone); add a little pitch so looking up
+          // noses the flyer up (climb) and looking down noses it down (dive).
+          const target = flying ? (-Math.PI / 2 + this.lookPitch * 0.5) : 0;
           pose.rotation.z += (target - pose.rotation.z) * 0.3;
         }
-        const wings = entry.group.userData.wings;
-        if (wings) {
-          for (const w of wings) w.visible = flying;
-          if (flying) {
-            const f = Math.sin(performance.now() * 0.012) * 0.4;
-            wings[0].rotation.z = 0.25 + f;   // left wing: spread + flap
-            wings[1].rotation.z = -0.25 - f;  // right wing: mirrored flap
-          }
-        }
+        const shadow = entry.group.userData.shadow;
+        if (shadow) shadow.position.y = -elev - 0.1; // pinned to the ground below
       }
       // walking animation (swing arms/legs) for humans that are moving
       if (entry.group.userData && entry.group.userData.walk) {
@@ -1038,9 +1046,13 @@ export class World3DRenderer {
     return { x: F.x * -raw.y, y: F.y * -raw.y };
   }
 
-  // Smoothly swing the camera toward the player's facing. A small lag makes the
-  // turn visible (frame-rate independent via exponential smoothing).
+  // Smooth the facing toward the input target (mouse/A-D), then swing the camera
+  // toward the facing. Two fast, frame-rate-independent eases: the first damps
+  // mouse jitter for a STABLE view, the second makes the player's turn VISIBLE.
   updateCameraFollow(dt) {
+    const kFace = 1 - Math.exp(-dt * 22);
+    this.lookYaw += (this._targetYaw - this.lookYaw) * kFace;
+    this.lookPitch += (this._targetPitch - this.lookPitch) * kFace;
     const k = 1 - Math.exp(-dt * 10);
     this._camYaw += (this.lookYaw - this._camYaw) * k;
     this._camPitch += (this.lookPitch - this._camPitch) * k;
@@ -1095,20 +1107,21 @@ export class World3DRenderer {
       if (uiBlocked()) return; // don't rotate the view while a popup is open
 
       // Drag mouse-look: rotate by how far the mouse MOVED (not where it is).
-      // INVERTED by request: mouse moves RIGHT → view turns LEFT, and vice-versa.
-      // Mouse STOPS → view stops. This can never spin on its own (no feedback
-      // loop). Vertical is normal (mouse up = look up).
+      // STANDARD direction: mouse RIGHT → view turns RIGHT, mouse LEFT → left,
+      // mouse UP → look up. Mouse STOPS → view stops. This can never spin on its
+      // own (no feedback loop). The deltas write to the smoothed target so the
+      // view stays stable (see updateCameraFollow).
       const dx = e.movementX ?? 0;
       const dy = e.movementY ?? 0;
       if (dx !== 0 || dy !== 0) {
         const s = this.lookSens;
-        this.lookYaw += dx * 0.0032 * s;                          // right = turn left
-        this.lookPitch = clampPitch(this.lookPitch - dy * 0.0032 * s); // up = look up
+        this._targetYaw -= dx * 0.0032 * s;                          // right = turn right
+        this._targetPitch = clampPitch(this._targetPitch - dy * 0.0032 * s); // up = look up
       }
     };
     const onWheel = (e) => {
       if (uiBlocked()) return; // let the popup scroll its own content
-      this.lookPitch = clampPitch(this.lookPitch + (e.deltaY < 0 ? 0.09 : -0.09));
+      this._targetPitch = clampPitch(this._targetPitch + (e.deltaY < 0 ? 0.09 : -0.09));
       e.preventDefault();
     };
     window.addEventListener('mousedown', onDown);
