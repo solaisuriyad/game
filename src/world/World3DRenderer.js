@@ -1107,16 +1107,15 @@ export class World3DRenderer {
       if (uiBlocked()) return; // don't rotate the view while a popup is open
 
       // Drag mouse-look: rotate by how far the mouse MOVED (not where it is).
-      // STANDARD direction: mouse RIGHT → view turns RIGHT, mouse LEFT → left,
-      // mouse UP → look up. Mouse STOPS → view stops. This can never spin on its
-      // own (no feedback loop). The deltas write to the smoothed target so the
-      // view stays stable (see updateCameraFollow).
+      // STANDARD direction: mouse RIGHT → view turns RIGHT, mouse LEFT → left.
+      // The mouse turns SIDEWAYS ONLY (yaw) — up/down (pitch) is handled by the
+      // scroll wheel. Mouse STOPS → view stops. This can never spin on its own
+      // (no feedback loop). Deltas write to the smoothed target so the view stays
+      // stable (see updateCameraFollow).
       const dx = e.movementX ?? 0;
-      const dy = e.movementY ?? 0;
-      if (dx !== 0 || dy !== 0) {
+      if (dx !== 0) {
         const s = this.lookSens;
-        this._targetYaw -= dx * 0.0032 * s;                          // right = turn right
-        this._targetPitch = clampPitch(this._targetPitch - dy * 0.0032 * s); // up = look up
+        this._targetYaw -= dx * 0.0032 * s; // right = turn right (sideways only)
       }
     };
     const onWheel = (e) => {
