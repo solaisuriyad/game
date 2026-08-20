@@ -1107,7 +1107,7 @@ export class World3DRenderer {
       if (uiBlocked()) return; // don't rotate the view while a popup is open
 
       // Drag mouse-look: rotate by how far the mouse MOVED (not where it is).
-      // STANDARD direction: mouse RIGHT → view turns RIGHT, mouse LEFT → left.
+      // INVERTED sideways: mouse RIGHT → view turns LEFT, mouse LEFT → right.
       // The mouse turns SIDEWAYS ONLY (yaw) — up/down (pitch) is handled by the
       // scroll wheel. Mouse STOPS → view stops. This can never spin on its own
       // (no feedback loop). Deltas write to the smoothed target so the view stays
@@ -1115,7 +1115,7 @@ export class World3DRenderer {
       const dx = e.movementX ?? 0;
       if (dx !== 0) {
         const s = this.lookSens;
-        this._targetYaw -= dx * 0.0032 * s; // right = turn right (sideways only)
+        this._targetYaw += dx * 0.0032 * s; // right = turn left (inverted)
       }
     };
     const onWheel = (e) => {
