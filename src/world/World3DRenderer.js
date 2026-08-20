@@ -622,6 +622,48 @@ export class World3DRenderer {
       body.position.y = 10; g.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(5, 8, 6), mat);
       head.position.y = 20; g.add(head);
+    } else if (kind === 'skeleton') {
+      // upright skeleton: bone-white, hollow-eyed skull, exposed ribcage, bony
+      // limbs. Built from thin bones so it reads as a skeleton (not a solid blob).
+      const bone = mat;                              // already bone-white (#d8d0c0)
+      const dark = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 1 });
+      // ribcage: stacked horizontal ribs across the chest (left/right = ±Z)
+      for (let i = 0; i < 4; i++) {
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.4, 6), bone);
+        rib.position.y = 9 + i * 2.2; g.add(rib);
+      }
+      // spine + pelvis
+      const spine = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 13, 6), bone);
+      spine.position.y = 12; g.add(spine);
+      const pelvis = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 4.5), bone);
+      pelvis.position.y = 5; g.add(pelvis);
+      // legs (thigh + shin bones) + feet, on the left/right (±Z)
+      for (const sgn of [-1, 1]) {
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.3, 6, 5), bone);
+        thigh.position.set(0, 4, sgn * 1.5); g.add(thigh);
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.1, 5, 5), bone);
+        shin.position.set(0, 1, sgn * 1.5); g.add(shin);
+        // arms (upper arm + forearm) hanging at the sides
+        const upArm = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 6, 5), bone);
+        upArm.position.set(0, 12.5, sgn * 3.6); upArm.rotation.x = -sgn * 0.25; g.add(upArm);
+        const foreArm = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 5, 5), bone);
+        foreArm.position.set(0, 9, sgn * 4.4); g.add(foreArm);
+      }
+      // skull (forward = +X, matching the other models' `rotation.y = -facing`)
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(4.2, 10, 8), bone);
+      skull.position.y = 21.5; g.add(skull);
+      // hollow eye sockets (dark, set into the front of the skull)
+      for (const sgn of [-1, 1]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(1.15, 6, 6), dark);
+        eye.position.set(3.1, 22, sgn * 1.6); g.add(eye);
+      }
+      // jaw with teeth
+      const jaw = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.5, 2.6), bone);
+      jaw.position.set(3.4, 19.2, 0); g.add(jaw);
+      for (let i = 0; i < 3; i++) {
+        const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.4), bone);
+        tooth.position.set(4.6, 19.9, (i - 1) * 0.7); g.add(tooth);
+      }
     } else {
       // generic beast / animals (rabbit, deer, boar, goat, bear…) — quadruped
       const b = new THREE.Mesh(new THREE.CapsuleGeometry(5, 10, 4, 8), mat);
@@ -651,7 +693,8 @@ export class World3DRenderer {
     if (m.family === 'wolf') return 'wolf';
     if (m.family === 'dragon') return 'dragon';
     if (m.family === 'dragonoid') return 'dragonoid';
-    if (m.family === 'goblin' || m.family === 'undead') return 'goblin';
+    if (m.family === 'goblin') return 'goblin';
+    if (m.family === 'undead') return 'skeleton';
     return 'beast';
   }
   _kindForAnimal(a) { return a.def && a.def.id === 'bird' ? 'bird' : 'beast'; }
@@ -1212,23 +1255,36 @@ export class World3DRenderer {
     }
   }
 
-  // name + rank labels floating above monsters and NPCs (projected from 3D)
+  // name + rank labels floating above monsters and NPCs (projected from 3D).
+  // PROXIMITY-BASED: a name appears only when the player is close to that
+  // entity. NPCs show at a tight radius (you've "entered" their space); monsters
+  // a little farther out (bigger threats). A hard cap keeps the village/forest
+  // from becoming a wall of text, which also costs frames on low-end machines.
   _drawNameLabels(ctx) {
     const g = this.game;
     const W = this.hudCanvas.width, H = this.hudCanvas.height;
     const px = g.player.x, py = g.player.y;
 
-    // gather nearby labelable entities
+    const NPC_R = 300;   // NPC names: only when you're right next to them
+    const MON_R = 700;   // monster names: a bit farther out
+    const MAX_LABELS = 30;
+
+    // gather nearby labelable entities (with distance, so we can cap nearest-first)
     const list = [];
     const mons = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
     for (const m of mons) {
       if (m.dead) continue;
-      if (Math.hypot(m.x - px, m.y - py) <= 1200) list.push({ name: m.name, rank: m.rank, boss: m.boss, x: m.x, y: m.y, yOff: 46 });
+      const d = Math.hypot(m.x - px, m.y - py);
+      if (d <= MON_R) list.push({ name: m.name, rank: m.rank, boss: m.boss, x: m.x, y: m.y, yOff: 46, d });
     }
     for (const n of g.npcs) {
-      if (Math.hypot(n.x - px, n.y - py) <= 1200) list.push({ name: n.name, rank: null, boss: false, x: n.x, y: n.y, yOff: 40 });
+      const d = Math.hypot(n.x - px, n.y - py);
+      if (d <= NPC_R) list.push({ name: n.name, rank: null, boss: false, x: n.x, y: n.y, yOff: 40, d });
     }
     if (!list.length) return;
+    // nearest first, then cap the total (avoids clutter + overdraw)
+    list.sort((a, b) => a.d - b.d);
+    if (list.length > MAX_LABELS) list.length = MAX_LABELS;
 
     const RANK_COLORS = { 'F': '#c8c8c8', 'E': '#7ac87a', 'D': '#7ac8e0', 'C': '#5a9ae0', 'B': '#a05ae0', 'A': '#e07a5a', 'S': '#ffd76a', 'A+': '#ff5ae0' };
 
