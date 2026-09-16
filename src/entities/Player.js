@@ -146,11 +146,18 @@ export class Player extends Entity {
 
   update(dt, game) {
     this.tickStatuses(dt, game);
-    // face the mouse
+    // face the mouse (desktop) or movement dir (mobile joystick)
     const cam = game.camera;
     const ms = game.input.mouse;
-    const wx = cam.x + ms.x, wy = cam.y + ms.y;
-    this.facing = Math.atan2(wy - this.y, wx - this.x);
+    // if mobile joystick is active and we're in 2D, face movement direction
+    const v = game.input._virtual;
+    const hasVirtual = v && (Math.abs(v.x) > 0.1 || Math.abs(v.y) > 0.1);
+    if (!game.mode3d && hasVirtual) {
+      this.facing = Math.atan2(v.y, v.x);
+    } else {
+      const wx = cam.x + ms.x, wy = cam.y + ms.y;
+      this.facing = Math.atan2(wy - this.y, wx - this.x);
+    }
 
     const dir = game._dirFn ? game._dirFn() : game.input.dirVector();
     const moving = dir.x !== 0 || dir.y !== 0;

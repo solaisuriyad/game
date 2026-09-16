@@ -46,6 +46,7 @@ import { BuildingInterior } from './ui/BuildingInterior.js';
 import { ChatUI } from './ui/ChatUI.js';
 import { World3DRenderer } from './world/World3DRenderer.js';
 import { Interior3DRenderer } from './world/Interior3DRenderer.js';
+import { MobileControls } from './ui/MobileControls.js';
 import { ITEM_DB, WEAPON_DB, ARMOR_DB, getItem } from './data/index.js';
 import { ABILITIES } from './data/abilities.js';
 import { RANKS } from './data/quests.js';
@@ -111,6 +112,10 @@ class Game {
     this.ui = new MenuManager(this);
     this.buildingInterior = new BuildingInterior(this);
     this.chat = new ChatUI(this);
+    // mobile controls (touch joysticks) — auto-detects phones/tablets or ?mobile=1
+    try { this.mobileControls = new MobileControls(this); } catch (e) { this.mobileControls = null; }
+    this._mobileSprint = false;
+    this._mobileFlyRequested = false;
 
     // experimental 3D view (opt-in via ?3d=1). The normal 2D renderer stays the
     // default; 3D reuses the same world/entities and is gated so it can't break
@@ -347,6 +352,15 @@ class Game {
 
     this.time.update(dt);
     this.weather.update(dt);
+    // mobile joysticks update (must run before A/D turn so it can add to _targetYaw)
+    if (this.mobileControls) {
+      try { this.mobileControls.update(dt); } catch (e) {}
+      // mobile fly button sets a flag if Input inject failed
+      if (this._mobileFlyRequested) {
+        this._mobileFlyRequested = false;
+        try { this.input._injectPressed('x'); } catch (e) {}
+      }
+    }
     // 3D mode: A/D TURN the player left/right (so the side you turn to becomes
     // your new "front"), and the mouse drag-looks (move mouse → turn, stop →
     // stop). Keys + mouse both write to the smoothed target, which lookYaw eases

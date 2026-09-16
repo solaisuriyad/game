@@ -1,0 +1,18 @@
+{
+  "name": "Verdant Hollow",
+  "short_name": "Verdant Hollow",
+  "description": "Open-world hunting/survival/adventure RPG — 3D mobile version",
+  "start_url": "/?3d=1&mobile=1",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#10141a",
+  "theme_color": "#10141a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' fill='%2310141a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='180' fill='%23ffd76a'%3E🌳%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

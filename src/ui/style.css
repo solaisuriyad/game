@@ -65,3 +65,25 @@ kbd { background: #2a2118; border: 1px solid #6a4a2a; border-radius: 3px; paddin
 .settings-btn:hover { background: rgba(60,48,32,.9); }
 
 input.vol { width: 100%; margin: 4px 0 8px; cursor: pointer; accent-color: #c8a040; }
+
+/* ---- mobile responsive ---- */
+@media (max-width: 900px) {
+  .panel { min-width: 92vw; max-width: 96vw; max-height: 90vh; }
+  .dialogue { min-width: 92vw; max-width: 96vw; }
+  .grid2 { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  .title-screen h1 { font-size: 28px; }
+  .title-form input { width: 90vw; max-width: 300px; }
+  .settings-btn { top: auto; bottom: 200px; right: 10px; }
+}
+@media (max-width: 600px) {
+  #ui-root { align-items: flex-start; padding-top: 6vh; }
+  .panel-body { padding: 8px 10px; }
+  .stats { grid-template-columns: 1fr 1fr; font-size: 11px; }
+  .map-canvas { height: 60vh; }
+}
+
+/* hide desktop hint on mobile */
+@media (pointer: coarse) {
+  #game3d-hint { display: none !important; }
+}

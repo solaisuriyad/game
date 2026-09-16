@@ -8,7 +8,13 @@ import * as THREE from '../../vendor/three.module.js';
 import { TILE, PX_W, PX_H, VILLAGE_CX, VILLAGE_CY, SNOW_X0, SNOW_X1, SNOW_Y0, SNOW_Y1, isSnowRegion } from './WorldSystem.js';
 import { makeFigure } from './Figure3D.js';
 // only render entities within this world-pixel radius of the player (perf)
+// mobile uses tighter cull for performance
 const CULL = 2600;
+const CULL_MOBILE = 1800;
+const CULL_TREES = 4500;
+const CULL_TREES_MOBILE = 3000;
+const CULL_FX = 1800;
+const CULL_FX_MOBILE = 1200;
 
 // shared low-poly materials / geometries (built once, reused)
 let _shared = null;
@@ -42,6 +48,17 @@ function shared() {
 export class World3DRenderer {
   constructor(game) {
     this.game = game;
+    this._isMobile = false;
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get('mobile') === '1' || qs.get('m') === '1') this._isMobile = true;
+      else if (typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) this._isMobile = true;
+      else if (typeof window !== 'undefined' && window.innerWidth <= 800 && 'ontouchstart' in window) this._isMobile = true;
+    } catch (e) {}
+    this._cull = this._isMobile ? CULL_MOBILE : CULL;
+    this._cullTrees = this._isMobile ? CULL_TREES_MOBILE : CULL_TREES;
+    this._cullFx = this._isMobile ? CULL_FX_MOBILE : CULL_FX;
+
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87b5d8); // sky blue
     this.scene.fog = new THREE.Fog(0x87b5d8, 4000, 20000);
@@ -744,23 +761,23 @@ export class World3DRenderer {
         if (moving) entry.group.userData.walk(performance.now() * 0.008);
         else entry.group.userData.idle();
       }
-      entry.group.visible = Math.hypot(e.x - px, e.y - py) <= CULL;
+      entry.group.visible = Math.hypot(e.x - px, e.y - py) <= this._cull;
     };
 
     // player
     place(g.player, 'player', g.player.clothColor);
 
     // NPCs, monsters, animals (all within cull radius for perf)
-    for (const n of g.npcs) if (Math.hypot(n.x - px, n.y - py) <= CULL) place(n, 'npc', n.clothColor);
+    for (const n of g.npcs) if (Math.hypot(n.x - px, n.y - py) <= this._cull) place(n, 'npc', n.clothColor);
     const mons = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
     for (const m of mons) {
       if (m.dead) continue;
-      if (Math.hypot(m.x - px, m.y - py) <= CULL) place(m, this._kindForMonster(m), m.color);
+      if (Math.hypot(m.x - px, m.y - py) <= this._cull) place(m, this._kindForMonster(m), m.color);
     }
     const animals = g.multiplayer.connected ? g.remoteAnimals : g.animals;
     for (const a of animals) {
       if (a.dead) continue;
-      if (Math.hypot(a.x - px, a.y - py) <= CULL) place(a, this._kindForAnimal(a), a.color);
+      if (Math.hypot(a.x - px, a.y - py) <= this._cull) place(a, this._kindForAnimal(a), a.color);
     }
 
     // remove meshes for entities that no longer exist
@@ -784,10 +801,10 @@ export class World3DRenderer {
     // distance-cull tree chunks: only render trees near the player (the single
     // biggest 3D perf win — without this all ~100k trees draw every frame)
     if (this._treeChunks) {
-      const CULL_TREES = 4500;
+      const CT = this._cullTrees;
       for (const c of this._treeChunks) {
         const dx = c.wx - px, dy = c.wy - py;
-        const vis = (dx * dx + dy * dy) <= CULL_TREES * CULL_TREES;
+        const vis = (dx * dx + dy * dy) <= CT * CT;
         for (const m of c.meshes) m.visible = vis;
       }
     }
@@ -997,12 +1014,12 @@ export class World3DRenderer {
     const F = this._fx;
     // clear
     for (const c of [...this.fxRoot.children]) this.fxRoot.remove(c);
-    const CULL_FX = 1800;
+    const CFX = this._cullFx;
 
     const add = (mesh, wx, wy, elev = 0) => {
       const p = this._worldToLocal(wx, wy);
       mesh.position.set(p.x, elev, p.z);
-      if (Math.hypot(wx - px, wy - py) <= CULL_FX) this.fxRoot.add(mesh);
+      if (Math.hypot(wx - px, wy - py) <= CFX) this.fxRoot.add(mesh);
     };
 
     // arrows / rocks / webs (flying projectiles)
@@ -1015,7 +1032,7 @@ export class World3DRenderer {
         m.position.set(p.x, elev, p.z);
         // point the arrow along its velocity (vx east, vy south→+z)
         m.rotation.y = -Math.atan2(pr.vy, pr.vx);
-        if (Math.hypot(pr.x - px, pr.y - py) <= CULL_FX) this.fxRoot.add(m);
+        if (Math.hypot(pr.x - px, pr.y - py) <= CFX) this.fxRoot.add(m);
       } else {
         const m = new THREE.Mesh(F.orb, pr.kind === 'web' ? F.webMat : F.rockMat);
         add(m, pr.x, pr.y, elev);
@@ -1184,9 +1201,12 @@ export class World3DRenderer {
     canvas.id = 'game3d';
     canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:1;';
     document.body.appendChild(canvas);
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    // cap the pixel ratio — rendering at 2x on a large screen is a big perf cost
-    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this._isMobile, powerPreference: 'high-performance' });
+    // cap the pixel ratio — mobile gets lower res for performance
+    const maxRatio = this._isMobile ? 1.0 : 1.5;
+    const minRatio = this._isMobile ? 0.8 : 1.0;
+    const dpr = window.devicePixelRatio || 1;
+    this.renderer.setPixelRatio(Math.max(minRatio, Math.min(maxRatio, dpr)));
 
     // a transparent 2D canvas ABOVE the 3D scene for the HUD (health bars, gold,
     // minimap, prompts…). pointer-events:none so it never blocks mouse aiming.
