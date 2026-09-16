@@ -3,3 +3,7 @@
 /data/
 node_modules/
 *.log
+www/
+android/app/build/
+android/.gradle/
+android/app/src/main/assets/public/

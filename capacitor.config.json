@@ -1,0 +1,15 @@
+{
+  "appId": "com.verdanthollow.game",
+  "appName": "Verdant Hollow",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#10141a"
+    }
+  }
+}

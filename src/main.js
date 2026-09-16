@@ -120,8 +120,18 @@ class Game {
     // experimental 3D view (opt-in via ?3d=1). The normal 2D renderer stays the
     // default; 3D reuses the same world/entities and is gated so it can't break
     // the base game.
+    // For APK (Capacitor) we default to 3D + mobile.
     this.mode3d = false;
-    try { this.mode3d = new URLSearchParams(window.location.search).get('3d') === '1'; } catch (e) {}
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get('3d') === '1') this.mode3d = true;
+      else {
+        // APK / Capacitor build: default to 3D
+        const isCap = (typeof window !== 'undefined' && (window.Capacitor || window.location.protocol === 'capacitor:' || window.location.protocol === 'file:'));
+        if (isCap) this.mode3d = true;
+        else if (qs.get('mobile') === '1' || qs.get('m') === '1') this.mode3d = true; // mobile browser default to 3D
+      }
+    } catch (e) {}
     if (this.mode3d) {
       try {
         this.renderer3d = new World3DRenderer(this);
