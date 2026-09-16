@@ -40,9 +40,67 @@ function shared() {
     monster: new THREE.MeshStandardMaterial({ color: 0xc05050, roughness: 1 }),
     boss: new THREE.MeshStandardMaterial({ color: 0xffd76a, roughness: 0.4, emissive: 0x443300 }),
     dragon: new THREE.MeshStandardMaterial({ color: 0xff5a30, roughness: 0.5 }),
-    playerGlow: new THREE.MeshBasicMaterial({ color: 0xffd76a })
+    playerGlow: new THREE.MeshBasicMaterial({ color: 0xffd76a }),
+    // realistic building materials
+    plaster: new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.9 }),
+    plasterDark: new THREE.MeshStandardMaterial({ color: 0xd0c0a8, roughness: 0.9 }),
+    brick: new THREE.MeshStandardMaterial({ color: 0x8a4a3a, roughness: 0.85 }),
+    brickDark: new THREE.MeshStandardMaterial({ color: 0x5a2a1a, roughness: 0.9 }),
+    stoneWall: new THREE.MeshStandardMaterial({ color: 0x9a9a8a, roughness: 0.9 }),
+    stoneDark: new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 1 }),
+    wood: new THREE.MeshStandardMaterial({ color: 0x6a4a2a, roughness: 0.8 }),
+    woodDark: new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.85 }),
+    woodLight: new THREE.MeshStandardMaterial({ color: 0x8a6a4a, roughness: 0.8 }),
+    foundation: new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 1 }),
+    roofTile: new THREE.MeshStandardMaterial({ color: 0x8a3a2a, roughness: 0.7 }),
+    roofTileDark: new THREE.MeshStandardMaterial({ color: 0x3a3a4a, roughness: 0.7 }),
+    roofThatch: new THREE.MeshStandardMaterial({ color: 0xc8a85a, roughness: 1 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x88c8e0, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.55 }),
+    glassLit: new THREE.MeshStandardMaterial({ color: 0xffd88a, emissive: 0xffc85a, emissiveIntensity: 0.25, roughness: 0.4 }),
+    doorWood: new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.8 }),
+    chimneyBrick: new THREE.MeshStandardMaterial({ color: 0x6a3a2a, roughness: 0.9 }),
+    signWood: new THREE.MeshStandardMaterial({ color: 0x8a6a3a, roughness: 0.8 }),
+    metal: new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.4, metalness: 0.5 })
   };
   return _shared;
+}
+
+// create a gable roof geometry (pitched roof with ridge along X axis)
+// w = width (X), d = depth (Z), h = roof height (Y)
+function createGableRoof(w, d, h) {
+  const w2 = w / 2, d2 = d / 2;
+  // 14 vertices: 4 front slope, 4 back slope, 3 left gable, 3 right gable
+  const pos = new Float32Array([
+    // front slope quad
+    -w2, 0, -d2,
+     w2, 0, -d2,
+     w2, h, 0,
+    -w2, h, 0,
+    // back slope quad
+    -w2, h, 0,
+     w2, h, 0,
+     w2, 0, d2,
+    -w2, 0, d2,
+    // left gable triangle
+    -w2, 0, -d2,
+    -w2, h, 0,
+    -w2, 0, d2,
+    // right gable triangle
+     w2, 0, -d2,
+     w2, 0, d2,
+     w2, h, 0,
+  ]);
+  const idx = [
+    0,1,2, 0,2,3,
+    4,5,6, 4,6,7,
+    8,9,10,
+    11,12,13
+  ];
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
 }
 
 export class World3DRenderer {
@@ -454,13 +512,235 @@ export class World3DRenderer {
     const S = shared();
     const bd = b.building;
     const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(b.w, 26, b.h), S.wall);
-    body.position.y = 13;
-    g.add(body);
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(b.w + 4, 6, b.h + 4), new THREE.MeshStandardMaterial({ color: parseInt(bd.color.slice(1), 16), roughness: 1 }));
-    roof.position.y = 29;
-    g.add(roof);
-    g.position.set(b.x + b.w / 2 - PX_W / 2, 0, b.y + b.h / 2 - PX_H / 2);
+    const W = b.w; // width in world px (e.g. 96 for 3 tiles)
+    const D = b.h; // depth
+    const func = bd.func;
+
+    // ---- determine realistic style by func ----
+    const isHouse = func === 'house' || func === 'home';
+    const isShop = ['general','foodshop','weaponshop','armorshop','market','gearshop','healer','tailor','carpenter','blacksmith','herbalist','crafting'].includes(func);
+    const isTavern = func === 'tavern' || func === 'inn' || func === 'lodge';
+    const isGuild = func === 'guild' || func === 'community' || func === 'chief' || func === 'training';
+    const isTemple = func === 'temple' || func === 'shrine';
+    const isTower = func === 'watchtower' || func === 'guard';
+    const isStorage = func === 'storage' || func === 'stable';
+    const isWell = func === 'well';
+    const isSchool = func === 'school' || func === 'healing';
+
+    // base heights
+    let wallH = 26;
+    if (isHouse) wallH = 24 + Math.min(8, W * 0.05);
+    if (isShop) wallH = 28;
+    if (isTavern) wallH = 42; // two stories
+    if (isGuild) wallH = 32;
+    if (isTemple) wallH = 36;
+    if (isTower) wallH = 56;
+    if (isSchool) wallH = 30;
+    if (isWell) wallH = 0; // special
+
+    // special well
+    if (isWell) {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(W * 0.45, W * 0.5, 8, 12), S.stoneWall);
+      base.position.y = 4; g.add(base);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(W * 0.45, 2, 6, 16), S.stoneDark);
+      rim.rotation.x = Math.PI/2; rim.position.y = 8; g.add(rim);
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(W * 0.7, 14, 6), S.woodDark);
+      roof.position.y = 18; g.add(roof);
+      const postGeo = new THREE.BoxGeometry(2, 14, 2);
+      for (const sgn of [-1,1]) {
+        const post = new THREE.Mesh(postGeo, S.wood);
+        post.position.set(sgn * W * 0.35, 10, 0); g.add(post);
+      }
+      g.position.set(b.x + W / 2 - PX_W / 2, 0, b.y + D / 2 - PX_H / 2);
+      return g;
+    }
+
+    // foundation
+    const found = new THREE.Mesh(new THREE.BoxGeometry(W + 6, 4, D + 6), S.foundation);
+    found.position.y = 2; g.add(found);
+
+    // wall material by type
+    let wallMat = S.plaster;
+    let wallMat2 = S.plasterDark;
+    if (isHouse) { wallMat = S.plaster; wallMat2 = S.woodLight; }
+    if (func === 'blacksmith') { wallMat = S.stoneWall; wallMat2 = S.brickDark; }
+    if (func === 'carpenter' || func === 'tailor') { wallMat = S.woodLight; wallMat2 = S.wood; }
+    if (isShop) { wallMat = S.plaster; wallMat2 = S.wood; }
+    if (isTavern) { wallMat = S.woodLight; wallMat2 = S.woodDark; }
+    if (isGuild) { wallMat = S.stoneWall; wallMat2 = S.plasterDark; }
+    if (isTemple) { wallMat = S.stoneWall; wallMat2 = S.stoneDark; }
+    if (isTower) { wallMat = S.stoneWall; wallMat2 = S.stoneDark; }
+    if (func === 'storage' || func === 'stable') { wallMat = S.wood; wallMat2 = S.woodDark; }
+
+    // main walls
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(W, wallH, D), wallMat);
+    walls.position.y = 4 + wallH / 2;
+    g.add(walls);
+
+    // second floor for tavern/inn
+    if (isTavern) {
+      const floor2 = new THREE.Mesh(new THREE.BoxGeometry(W + 2, 16, D + 2), wallMat2);
+      floor2.position.y = 4 + wallH - 4;
+      g.add(floor2);
+      // balcony
+      const bal = new THREE.Mesh(new THREE.BoxGeometry(W * 0.7, 2, 12), S.wood);
+      bal.position.set(0, 4 + wallH - 12, D / 2 + 6);
+      g.add(bal);
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(W * 0.7, 6, 1), S.woodDark);
+      rail.position.set(0, 4 + wallH - 8, D / 2 + 12);
+      g.add(rail);
+    }
+
+    // roof — realistic gable roof with overhang
+    let roofH = 14;
+    if (isHouse) roofH = 12 + W * 0.08;
+    if (isShop) roofH = 14;
+    if (isTavern) roofH = 18;
+    if (isGuild) roofH = 16;
+    if (isTemple) roofH = 22;
+    if (isTower) roofH = 10;
+    if (func === 'storage') roofH = 10;
+
+    let roofMat = S.roofTile;
+    try { const c = parseInt(bd.color.slice(1), 16); roofMat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); } catch (e) {}
+    if (func === 'temple') roofMat = S.roofTileDark;
+    if (isHouse && W < 100) roofMat = S.roofThatch; // small houses thatch
+    if (isTower) roofMat = S.roofTileDark;
+
+    if (isTower) {
+      // tower roof cone + crenellations
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(Math.max(W,D) * 0.6, roofH, 8), roofMat);
+      cone.position.y = 4 + wallH + roofH / 2;
+      g.add(cone);
+      // crenellations
+      const crenGeo = new THREE.BoxGeometry(4, 6, 4);
+      const r = Math.max(W,D) * 0.5;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const cren = new THREE.Mesh(crenGeo, S.stoneWall);
+        cren.position.set(Math.cos(a) * r, 4 + wallH + 2, Math.sin(a) * r);
+        g.add(cren);
+      }
+    } else {
+      const roofGeo = createGableRoof(W + 10, D + 10, roofH);
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.y = 4 + wallH;
+      g.add(roof);
+    }
+
+    // door — always on front (south, +Z)
+    const doorW = isShop ? 14 : 10;
+    const doorH = isTavern ? 18 : 14;
+    const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 1.5), S.doorWood);
+    door.position.set(0, 4 + doorH / 2, D / 2 + 0.8);
+    g.add(door);
+    // door frame
+    const frameMat = S.woodDark;
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(doorW + 4, 2, 2), frameMat);
+    frameTop.position.set(0, 4 + doorH + 1, D / 2 + 0.8); g.add(frameTop);
+    const frameSideGeo = new THREE.BoxGeometry(2, doorH, 2);
+    for (const sgn of [-1,1]) {
+      const f = new THREE.Mesh(frameSideGeo, frameMat);
+      f.position.set(sgn * (doorW / 2 + 1), 4 + doorH / 2, D / 2 + 0.8); g.add(f);
+    }
+
+    // windows — front + sides, with glass
+    const addWindow = (x, y, z, w, h, rotY = 0) => {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 2, h + 2, 1.2), S.woodDark);
+      frame.position.set(x, y, z); frame.rotation.y = rotY; g.add(frame);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(w, h), S.glass);
+      glass.position.set(x, y, z + 0.7); glass.rotation.y = rotY; g.add(glass);
+      // cross bars
+      const barV = new THREE.Mesh(new THREE.BoxGeometry(0.8, h, 0.5), S.woodDark);
+      barV.position.set(x, y, z + 0.8); barV.rotation.y = rotY; g.add(barV);
+      const barH = new THREE.Mesh(new THREE.BoxGeometry(w, 0.8, 0.5), S.woodDark);
+      barH.position.set(x, y, z + 0.8); barH.rotation.y = rotY; g.add(barH);
+    };
+
+    if (isHouse) {
+      // 2 front windows
+      addWindow(-W * 0.25, 4 + wallH * 0.6, D / 2 + 0.6, 8, 8);
+      addWindow(W * 0.25, 4 + wallH * 0.6, D / 2 + 0.6, 8, 8);
+      // side window
+      if (W > 60) addWindow(W / 2 + 0.6, 4 + wallH * 0.55, 0, 7, 7, Math.PI / 2);
+    } else if (isShop) {
+      // large shop windows
+      addWindow(-W * 0.28, 4 + wallH * 0.55, D / 2 + 0.6, 14, 12);
+      addWindow(W * 0.28, 4 + wallH * 0.55, D / 2 + 0.6, 14, 12);
+      // awning
+      const awning = new THREE.Mesh(new THREE.BoxGeometry(W + 6, 2, 14), S.wood);
+      awning.position.set(0, 4 + wallH * 0.85, D / 2 + 8); g.add(awning);
+      const awningStrutGeo = new THREE.BoxGeometry(1, 8, 1);
+      for (const sgn of [-1,1]) {
+        const strut = new THREE.Mesh(awningStrutGeo, S.woodDark);
+        strut.position.set(sgn * W * 0.4, 4 + wallH * 0.75, D / 2 + 6); g.add(strut);
+      }
+    } else if (isTavern) {
+      // ground floor windows
+      addWindow(-W * 0.3, 4 + wallH * 0.3, D / 2 + 0.6, 10, 10);
+      addWindow(W * 0.3, 4 + wallH * 0.3, D / 2 + 0.6, 10, 10);
+      // second floor
+      addWindow(-W * 0.25, 4 + wallH * 0.75, D / 2 + 0.6, 8, 8);
+      addWindow(W * 0.25, 4 + wallH * 0.75, D / 2 + 0.6, 8, 8);
+      addWindow(W / 2 + 0.6, 4 + wallH * 0.7, 0, 8, 8, Math.PI / 2);
+    } else if (isGuild) {
+      addWindow(-W * 0.3, 4 + wallH * 0.6, D / 2 + 0.6, 12, 14);
+      addWindow(W * 0.3, 4 + wallH * 0.6, D / 2 + 0.6, 12, 14);
+      // pillars in front
+      const pillarGeo = new THREE.CylinderGeometry(3, 3, wallH, 6);
+      for (const sgn of [-1,1]) {
+        const pil = new THREE.Mesh(pillarGeo, S.stoneWall);
+        pil.position.set(sgn * W * 0.35, 4 + wallH / 2, D / 2 + 4); g.add(pil);
+      }
+    } else if (isTemple) {
+      // tall narrow windows, pillars
+      const pillarGeo = new THREE.CylinderGeometry(3.5, 4, wallH, 8);
+      for (let i = -1; i <= 1; i++) {
+        const pil = new THREE.Mesh(pillarGeo, S.stoneWall);
+        pil.position.set(i * W * 0.3, 4 + wallH / 2, D / 2 + 5); g.add(pil);
+      }
+      // temple windows (slit)
+      addWindow(0, 4 + wallH * 0.6, -D / 2 - 0.6, 6, 16, Math.PI);
+    } else {
+      // generic: 1-2 windows
+      addWindow(-W * 0.25, 4 + wallH * 0.6, D / 2 + 0.6, 8, 8);
+      if (W > 100) addWindow(W * 0.25, 4 + wallH * 0.6, D / 2 + 0.6, 8, 8);
+    }
+
+    // chimney — for houses, taverns, blacksmith
+    if (isHouse || isTavern || func === 'blacksmith' || func === 'inn') {
+      const chimH = wallH * 0.8 + roofH * 0.6;
+      const chim = new THREE.Mesh(new THREE.BoxGeometry(8, chimH, 8), S.chimneyBrick);
+      chim.position.set(W * 0.35, 4 + wallH * 0.5 + chimH * 0.3, -D * 0.2);
+      g.add(chim);
+      // smoke puff (simple dark box on top when not mobile)
+      if (!this._isMobile) {
+        const smoke = new THREE.Mesh(new THREE.SphereGeometry(3, 6, 6), new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.25 }));
+        smoke.position.set(W * 0.35, 4 + wallH + roofH + chimH * 0.3, -D * 0.2);
+        g.add(smoke);
+      }
+    }
+
+    // shop sign
+    if (isShop || isTavern || isGuild) {
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(22, 8, 1.2), S.signWood);
+      sign.position.set(0, 4 + wallH + 6, D / 2 + 10);
+      g.add(sign);
+      // hanging chains
+      const chainGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 4);
+      for (const sgn of [-1,1]) {
+        const ch = new THREE.Mesh(chainGeo, S.metal);
+        ch.position.set(sgn * 8, 4 + wallH + 3, D / 2 + 10); g.add(ch);
+      }
+    }
+
+    // for playground: add simple slide/swing
+    if (func === 'playground') {
+      const slide = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 20), new THREE.MeshStandardMaterial({ color: 0xc8a040 }));
+      slide.position.set(-W * 0.2, 6, 0); slide.rotation.x = -0.3; g.add(slide);
+    }
+
+    g.position.set(b.x + W / 2 - PX_W / 2, 0, b.y + D / 2 - PX_H / 2);
     return g;
   }
 
