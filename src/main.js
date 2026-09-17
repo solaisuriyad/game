@@ -204,7 +204,7 @@ class Game {
     this.state = 'playing';
     this.paused = false;
     this.toast(`Welcome, ${this.player.name}. Hunt 3 rabbits and bring their meat to the Guild!`);
-    this.toast('WASD move · click attack · E interact · I inventory · M map');
+    this.toast('WASD move · Space jump/roll · C bend · X tap fly / hold boost to 200ft · E interact · F to Floating City');
   }
 
   returnToTitle() {
@@ -330,10 +330,12 @@ class Game {
         this.player.x = isl.x;
         this.player.y = isl.y;
         this.player.flying = true;
-        this.player.targetAlt = 75;
-        this.player.altitude = 75;
-        this.player.flyTimer = 30;
-        this.toast(`✈️ Teleported to Floating City! Press X to land on it`);
+        const islandFt = isl.elev / 3;
+        this.player.targetAlt = islandFt + 20;
+        this.player.altitude = islandFt + 20;
+        this.player.flyTimer = 60;
+        this.player.onFloatingIsland = null;
+        this.toast(`✈️ Teleported to Floating City at ${Math.round(islandFt)}ft! HOLD X to boost to 200ft, TAP X to land`);
       }
     }
   }

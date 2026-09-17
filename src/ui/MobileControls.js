@@ -193,20 +193,24 @@ export class MobileControls {
       try { g.interact.interact(); } catch (err) {}
     });
 
-    // Fly (X)
-    el.fly.addEventListener('pointerdown', (e) => {
+    // Fly (X) — TAP = takeoff/land, HOLD = boost to 200ft
+    this._flyHeld = false;
+    const flyDown = (e) => {
       e.preventDefault();
-      // simulate X press
-      try {
-        g.input._injectPressed('x');
-      } catch (err) {
-        // fallback direct call
-        if (g.player && g.player.flyCd <= 0) {
-          // trigger same logic as in Player.update X handling by setting a flag
-          g._mobileFlyRequested = true;
-        }
-      }
-    });
+      this._flyHeld = true;
+      try { g.input._setHeld('x', true); g.input._injectPressed('x'); } catch (err) {}
+      if (el.fly) el.fly.style.background = 'rgba(80,150,255,0.75)';
+    };
+    const flyUp = (e) => {
+      e.preventDefault();
+      this._flyHeld = false;
+      try { g.input._setHeld('x', false); } catch (err) {}
+      if (el.fly) el.fly.style.background = '';
+    };
+    el.fly.addEventListener('pointerdown', flyDown);
+    window.addEventListener('pointerup', (e) => { if (this._flyHeld) flyUp(e); });
+    el.fly.addEventListener('pointercancel', flyUp);
+    el.fly.addEventListener('pointerleave', flyUp);
 
     // Sprint (R hold)
     const sprintDown = (e) => { e.preventDefault(); g._mobileSprint = true; };

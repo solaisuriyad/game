@@ -67,13 +67,28 @@ export class Player extends Entity {
     this.working = 0;
     this.idleTime = 0;
     this.recovering = false;
-    // FIXED: X now cycles 50ft -> 75ft -> land (no extra 50ft that confused users)
+
+    // flying — now with boost to 200ft, hold X to climb
     this.flying = false;
-    this.flyLevel = 0; // 0=ground, 1=50ft, 2=75ft, 3=land
-    this.targetAlt = 0;
-    this.altitude = 0;
+    this.flyLevel = 0; // 0=ground, 1=flying
+    this.targetAlt = 0; // feet
+    this.altitude = 0; // feet
     this.flyTimer = 0;
     this.flyCd = 0;
+    this._xHold = 0; // how long X held (for boost)
+    this._xTap = 0; // tap detection
+    this.maxFlyAlt = 200; // up to 200ft
+
+    // jump / roll / bend
+    this.jumpTimer = 0;
+    this.jumpCd = 0;
+    this.jumpHeight = 0; // visual jump height in feet
+    this.rollTimer = 0;
+    this.bendTimer = 0;
+    this.isJumping = false;
+    this.isRolling = false;
+    this.isBending = false;
+
     this.yggBlessing = 0;
     this.spawnGrace = 0;
     this.onFloatingIsland = null;
@@ -84,6 +99,8 @@ export class Player extends Entity {
     let s = 140;
     if (this.buffs.speed > 0) s *= 1.6;
     if (this.hasStatus('slow')) s *= this.statusSlow;
+    if (this.isBending) s *= 0.5;
+    if (this.isRolling) s *= 1.8;
     return s;
   }
   get totalDefense() {
@@ -91,6 +108,8 @@ export class Player extends Entity {
     for (const slot of ['head', 'body', 'legs', 'feet']) {
       if (this.armor[slot]) d += this.armor[slot].defense;
     }
+    if (this.isBending) d += 2;
+    if (this.isRolling) d += 5;
     return d;
   }
 
@@ -115,7 +134,8 @@ export class Player extends Entity {
       this.altitude = isl.elev / 3;
       this.flyTimer = 0;
       this.onFloatingIsland = isl;
-      this.flyCd = 5;
+      this.flyCd = 4;
+      this._xHold = 0;
       game.toast(`🛬 Landed on ${isl.kind === 'city' ? 'Floating City' : 'Floating Island'}!`);
       try { game.audio.sfx('levelup'); } catch (e) {}
       return;
@@ -126,8 +146,9 @@ export class Player extends Entity {
     this.altitude = 0;
     this.onFloatingIsland = null;
     this.flyTimer = 0;
+    this._xHold = 0;
     this.land(game);
-    this.flyCd = 10;
+    this.flyCd = 6;
     game.toast(toast);
   }
 
@@ -135,13 +156,13 @@ export class Player extends Entity {
     const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
     if (isl) {
       this.flying = false;
-      this.flyCd = 5;
+      this.flyCd = 4;
       this.altitude = isl.elev / 3;
       this.onFloatingIsland = isl;
       return;
     }
     this.flying = false;
-    this.flyCd = 5;
+    this.flyCd = 4;
     this.altitude = 0;
     this.onFloatingIsland = null;
     for (let r = 0; r <= 80; r += 8) {
@@ -155,6 +176,36 @@ export class Player extends Entity {
         }
       }
     }
+  }
+
+  // jump: short vertical hop
+  doJump(game) {
+    if (this.jumpCd > 0 || this.flying || this.onFloatingIsland) return;
+    if (this.stamina < 15) return;
+    this.isJumping = true;
+    this.jumpTimer = 0.55;
+    this.jumpCd = 0.7;
+    this.jumpHeight = 0;
+    this.stamina -= 12;
+    try { game.audio.sfx('swing'); } catch (e) {}
+  }
+
+  // roll: quick forward roll (dodge)
+  doRoll(game) {
+    if (this.rollTimer > 0 || this.flying) return;
+    if (this.stamina < 20) return;
+    this.isRolling = true;
+    this.rollTimer = 0.45;
+    this.dodgeTimer = 0.35; // i-frames
+    this.dodgeCd = 0.8;
+    this.stamina -= 18;
+    try { game.audio.sfx('swing'); } catch (e) {}
+  }
+
+  // bend/crouch: hold to sneak + defense
+  doBend(start) {
+    this.isBending = !!start;
+    this.bendTimer = start ? 10 : 0;
   }
 
   update(dt, game) {
@@ -173,7 +224,8 @@ export class Player extends Entity {
     const dir = game._dirFn ? game._dirFn() : game.input.dirVector();
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
-    this.crouching = game.input.held('shift');
+    this.crouching = game.input.held('shift') || this.isBending;
+
     if (game.input.pressed('r')) {
       if (this._rTapTime > 0) {
         this.runLocked = !this.runLocked;
@@ -184,69 +236,148 @@ export class Player extends Entity {
       }
     }
     if (this._rTapTime > 0) this._rTapTime -= dt;
-    this.sprinting = (game.input.held('r') || this.runLocked) && moving && !this.crouching && !this.blocking;
+    this.sprinting = (game.input.held('r') || this.runLocked) && moving && !this.crouching && !this.blocking && !this.isBending;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
+
+    // jump / roll / bend inputs
+    if (this.jumpCd > 0) this.jumpCd -= dt;
+    if (this.jumpTimer > 0) {
+      this.jumpTimer -= dt;
+      // parabolic jump: up then down
+      const t = 1 - this.jumpTimer / 0.55; // 0->1
+      const h = 14 * Math.sin(t * Math.PI); // 14ft peak
+      this.jumpHeight = h;
+      if (this.jumpTimer <= 0) {
+        this.isJumping = false;
+        this.jumpHeight = 0;
+      }
+    }
+
+    if (this.rollTimer > 0) {
+      this.rollTimer -= dt;
+      if (this.rollTimer <= 0) this.isRolling = false;
+    }
+
+    // Space = jump if standing, roll if sprinting
+    if (game.input.pressed(' ') && this.jumpCd <= 0) {
+      if (this.sprinting && moving) this.doRoll(game);
+      else this.doJump(game);
+    }
+
+    // C key = bend (alternative to shift)
+    if (game.input.pressed('c')) this.doBend(true);
+    if (!game.input.held('c') && !game.input.held('shift')) this.doBend(false);
 
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
 
-    // FIXED: X now = 50ft -> 75ft -> land (3 presses, not 4)
-    if (game.input.pressed('x') && this.flyCd <= 0) {
-      this.flyLevel++;
-      if (this.flyLevel === 1) {
-        this.flying = true;
-        this.targetAlt = 50;
-        this.flyTimer = 30;
-        this.onFloatingIsland = null;
-        game.toast('✈️ You take flight at 50 feet. Press X again for 75 feet');
-      } else if (this.flyLevel === 2) {
-        this.flying = true;
-        this.targetAlt = 75;
-        this.flyTimer = 30;
-        this.onFloatingIsland = null;
-        game.toast('✈️ You fly higher at 75 feet! Press X again to land');
-      } else {
-        this._land(game, '🛬 You land. Flying cools down for 10s.');
-      }
-      try { game.audio.sfx('levelup'); } catch (e) {}
+    // ---- NEW FLYING: hold X to boost up to 200ft ----
+    const xHeld = game.input.held('x');
+    const xPressed = game.input.pressed('x');
+
+    if (xHeld) this._xHold += dt;
+    else this._xHold = 0;
+
+    if (xPressed && this.flyCd <= 0) {
+      // short tap detection starts
+      this._xTap = 0;
     }
 
+    if (!xHeld && this._xTap >= 0) {
+      // X released — check tap duration
+      if (this._xTap >= 0 && this._xTap < 0.35) {
+        // short tap
+        if (!this.flying && !this.onFloatingIsland) {
+          // take off to 50ft
+          this.flying = true;
+          this.flyLevel = 1;
+          this.targetAlt = 50;
+          this.altitude = 0;
+          this.flyTimer = 60; // longer for boost flying
+          this.onFloatingIsland = null;
+          game.toast('✈️ Takeoff 50ft — HOLD X to boost to 200ft, TAP X to land');
+          try { game.audio.sfx('levelup'); } catch (e) {}
+        } else if (this.flying) {
+          // tap while flying = land
+          this._land(game, '🛬 You land. Flying cools down for 4s.');
+        } else if (this.onFloatingIsland) {
+          // take off from island
+          this.flying = true;
+          this.flyLevel = 1;
+          this.targetAlt = this.onFloatingIsland.elev / 3 + 30;
+          this.altitude = this.onFloatingIsland.elev / 3;
+          this.onFloatingIsland = null;
+          this.flyTimer = 60;
+          game.toast('✈️ Takeoff from island — HOLD X to boost');
+        }
+      }
+      this._xTap = -1; // reset
+    }
+
+    if (xPressed) this._xTap = 0;
+    if (xHeld && this._xTap >= 0) this._xTap += dt;
+
+    // while holding X and flying, boost altitude up to 200ft
+    if (xHeld && this.flying) {
+      const boostRate = 55; // ft per second
+      this.targetAlt = Math.min(this.maxFlyAlt, this.targetAlt + boostRate * dt);
+      // if already at target, also push altitude directly for responsiveness
+      if (this.altitude < this.targetAlt) {
+        this.altitude = Math.min(this.targetAlt, this.altitude + boostRate * dt * 1.2);
+      }
+      if (Math.floor(this.targetAlt) % 20 === 0) {
+        // occasional toast at milestones
+      }
+    }
+
+    // auto-timer for flying (60s, then land)
     if (this.flying) {
       this.flyTimer -= dt;
-      if (this.flyTimer <= 0 && this.targetAlt === 75) {
-        this.targetAlt = 50;
-        this.flyTimer = 5;
-        game.toast('↘️ Flight time up — descending to 50 feet.');
-      } else if (this.flyTimer <= 0) {
-        this._land(game, '🛬 Flight time up — you land. Flying cools down for 10s.');
+      if (this.flyTimer <= 0) {
+        this._land(game, '🛬 Flight time up — you land.');
       }
     }
 
+    // smooth glide to target altitude
     if (this.flying) {
       const diff = this.targetAlt - this.altitude;
-      const step = 90 * dt;
+      const step = (xHeld ? 120 : 90) * dt;
       if (Math.abs(diff) <= step) this.altitude = this.targetAlt;
       else this.altitude += Math.sign(diff) * step;
+      this.altitude = Math.max(0, Math.min(this.maxFlyAlt, this.altitude));
     }
 
     if (!this.flying && this.onFloatingIsland) {
       const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
       if (!isl || isl.id !== this.onFloatingIsland.id) {
         this.onFloatingIsland = null;
-        this.flyCd = 2;
-        game.toast('💨 You stepped off the floating island!');
+        this.flyCd = 1.5;
+        game.toast('💨 Stepped off island — falling!');
+        // start falling from island height
+        this.altitude = isl ? isl.elev / 3 : this.altitude;
+        this.flying = true;
+        this.targetAlt = 0;
+        this.flyLevel = 1;
+        this.flyTimer = 8;
       } else {
-        this.altitude = isl.elev / 3;
+        this.altitude = isl.elev / 3 + this.jumpHeight;
       }
     }
 
+    if (!this.flying && !this.onFloatingIsland) {
+      // include jump height when not flying
+      this.altitude = this.jumpHeight;
+    }
+
     let spd = this.sprinting ? 230 : this.speed;
-    if (this.flying) spd = 260;
+    if (this.flying) spd = this.isRolling ? 320 : 260 + this.altitude * 0.3; // faster higher
+    if (this.onFloatingIsland) spd = 160;
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;
     if (this.charging) spd *= 0.55;
     if (this.dodgeTimer > 0) spd *= 2.3;
     if (this.crouching) spd *= 0.55;
+    if (this.isJumping) spd *= 1.1;
 
     if (moving) {
       if (this.flying || this.onFloatingIsland) {
@@ -281,26 +412,28 @@ export class Player extends Entity {
     const bob = this.attackAnim > 0 ? Math.sin(this.attackAnim * 40) * 1.5 : 0;
     ctx.save();
     ctx.translate(x, y);
-    if (this.flying || this.onFloatingIsland) {
-      const alt = this.flying ? this.altitude : (this.onFloatingIsland ? this.onFloatingIsland.elev / 3 : 0);
+    const isAir = this.flying || this.onFloatingIsland || this.isJumping;
+    if (isAir) {
+      const alt = this.flying ? this.altitude : (this.onFloatingIsland ? this.onFloatingIsland.elev / 3 : this.jumpHeight);
       const lift = -alt * 3.0;
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * (0.7 - alt * 0.008), s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * (0.7 - Math.min(1, alt * 0.008)), s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
       ctx.translate(0, lift);
-      const hbob = Math.sin(game.time.timeOfDay * 400 + this.x * 0.1) * 4;
+      const hbob = this.flying ? Math.sin(game.time.timeOfDay * 400 + this.x * 0.1) * 4 : 0;
       ctx.translate(0, hbob);
-      const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 2.2);
-      glow.addColorStop(0, 'rgba(255,255,255,0.35)');
-      glow.addColorStop(1, 'rgba(200,230,255,0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
-      const flap = Math.sin(game.time.timeOfDay * 500) * 0.4;
-      ctx.fillStyle = 'rgba(200,230,255,0.4)';
-      ctx.beginPath(); ctx.ellipse(-s * 1.2, -s * 0.2, s * 0.55, s * 0.3, -0.5 - flap, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(s * 1.2, -s * 0.2, s * 0.55, s * 0.3, 0.5 + flap, 0, Math.PI * 2); ctx.fill();
+      if (this.flying) {
+        const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 2.2);
+        glow.addColorStop(0, 'rgba(255,255,255,0.35)');
+        glow.addColorStop(1, 'rgba(200,230,255,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
+      }
+      if (this.isRolling) {
+        ctx.rotate(this.rollTimer * 12);
+      }
     }
-    if (this.crouching) ctx.scale(1, 0.8);
-    if (!this.flying && !this.onFloatingIsland) {
+    if (this.crouching || this.isBending) ctx.scale(1, this.isBending ? 0.55 : 0.8);
+    if (!isAir) {
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
     }
@@ -316,18 +449,23 @@ export class Player extends Entity {
       ctx.restore();
     }
 
-    const scale = 1.35;
+    const scale = this.isBending ? 1.1 : 1.35;
     ctx.save();
     ctx.scale(scale, scale);
     if (this.gender === 'male') {
       ctx.fillStyle = this.clothColor;
-      ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.72, s * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.72, s * (isAir ? 0.4 : 0.62), 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = this._darken(this.clothColor);
-      ctx.fillRect(-s * 0.28, s * 0.55, s * 0.24, s * 0.42);
-      ctx.fillRect(s * 0.04, s * 0.55, s * 0.24, s * 0.42);
+      if (this.isRolling) {
+        ctx.fillRect(-s * 0.5, s * 0.2, s * 0.24, s * 0.6);
+        ctx.fillRect(s * 0.26, s * 0.2, s * 0.24, s * 0.6);
+      } else {
+        ctx.fillRect(-s * 0.28, s * 0.55, s * 0.24, s * 0.42);
+        ctx.fillRect(s * 0.04, s * 0.55, s * 0.24, s * 0.42);
+      }
     } else if (this.gender === 'female') {
       ctx.fillStyle = this.clothColor;
-      ctx.beginPath(); ctx.ellipse(0, s * 0.12 + bob, s * 0.52, s * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, s * 0.12 + bob, s * 0.52, s * (isAir ? 0.35 : 0.5), 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath();
       ctx.moveTo(-s * 0.4, s * 0.3);
       ctx.lineTo(-s * 0.7, s * 0.95);

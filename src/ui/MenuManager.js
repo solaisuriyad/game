@@ -652,20 +652,20 @@ export class MenuManager {
 
   _renderHelp() {
     this.show('How to Play', `<div class="help">
-      <b>Move</b> — WASD / arrows<br>
-      <b>Run</b> — hold R while moving (drains stamina)<br>
-      <b>Fly</b> — X to take flight (30s, 50ft high, 5s cooldown)<br>
-      <b>Yggdrasil blessing</b> — press Q near the world tree to fully restore + become invincible<br>
-      <b>Aim</b> — mouse · <b>Attack</b> — click (hold & release for heavy)<br>
-      <b>Block</b> — hold right mouse · <b>Dodge</b> — Space<br>
-      <b>Sneak</b> — hold Shift (quieter, harder to detect, use cover & approach from behind)<br>
-      <b>Track</b> — Tab toggles tracking (footprint direction + blood trails)<br>
-      <b>Traps</b> — T place snare · Y place bear trap · G bait (raw meat/berries)<br>
-      <b>Interact</b> — E (gather, harvest, talk, buildings)<br>
-      <b>Active skills</b> — keys 1–8 to cast (cost MP) · O for the skill list<br>
-      <b>Menus</b> — I inventory · C character · K skills · J quests · M map · B craft · F relationships · L codex · Esc menu<br><br>
-      Hunt animals, gather materials, then <b>submit them at the Adventure Guild</b> to earn Guild Points, gold and rank.
-      Buy food to keep your hunger up, rest at the inn, and push deeper into the forest for better loot — but watch your weight and stamina!
+      <b>Move</b> — WASD / arrows · <b>Mobile</b> left joystick<br>
+      <b>Run</b> — hold R (or 🏃 on mobile) · double-tap R = auto-run lock<br>
+      <b>Jump</b> — Space (tap) — 14ft hop, costs stamina<br>
+      <b>Roll</b> — Sprint + Space — forward roll with i-frames<br>
+      <b>Bend / Crouch</b> — Shift or C (or hold) — sneak + defense<br>
+      <b>Fly</b> — TAP X to takeoff (50ft), HOLD X to boost up to 200ft, release to stay, TAP X again to land<br>
+      <b>Floating City</b> — above 100ft near monster territory (165 tiles east), press F to teleport, landable<br>
+      <b>Yggdrasil blessing</b> — Q near world tree<br>
+      <b>Aim</b> — mouse / right joystick · <b>Attack</b> — click or ⚔️ (hold for heavy)<br>
+      <b>Block</b> — right mouse · <b>Dodge</b> — Space while sprinting<br>
+      <b>Track</b> — Tab · <b>Traps</b> — T snare, Y bear trap, G bait<br>
+      <b>Interact</b> — E · <b>Skills</b> — 1-3, O list<br>
+      <b>Menus</b> — I inv, C char, K skills, J quests, M map, B craft, F rel, L codex, Esc menu<br><br>
+      Hunt, gather, submit at Guild for rank. Buy food, rest at inn, push deeper for loot!
     </div>`);
   }
 
@@ -755,7 +755,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 9.6 — fixed X fly: 50ft → 75ft → land, floating city visible (F to teleport), realistic buildings (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 9.7 — jump (Space), roll (sprint+Space), bend (C/Shift), boost fly HOLD X to 200ft, islands above 100ft (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

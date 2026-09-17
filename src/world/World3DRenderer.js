@@ -1231,13 +1231,37 @@ export class World3DRenderer {
         const flying = !!e.flying;
         const pose = entry.group.userData.pose;
         if (pose) {
-          // -Z tips the head forward (prone); add a little pitch so looking up
-          // noses the flyer up (climb) and looking down noses it down (dive).
-          const target = flying ? (-Math.PI / 2 + this.lookPitch * 0.5) : 0;
-          pose.rotation.z += (target - pose.rotation.z) * 0.3;
+          // flying: horizontal, jump: up, roll: spin, bend: crouch
+          let targetZ = 0;
+          if (flying) targetZ = -Math.PI / 2 + this.lookPitch * 0.5;
+          if (e.isRolling) targetZ += Math.PI * 1.5 * (1 - e.rollTimer / 0.45);
+          if (e.isBending) targetZ += 0.3;
+          pose.rotation.z += (targetZ - pose.rotation.z) * 0.3;
+
+          // jump / roll vertical bob
+          let targetY = 0;
+          if (e.isJumping) targetY = e.jumpHeight * 0.8;
+          if (e.isRolling) targetY = Math.sin((1 - e.rollTimer / 0.45) * Math.PI) * 6;
+          if (e.isBending) targetY = -4;
+          pose.position.y += (targetY - pose.position.y) * 0.35;
+
+          // bend scale
+          let targetSy = 1;
+          if (e.isBending) targetSy = 0.6;
+          if (e.isRolling) targetSy = 0.8;
+          pose.scale.y += (targetSy - pose.scale.y) * 0.35;
         }
         const shadow = entry.group.userData.shadow;
-        if (shadow) shadow.position.y = -elev - 0.1; // pinned to the ground below
+        if (shadow) {
+          // shadow stays on ground or island
+          let baseElev = elev;
+          if (e.onFloatingIsland) baseElev = e.onFloatingIsland.elev + (shadow.position.y - (-baseElev -0.1));
+          shadow.position.y = -baseElev - 0.1;
+          // shrink shadow when high
+          const h = e.altitude || 0;
+          const sc = Math.max(0.3, 1 - h * 0.004);
+          shadow.scale.setScalar(sc);
+        }
       }
       // walking animation (swing arms/legs) for humans that are moving
       if (entry.group.userData && entry.group.userData.walk) {

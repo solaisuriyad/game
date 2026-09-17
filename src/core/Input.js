@@ -41,6 +41,11 @@ export const Input = {
   set _virtualSprint(v) { _virtualSprint = !!v; },
   // for mobile buttons to inject a one-frame press (e.g. X fly, Space dodge)
   _injectPressed(k) { PRESSED.add(k.toLowerCase()); KEYS.add(k.toLowerCase()); setTimeout(() => KEYS.delete(k.toLowerCase()), 120); },
+  _setHeld(k, isHeld) {
+    const lk = k.toLowerCase();
+    if (isHeld) KEYS.add(lk);
+    else KEYS.delete(lk);
+  },
   _setVirtual(x, y) { _virtual.x = x; _virtual.y = y; },
   endFrame() { PRESSED.clear(); mouse.wheel = 0; },
   dirVector() {

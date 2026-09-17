@@ -151,50 +151,44 @@ export class WorldSystem {
   }
 
   _placeFloatingIslands() {
-    // Floating archipelago near monster territory, inspired by the ink sketch.
-    // FIX: previously placed 320 tiles from Yggdrasil (too far, hidden by fog).
-    // Now place much closer to village so player can SEE it from village when flying.
-    // Monster territory starts at ~150 tiles from village (Dark Forest).
     this.floatingIslands = [];
-    // MAIN FLOATING CITY — like the image, near monster territory but visible
-    const mainX = (VILLAGE_CX + 165) * TILE; // 165 tiles east = Dark Forest, near monsters
-    const mainY = (VILLAGE_CY - 25) * TILE; // slightly north
+    // MAIN FLOATING CITY — now above 100ft (360px = 120ft) as requested, near monsters
+    const mainX = (VILLAGE_CX + 165) * TILE;
+    const mainY = (VILLAGE_CY - 25) * TILE;
     this.floatingIslands.push({
       id: 'main',
       x: mainX, y: mainY,
-      r: 340,
-      elev: 240, // higher for visibility (~80ft)
+      r: 360,
+      elev: 360, // 120ft above ground
       kind: 'city',
       seed: 1
     });
-    // small islands around it (like sketch's tiny floaters)
     this.floatingIslands.push({
       id: 'small1',
-      x: mainX + 380, y: mainY - 180,
-      r: 120, elev: 180, kind: 'rock', seed: 2
+      x: mainX + 420, y: mainY - 200,
+      r: 130, elev: 330, kind: 'rock', seed: 2
     });
     this.floatingIslands.push({
       id: 'small2',
-      x: mainX - 280, y: mainY + 320,
-      r: 140, elev: 200, kind: 'temple', seed: 3
+      x: mainX - 300, y: mainY + 360,
+      r: 150, elev: 345, kind: 'temple', seed: 3
     });
     this.floatingIslands.push({
       id: 'tiny1',
-      x: mainX + 80, y: mainY + 480,
-      r: 85, elev: 150, kind: 'shrine', seed: 4
+      x: mainX + 100, y: mainY + 520,
+      r: 95, elev: 315, kind: 'shrine', seed: 4
     });
     this.floatingIslands.push({
       id: 'small3',
-      x: mainX - 90, y: mainY - 380,
-      r: 100, elev: 170, kind: 'rock', seed: 5
+      x: mainX - 100, y: mainY - 420,
+      r: 110, elev: 325, kind: 'rock', seed: 5
     });
-    // extra island near Yggdrasil for deep exploration (original far position kept as second city)
     const deepX = (YGGDRASIL_CX + 180) * TILE;
     const deepY = (YGGDRASIL_CY - 180) * TILE;
     this.floatingIslands.push({
       id: 'deep_city',
       x: deepX, y: deepY,
-      r: 280, elev: 220, kind: 'city', seed: 6
+      r: 300, elev: 360, kind: 'city', seed: 6
     });
   }
 
