@@ -755,7 +755,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 9.5 — floating city now visible near village/monsters, 75 buildings like sketch, press F to teleport (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 9.6 — fixed X fly: 50ft → 75ft → land, floating city visible (F to teleport), realistic buildings (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

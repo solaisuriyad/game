@@ -12,7 +12,6 @@ export class Player extends Entity {
     this.skinTone = customization.skinTone || '#e8c39a';
     this.clothColor = customization.clothColor || '#7a6a4a';
 
-    // core stats
     this.level = 1; this.xp = 0; this.xpNext = 100;
     this.skillPoints = 0;
     this.baseStats = {
@@ -21,30 +20,25 @@ export class Player extends Entity {
     };
     this.learnedSkills = [];
 
-    // vitals (200% capacity for the 3 core resources)
     this.maxHealth = 200; this.health = 200;
     this.maxStamina = 200; this.stamina = 200;
     this.maxMp = 200; this.mp = 200;
     this.hunger = 100;
     this.temperature = 21;
     this.energy = 100;
-    // timed buffs (hold-full charms + active-skill buffs)
     this.buffs = { healthHold: 0, staminaHold: 0, manaHold: 0, armor: 0, speed: 0 };
     this.castingSkill = 0;
 
-    // progression
     this.gold = 50;
     this.guildPoints = 0;
     this.rankIndex = 0;
     this.reputation = 0;
 
-    // equipment
     this.weapon = null;
     this.armor = { head: null, body: null, legs: null, feet: null };
     this.inventory = [];
     this.backpackLevel = 0;
 
-    // combat state
     this.attackCd = 0;
     this.attackWindup = 0;
     this.attackHitDone = false;
@@ -64,7 +58,6 @@ export class Player extends Entity {
     this.gatheredCount = 0;
     this.recentBossKill = null;
 
-    // stealth / movement state
     this.crouching = false;
     this.sprinting = false;
     this.runLocked = false;
@@ -74,8 +67,9 @@ export class Player extends Entity {
     this.working = 0;
     this.idleTime = 0;
     this.recovering = false;
+    // FIXED: X now cycles 50ft -> 75ft -> land (no extra 50ft that confused users)
     this.flying = false;
-    this.flyLevel = 0;
+    this.flyLevel = 0; // 0=ground, 1=50ft, 2=75ft, 3=land
     this.targetAlt = 0;
     this.altitude = 0;
     this.flyTimer = 0;
@@ -195,27 +189,25 @@ export class Player extends Entity {
 
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
 
+    // FIXED: X now = 50ft -> 75ft -> land (3 presses, not 4)
     if (game.input.pressed('x') && this.flyCd <= 0) {
       this.flyLevel++;
       if (this.flyLevel === 1) {
         this.flying = true;
         this.targetAlt = 50;
         this.flyTimer = 30;
-        game.toast('✈️ You take flight at 50 feet.');
+        this.onFloatingIsland = null;
+        game.toast('✈️ You take flight at 50 feet. Press X again for 75 feet');
       } else if (this.flyLevel === 2) {
         this.flying = true;
         this.targetAlt = 75;
         this.flyTimer = 30;
-        game.toast('✈️ You fly higher at 75 feet!');
-      } else if (this.flyLevel === 3) {
-        this.flying = true;
-        this.targetAlt = 50;
-        this.flyTimer = 30;
-        game.toast('✈️ Descending back to 50 feet.');
+        this.onFloatingIsland = null;
+        game.toast('✈️ You fly higher at 75 feet! Press X again to land');
       } else {
         this._land(game, '🛬 You land. Flying cools down for 10s.');
       }
-      game.audio.sfx('levelup');
+      try { game.audio.sfx('levelup'); } catch (e) {}
     }
 
     if (this.flying) {
@@ -236,18 +228,13 @@ export class Player extends Entity {
       else this.altitude += Math.sign(diff) * step;
     }
 
-    // floating island logic: if on island and walk off edge, start falling
     if (!this.flying && this.onFloatingIsland) {
       const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
       if (!isl || isl.id !== this.onFloatingIsland.id) {
-        // walked off edge — fall to ground
         this.onFloatingIsland = null;
-        this.altitude = this.altitude; // keep current altitude, will fall in next frames? For now snap to 0 with grace
-        // give brief grace and start falling visual
         this.flyCd = 2;
         game.toast('💨 You stepped off the floating island!');
       } else {
-        // stay at island height
         this.altitude = isl.elev / 3;
       }
     }
@@ -266,7 +253,6 @@ export class Player extends Entity {
         this.x = Math.max(24, Math.min(PX_W - 24, this.x + dir.x * spd * dt));
         this.y = Math.max(24, Math.min(PX_H - 24, this.y + dir.y * spd * dt));
         if (this.onFloatingIsland && !this.flying) {
-          // clamp to island radius when walking on island
           const isl = this.onFloatingIsland;
           const dx = this.x - isl.x, dy = this.y - isl.y;
           const dist = Math.hypot(dx, dy);
