@@ -263,6 +263,15 @@ export class World3DRenderer {
     for (const b of w.buildings) {
       root.add(this._makeBuilding(b));
     }
+    // floating islands near monster territory (the ink sketch city)
+    this._floatingIslands = [];
+    if (w.floatingIslands) {
+      for (const isl of w.floatingIslands) {
+        const mesh = this._makeFloatingIsland(isl);
+        root.add(mesh);
+        this._floatingIslands.push(mesh);
+      }
+    }
     // the permanent snow region (north-west quarter of the monster forest)
     root.add(this._makeSnowOverlay());
     // mountains (peaks around the town + monster forest, some snowy/waterfalls)
@@ -273,6 +282,157 @@ export class World3DRenderer {
     root.add(this._makeYggdrasil());
     this._terrain = root;
     this.scene.add(root);
+  }
+
+  // ---- floating islands (the sketch) ----
+  _makeFloatingIsland(isl) {
+    const S = shared();
+    const g = new THREE.Group();
+    const R = isl.r;
+    const elev = isl.elev; // px above ground
+    const kind = isl.kind;
+
+    // bottom rock — inverted cone + irregular lumps
+    const rockH = kind === 'city' ? 420 : 200 + R * 0.6;
+    const baseRock = new THREE.Mesh(new THREE.ConeGeometry(R * 1.15, rockH, 10), S.rock);
+    baseRock.rotation.x = Math.PI;
+    baseRock.position.y = elev - rockH / 2 + 8;
+    g.add(baseRock);
+
+    // extra rock stalactites to make bottom look jagged like sketch
+    const lumpGeo = new THREE.ConeGeometry(R * 0.25, rockH * 0.5, 6);
+    for (let i = 0; i < (kind === 'city' ? 6 : 3); i++) {
+      const a = (i / (kind === 'city' ? 6 : 3)) * Math.PI * 2 + (isl.seed * 0.7);
+      const rr = R * (0.5 + Math.random() * 0.3);
+      const lump = new THREE.Mesh(lumpGeo, S.rock);
+      lump.rotation.x = Math.PI;
+      lump.position.set(Math.cos(a) * rr, elev - rockH * 0.2, Math.sin(a) * rr);
+      lump.scale.setScalar(0.6 + Math.random() * 0.5);
+      g.add(lump);
+    }
+
+    // top platform — grass + dirt edge
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 0.92, 18, 12), S.ground);
+    top.position.y = elev + 9;
+    g.add(top);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.92, R * 0.95, 8, 12), S.rock);
+    rim.position.y = elev - 2;
+    g.add(rim);
+
+    // waterfall — on south side (+Z), like sketch
+    if (kind === 'city' || kind === 'temple') {
+      const fallW = kind === 'city' ? R * 0.22 : R * 0.18;
+      const fallH = elev + rockH * 0.6;
+      const fall = new THREE.Mesh(new THREE.BoxGeometry(fallW, fallH, 2), S.water);
+      fall.position.set(R * 0.15, elev - fallH / 2 + 10, R * 0.55);
+      g.add(fall);
+      // pool mist at bottom of fall
+      const mist = new THREE.Mesh(new THREE.SphereGeometry(fallW * 0.8, 8, 6), new THREE.MeshBasicMaterial({ color: 0xaad8ff, transparent: true, opacity: 0.18, depthWrite: false }));
+      mist.position.set(R * 0.15, 6, R * 0.55);
+      mist.scale.set(1, 0.5, 1);
+      g.add(mist);
+    }
+
+    // city on top — only for main island
+    if (kind === 'city') {
+      // dense city: ~45 small buildings + central tower + spires, like sketch
+      const cityMat = S.stoneWall;
+      const cityMat2 = S.plasterDark;
+      const roofMat = S.roofTileDark;
+      // generate buildings in rings
+      for (let i = 0; i < 42; i++) {
+        const ang = (i / 42) * Math.PI * 2 * 3.7 + isl.seed;
+        const rad = (i / 42) * R * 0.82;
+        const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 20;
+        const z = Math.sin(ang) * rad + (Math.random() - 0.5) * 20;
+        const w = 12 + Math.random() * 18;
+        const d = 12 + Math.random() * 18;
+        const h = 18 + Math.random() * (i < 8 ? 80 : 32);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), i % 3 === 0 ? cityMat : cityMat2);
+        b.position.set(x, elev + 18 + h / 2, z);
+        g.add(b);
+        // roof
+        if (Math.random() < 0.7) {
+          const rh = 6 + Math.random() * 8;
+          const roof = new THREE.Mesh(createGableRoof(w + 4, d + 4, rh), roofMat);
+          roof.position.set(x, elev + 18 + h, z);
+          g.add(roof);
+        }
+        // spire for some
+        if (i % 7 === 0) {
+          const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 18 + Math.random() * 20, 6), S.stoneDark);
+          spire.position.set(x, elev + 18 + h + 12, z);
+          g.add(spire);
+        }
+      }
+      // central colossal tower (like sketch's main spire)
+      const centralH = 160;
+      const central = new THREE.Mesh(new THREE.CylinderGeometry(18, 22, centralH, 10), S.stoneWall);
+      central.position.set(0, elev + 18 + centralH / 2, -R * 0.1);
+      g.add(central);
+      const centralTop = new THREE.Mesh(new THREE.CylinderGeometry(8, 14, 40, 8), S.stoneDark);
+      centralTop.position.set(0, elev + 18 + centralH + 20, -R * 0.1);
+      g.add(centralTop);
+      const spireTop = new THREE.Mesh(new THREE.ConeGeometry(6, 36, 8), S.metal);
+      spireTop.position.set(0, elev + 18 + centralH + 58, -R * 0.1);
+      g.add(spireTop);
+      // surrounding towers (like sketch's many spires)
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const rr = R * 0.35;
+        const th = 60 + Math.random() * 50;
+        const tw = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, th, 8), S.stoneWall);
+        tw.position.set(Math.cos(a) * rr, elev + 18 + th / 2, Math.sin(a) * rr);
+        g.add(tw);
+        const tr = new THREE.Mesh(new THREE.ConeGeometry(7, 18, 6), S.roofTileDark);
+        tr.position.set(Math.cos(a) * rr, elev + 18 + th + 9, Math.sin(a) * rr);
+        g.add(tr);
+      }
+      // floating smaller platforms hanging below main (like sketch's underside structures)
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + 0.5;
+        const rr = R * 0.7;
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(18, 4, 18), S.wood);
+        plat.position.set(Math.cos(a) * rr, elev - 30 - i * 12, Math.sin(a) * rr);
+        g.add(plat);
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 34, 4), S.metal);
+        chain.position.set(Math.cos(a) * rr, elev - 12, Math.sin(a) * rr);
+        g.add(chain);
+      }
+    } else if (kind === 'temple') {
+      // temple on small island — like bottom of sketch
+      const base = new THREE.Mesh(new THREE.BoxGeometry(R * 0.9, 18, R * 0.9), S.stoneWall);
+      base.position.y = elev + 18; g.add(base);
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(R * 0.65, 22, 8), S.roofTileDark);
+      roof.position.y = elev + 38; g.add(roof);
+      const pillarGeo = new THREE.CylinderGeometry(3, 3, 18, 6);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const pil = new THREE.Mesh(pillarGeo, S.plaster);
+        pil.position.set(Math.cos(a) * R * 0.35, elev + 18, Math.sin(a) * R * 0.35); g.add(pil);
+      }
+    } else if (kind === 'shrine') {
+      const shrine = new THREE.Mesh(new THREE.BoxGeometry(R * 0.7, 14, R * 0.7), S.stoneWall);
+      shrine.position.y = elev + 16; g.add(shrine);
+      const ling = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 12, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      ling.position.y = elev + 29; g.add(ling);
+    } else {
+      // rock island — just a few rocks / trees
+      if (!this._isMobile) {
+        const tree = new THREE.Mesh(new THREE.ConeGeometry(12, 24, 7), S.canopy);
+        tree.position.set(0, elev + 24, 0); g.add(tree);
+      }
+    }
+
+    // position in world
+    g.position.set(isl.x - PX_W / 2, 0, isl.y - PX_H / 2);
+    // floating animation (slow bob) — store base Y
+    g.userData.baseY = g.position.y;
+    g.userData.isl = isl;
+    g.userData.bobPhase = isl.seed * 1.7;
+    // keep always visible (no frustum cull) for the main city
+    if (kind === 'city') g.frustumCulled = false;
+    return g;
   }
 
   // a flat white plane covering the permanent snow region (ground is a single
@@ -1072,6 +1232,21 @@ export class World3DRenderer {
     if (this._yggGlow) {
       const t = g.time ? g.time.timeOfDay * 60 : 0;
       this._yggGlow.material.opacity = 0.10 + Math.sin(t) * 0.04;
+    }
+
+    // float the floating islands slowly up/down (like the sketch drifting in clouds)
+    if (this._floatingIslands) {
+      const now = performance.now() * 0.001;
+      for (const isl of this._floatingIslands) {
+        const base = isl.userData.baseY ?? 0;
+        const phase = isl.userData.bobPhase ?? 0;
+        const bob = Math.sin(now * 0.4 + phase) * 8;
+        isl.position.y = base + bob;
+        // slow rotation for main city
+        if (isl.userData.isl && isl.userData.isl.kind === 'city') {
+          isl.rotation.y = Math.sin(now * 0.08 + phase) * 0.05;
+        }
+      }
     }
 
     // rebuild any tree chunks whose trees were chopped or regrown (so chopped

@@ -54,6 +54,7 @@ export class WorldSystem {
     this.depletedTrees = []; // chopped trees awaiting respawn (small list)
     this.nodes = [];       // resource nodes (herb, mushroom, berry, ore, tree, rock)
     this.mountains = [];   // procedural mountains (peaks with snow caps / waterfalls)
+    this.floatingIslands = []; // floating islands near monster territory (like the image)
     this._cell = Math.floor(256 / TILE); // grid cell = 8 tiles = 256px
     this.discovered = new Uint8Array(0); // (fog moved to the 700px minimap; keep a stub)
     this.generate();
@@ -78,6 +79,8 @@ export class WorldSystem {
     this._placeBuildings();
     // 6. the Yggdrasil FIRST (so the forest doesn't grow inside its grove)
     this._placeYggdrasil();
+    // 6b. floating islands near monster territory (like the sketch)
+    this._placeFloatingIslands();
     // 7. mountains (some around the town, some around the monster forest)
     this._placeMountains();
     // 8. forest trees + resource nodes + the permanent snow region
@@ -145,6 +148,55 @@ export class WorldSystem {
     // r = the blessing radius, sized so the player can trigger it while standing
     // AT the edge of the solid trunk (r = half the footprint).
     this.yggdrasil = { x: cx, y: cy, r: size / 2, w: size, h: size };
+  }
+
+  _placeFloatingIslands() {
+    // Floating archipelago near monster territory, inspired by the ink sketch:
+    // a huge main island with a city on top, waterfall, plus smaller islands.
+    this.floatingIslands = [];
+    const mainX = (YGGDRASIL_CX + 320) * TILE;
+    const mainY = (YGGDRASIL_CY - 280) * TILE;
+    // main island — big, high, with city
+    this.floatingIslands.push({
+      id: 'main',
+      x: mainX, y: mainY,
+      r: 320, // platform radius (walkable)
+      elev: 200, // px above ground (~66ft) — reachable at 50/75ft flight
+      kind: 'city', // city island
+      seed: 1
+    });
+    // small island 1 — north-east, lower
+    this.floatingIslands.push({
+      id: 'small1',
+      x: mainX + 520, y: mainY - 260,
+      r: 110, elev: 160, kind: 'rock', seed: 2
+    });
+    // small island 2 — south-west
+    this.floatingIslands.push({
+      id: 'small2',
+      x: mainX - 380, y: mainY + 420,
+      r: 130, elev: 180, kind: 'temple', seed: 3
+    });
+    // tiny island — far south, with a shrine
+    this.floatingIslands.push({
+      id: 'tiny1',
+      x: mainX + 120, y: mainY + 620,
+      r: 75, elev: 130, kind: 'shrine', seed: 4
+    });
+    // another small rock island
+    this.floatingIslands.push({
+      id: 'small3',
+      x: mainX - 120, y: mainY - 520,
+      r: 90, elev: 150, kind: 'rock', seed: 5
+    });
+  }
+
+  // check if world px is over a floating island (for landing / walking)
+  floatingIslandAt(px, py) {
+    for (const isl of this.floatingIslands) {
+      if (Math.hypot(px - isl.x, py - isl.y) < isl.r) return isl;
+    }
+    return null;
   }
 
   _carveRiver() {

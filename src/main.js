@@ -456,6 +456,18 @@ class Game {
       }
     }
 
+    // floating islands — discovery + landing hint
+    if (this.world.floatingIslandAt) {
+      const isl = this.world.floatingIslandAt(this.player.x, this.player.y);
+      if (isl && isl.id !== this._lastIsland) {
+        this._lastIsland = isl.id;
+        const name = isl.kind === 'city' ? 'Floating City' : 'Floating Island';
+        this.toast(`🏝️ Discovered ${name}! ${this.player.flying ? 'Press X to land' : 'Fly (X) to reach it'}`);
+        try { this.lore.discover('lore_' + isl.id); } catch (e) {}
+      }
+      if (!isl) this._lastIsland = null;
+    }
+
     this.camera.follow(this.player.x, this.player.y);
     this.hud.updateDiscovery();
     // audio must never be able to freeze the game (it only runs in real browsers)

@@ -57,7 +57,7 @@ export class Player extends Entity {
     this.charging = false;
     this.chargeTime = 0;
     this.lastDamageDir = 0;
-    this.recentAttacker = null; // { name, dir, t } — who last hit you (for the HUD)
+    this.recentAttacker = null;
 
     this.kills = 0;
     this.animalsHunted = 0;
@@ -67,34 +67,33 @@ export class Player extends Entity {
     // stealth / movement state
     this.crouching = false;
     this.sprinting = false;
-    this.runLocked = false;   // double-press R toggles auto-run (no need to hold)
-    this._rTapTime = 0;       // double-tap window timer
+    this.runLocked = false;
+    this._rTapTime = 0;
     this.tracking = false;
     this.moving = false;
     this.working = 0;
     this.idleTime = 0;
     this.recovering = false;
-    // flying: X cycles 50ft -> 75ft -> 50ft -> land, with an auto-timer at 75ft
-    // (30s at 75ft -> 5s at 50ft -> land + 10s cooldown)
     this.flying = false;
-    this.flyLevel = 0;      // 0=ground, 1=50ft, 2=75ft, 3=50ft(2nd press)
+    this.flyLevel = 0;
     this.targetAlt = 0;
-    this.altitude = 0;      // current altitude in feet (0..75)
-    this.flyTimer = 0;      // remaining flight time (30s, then 5s descend, then land)
-    this.flyCd = 0;         // landing cooldown (10s)
-    this.yggBlessing = 0;   // invulnerability aura near the Yggdrasil (seconds)
-    this.spawnGrace = 0;    // brief invulnerability right after respawning
+    this.altitude = 0;
+    this.flyTimer = 0;
+    this.flyCd = 0;
+    this.yggBlessing = 0;
+    this.spawnGrace = 0;
+    this.onFloatingIsland = null;
   }
 
   get weaponDamage() { return this.weapon ? this.weapon.damage : 4; }
   get speed() {
     let s = 140;
-    if (this.buffs.speed > 0) s *= 1.6; // Swift Step
+    if (this.buffs.speed > 0) s *= 1.6;
     if (this.hasStatus('slow')) s *= this.statusSlow;
     return s;
   }
   get totalDefense() {
-    let d = this.baseStats.defense + (this.buffs.armor || 0); // Stone Guard
+    let d = this.baseStats.defense + (this.buffs.armor || 0);
     for (const slot of ['head', 'body', 'legs', 'feet']) {
       if (this.armor[slot]) d += this.armor[slot].defense;
     }
@@ -113,24 +112,44 @@ export class Player extends Entity {
     return `rgb(${r},${g},${b})`;
   }
 
-  // land the player (with cooldown) — used by the manual X cycle and the auto-timer
   _land(game, toast) {
+    const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
+    if (isl) {
+      this.flyLevel = 0;
+      this.flying = false;
+      this.targetAlt = 0;
+      this.altitude = isl.elev / 3;
+      this.flyTimer = 0;
+      this.onFloatingIsland = isl;
+      this.flyCd = 5;
+      game.toast(`🛬 Landed on ${isl.kind === 'city' ? 'Floating City' : 'Floating Island'}!`);
+      try { game.audio.sfx('levelup'); } catch (e) {}
+      return;
+    }
     this.flyLevel = 0;
     this.flying = false;
     this.targetAlt = 0;
     this.altitude = 0;
+    this.onFloatingIsland = null;
     this.flyTimer = 0;
     this.land(game);
     this.flyCd = 10;
     game.toast(toast);
   }
 
-  // stop flying and snap to the nearest walkable ground so the player is never
-  // left stuck inside a tree / building / water (which caused "frozen" movement)
   land(game) {
+    const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
+    if (isl) {
+      this.flying = false;
+      this.flyCd = 5;
+      this.altitude = isl.elev / 3;
+      this.onFloatingIsland = isl;
+      return;
+    }
     this.flying = false;
     this.flyCd = 5;
     this.altitude = 0;
+    this.onFloatingIsland = null;
     for (let r = 0; r <= 80; r += 8) {
       for (let a = 0; a < 8; a++) {
         const ang = (a / 8) * Math.PI * 2;
@@ -146,10 +165,8 @@ export class Player extends Entity {
 
   update(dt, game) {
     this.tickStatuses(dt, game);
-    // face the mouse (desktop) or movement dir (mobile joystick)
     const cam = game.camera;
     const ms = game.input.mouse;
-    // if mobile joystick is active and we're in 2D, face movement direction
     const v = game.input._virtual;
     const hasVirtual = v && (Math.abs(v.x) > 0.1 || Math.abs(v.y) > 0.1);
     if (!game.mode3d && hasVirtual) {
@@ -163,23 +180,19 @@ export class Player extends Entity {
     const moving = dir.x !== 0 || dir.y !== 0;
     this.moving = moving;
     this.crouching = game.input.held('shift');
-    // Sprint: hold R while moving, OR double-press R to LOCK auto-run (so you
-    // don't have to keep holding it). Movement is independent of stamina so the
-    // player never gets slowed down by it.
     if (game.input.pressed('r')) {
       if (this._rTapTime > 0) {
         this.runLocked = !this.runLocked;
         game.toast(this.runLocked ? '🏃 Auto-run LOCKED — press R twice to unlock' : '🚶 Auto-run unlocked');
         this._rTapTime = 0;
       } else {
-        this._rTapTime = 0.3; // 300ms window for the second tap
+        this._rTapTime = 0.3;
       }
     }
     if (this._rTapTime > 0) this._rTapTime -= dt;
     this.sprinting = (game.input.held('r') || this.runLocked) && moving && !this.crouching && !this.blocking;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
-    // ---- flying: X cycles 50ft -> 75ft -> 50ft -> land; auto-timer at 75ft ----
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
 
     if (game.input.pressed('x') && this.flyCd <= 0) {
@@ -187,7 +200,7 @@ export class Player extends Entity {
       if (this.flyLevel === 1) {
         this.flying = true;
         this.targetAlt = 50;
-        this.flyTimer = 30; // 30s total flight time, always
+        this.flyTimer = 30;
         game.toast('✈️ You take flight at 50 feet.');
       } else if (this.flyLevel === 2) {
         this.flying = true;
@@ -199,34 +212,48 @@ export class Player extends Entity {
         this.targetAlt = 50;
         this.flyTimer = 30;
         game.toast('✈️ Descending back to 50 feet.');
-      } else { // flyLevel === 4 -> land
+      } else {
         this._land(game, '🛬 You land. Flying cools down for 10s.');
       }
       game.audio.sfx('levelup');
     }
 
-    // auto-timer: after 30s of flight, descend to 50ft (5s), then land
     if (this.flying) {
       this.flyTimer -= dt;
       if (this.flyTimer <= 0 && this.targetAlt === 75) {
         this.targetAlt = 50;
-        this.flyTimer = 5; // 5s at 50ft before landing
+        this.flyTimer = 5;
         game.toast('↘️ Flight time up — descending to 50 feet.');
       } else if (this.flyTimer <= 0) {
         this._land(game, '🛬 Flight time up — you land. Flying cools down for 10s.');
       }
     }
 
-    // smoothly glide to the target altitude
     if (this.flying) {
       const diff = this.targetAlt - this.altitude;
-      const step = 90 * dt; // 90 ft/s glide
+      const step = 90 * dt;
       if (Math.abs(diff) <= step) this.altitude = this.targetAlt;
       else this.altitude += Math.sign(diff) * step;
     }
 
+    // floating island logic: if on island and walk off edge, start falling
+    if (!this.flying && this.onFloatingIsland) {
+      const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
+      if (!isl || isl.id !== this.onFloatingIsland.id) {
+        // walked off edge — fall to ground
+        this.onFloatingIsland = null;
+        this.altitude = this.altitude; // keep current altitude, will fall in next frames? For now snap to 0 with grace
+        // give brief grace and start falling visual
+        this.flyCd = 2;
+        game.toast('💨 You stepped off the floating island!');
+      } else {
+        // stay at island height
+        this.altitude = isl.elev / 3;
+      }
+    }
+
     let spd = this.sprinting ? 230 : this.speed;
-    if (this.flying) spd = 260; // fly faster than walking
+    if (this.flying) spd = 260;
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;
@@ -235,10 +262,20 @@ export class Player extends Entity {
     if (this.crouching) spd *= 0.55;
 
     if (moving) {
-      if (this.flying) {
-        // flying ignores ground collision (soars over water, trees and buildings)
+      if (this.flying || this.onFloatingIsland) {
         this.x = Math.max(24, Math.min(PX_W - 24, this.x + dir.x * spd * dt));
         this.y = Math.max(24, Math.min(PX_H - 24, this.y + dir.y * spd * dt));
+        if (this.onFloatingIsland && !this.flying) {
+          // clamp to island radius when walking on island
+          const isl = this.onFloatingIsland;
+          const dx = this.x - isl.x, dy = this.y - isl.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > isl.r - 16) {
+            const s = (isl.r - 16) / dist;
+            this.x = isl.x + dx * s;
+            this.y = isl.y + dy * s;
+          }
+        }
       } else {
         game.world.moveEntity(this, dir.x * spd * dt, dir.y * spd * dt);
       }
@@ -246,8 +283,6 @@ export class Player extends Entity {
 
     this.attackCd = Math.max(0, this.attackCd - dt);
     this.attackAnim = Math.max(0, this.attackAnim - dt);
-    // CRITICAL FIX: attackWindup must decay or the player is stuck "attacking"
-    // forever, permanently blocking stamina/MP/health recovery.
     this.attackWindup = Math.max(0, this.attackWindup - dt);
     this.dodgeCd = Math.max(0, this.dodgeCd - dt);
     if (this.dodgeTimer > 0) this.dodgeTimer -= dt;
@@ -260,32 +295,26 @@ export class Player extends Entity {
     const bob = this.attackAnim > 0 ? Math.sin(this.attackAnim * 40) * 1.5 : 0;
     ctx.save();
     ctx.translate(x, y);
-    if (this.flying) {
-      // ---- clear, obvious flight: big lift + separated ground shadow + glow ----
-      const lift = -this.altitude * 3.0; // 50 feet -> ~150px up (clearly visible)
-      // ground shadow (stays low and small = height cue)
+    if (this.flying || this.onFloatingIsland) {
+      const alt = this.flying ? this.altitude : (this.onFloatingIsland ? this.onFloatingIsland.elev / 3 : 0);
+      const lift = -alt * 3.0;
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * (0.7 - this.altitude * 0.008), s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
-      // lift the body up
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * (0.7 - alt * 0.008), s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
       ctx.translate(0, lift);
-      // floating bob so it never looks static
       const hbob = Math.sin(game.time.timeOfDay * 400 + this.x * 0.1) * 4;
       ctx.translate(0, hbob);
-      // glow aura
       const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 2.2);
       glow.addColorStop(0, 'rgba(255,255,255,0.35)');
       glow.addColorStop(1, 'rgba(200,230,255,0)');
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
-      // wing aura (flapping)
       const flap = Math.sin(game.time.timeOfDay * 500) * 0.4;
       ctx.fillStyle = 'rgba(200,230,255,0.4)';
-      ctx.beginPath(); ctx.ellipse(-s * 1.2, -s * 0.2, s * 0.55, s * 0.3, -0.5 - flap, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-s * 1.2, -s * 0.2, s * 0.55, s * 0.3, -0.5 - flap, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(s * 1.2, -s * 0.2, s * 0.55, s * 0.3, 0.5 + flap, 0, Math.PI * 2); ctx.fill();
     }
     if (this.crouching) ctx.scale(1, 0.8);
-    // body shadow (only when NOT flying; when flying the ground shadow above is used)
-    if (!this.flying) {
+    if (!this.flying && !this.onFloatingIsland) {
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
     }
@@ -301,50 +330,39 @@ export class Player extends Entity {
       ctx.restore();
     }
 
-    // ---- bigger, clearly gender-distinct figure ----
-    const scale = 1.35; // make the character more visible
+    const scale = 1.35;
     ctx.save();
     ctx.scale(scale, scale);
-    // body: male = broad torso + trousers, female = slimmer torso + flared dress
     if (this.gender === 'male') {
-      // broad shoulders + torso
       ctx.fillStyle = this.clothColor;
       ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.72, s * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-      // legs (trousers)
       ctx.fillStyle = this._darken(this.clothColor);
       ctx.fillRect(-s * 0.28, s * 0.55, s * 0.24, s * 0.42);
       ctx.fillRect(s * 0.04, s * 0.55, s * 0.24, s * 0.42);
     } else if (this.gender === 'female') {
-      // slimmer torso
       ctx.fillStyle = this.clothColor;
       ctx.beginPath(); ctx.ellipse(0, s * 0.12 + bob, s * 0.52, s * 0.5, 0, 0, Math.PI * 2); ctx.fill();
-      // flared dress / skirt
       ctx.beginPath();
       ctx.moveTo(-s * 0.4, s * 0.3);
       ctx.lineTo(-s * 0.7, s * 0.95);
       ctx.lineTo(s * 0.7, s * 0.95);
       ctx.lineTo(s * 0.4, s * 0.3);
       ctx.closePath(); ctx.fill();
-      // legs (slender)
       ctx.fillStyle = this.skinTone;
       ctx.fillRect(-s * 0.18, s * 0.85, s * 0.12, s * 0.25);
       ctx.fillRect(s * 0.06, s * 0.85, s * 0.12, s * 0.25);
     } else {
-      // neutral
       ctx.fillStyle = this.clothColor;
       ctx.beginPath(); ctx.ellipse(0, s * 0.18 + bob, s * 0.62, s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = this._darken(this.clothColor);
       ctx.fillRect(-s * 0.22, s * 0.55, s * 0.2, s * 0.4);
       ctx.fillRect(s * 0.02, s * 0.55, s * 0.2, s * 0.4);
     }
-    // arms
     ctx.fillStyle = this.skinTone;
     ctx.beginPath(); ctx.ellipse(-s * 0.72, s * 0.28 + bob, s * 0.11, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(s * 0.72, s * 0.28 + bob, s * 0.11, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
-    // head
     ctx.fillStyle = this.skinTone;
     ctx.beginPath(); ctx.arc(0, -s * 0.52 + bob, s * 0.48, 0, Math.PI * 2); ctx.fill();
-    // hair (gender-aware: female long, neutral medium, male short)
     ctx.fillStyle = this.hairColor;
     if (this.gender === 'female') {
       ctx.beginPath(); ctx.arc(0, -s * 0.68 + bob, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
@@ -357,12 +375,10 @@ export class Player extends Entity {
     } else {
       ctx.beginPath(); ctx.arc(0, -s * 0.68 + bob, s * 0.48, Math.PI, Math.PI * 2); ctx.fill();
     }
-    // eyes
     ctx.fillStyle = '#1a1a1a';
     ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    // ---- end body ----
 
     if (this.weapon && this.attackAnim <= 0) {
       ctx.save();

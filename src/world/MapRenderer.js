@@ -19,6 +19,7 @@ export class MapRenderer {
     this._drawTiles(ctx, game);
     this._drawNodes(ctx, game);
     this._drawBuildings(ctx, game);
+    this._drawFloatingIslands(ctx, game);
     this._drawTrails(ctx, game);
     this._drawCorpsesAndTraps(ctx, game);
     this._drawDrops(ctx, game);
@@ -391,6 +392,55 @@ export class MapRenderer {
     ctx.font = '9px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Playground', sx + w / 2, sy + h + 10);
+  }
+
+  _drawFloatingIslands(ctx, game) {
+    const cam = game.camera;
+    const islands = game.world.floatingIslands || [];
+    for (const isl of islands) {
+      const sx = isl.x - cam.x, sy = isl.y - cam.y;
+      const r = isl.r;
+      if (sx + r < -100 || sx - r > cam.vw + 100 || sy + r < -100 || sy - r > cam.vh + 100) continue;
+      // shadow on ground
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(sx, sy, r * 0.9, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      // floating rock bottom (dark)
+      ctx.fillStyle = '#6a6258';
+      ctx.beginPath();
+      ctx.moveTo(sx - r, sy);
+      ctx.quadraticCurveTo(sx, sy + r * 0.9, sx + r, sy);
+      ctx.quadraticCurveTo(sx, sy + r * 0.4, sx - r, sy);
+      ctx.closePath(); ctx.fill();
+      // top grass
+      ctx.fillStyle = isl.kind === 'city' ? '#7a9a6a' : '#5a8a4a';
+      ctx.beginPath(); ctx.ellipse(sx, sy - 4, r * 0.85, r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+      // city buildings (top-down)
+      if (isl.kind === 'city') {
+        ctx.fillStyle = '#8a8a8a';
+        for (let i = 0; i < 18; i++) {
+          const a = (i / 18) * Math.PI * 2 * 2.3;
+          const rr = (i / 18) * r * 0.6;
+          const bx = sx + Math.cos(a) * rr;
+          const by = sy - 4 + Math.sin(a) * rr * 0.45;
+          ctx.fillRect(bx - 3, by - 3, 6, 6);
+        }
+        // central tower
+        ctx.fillStyle = '#4a4a5a';
+        ctx.fillRect(sx - 4, sy - 12, 8, 12);
+      }
+      // waterfall mark
+      if (isl.kind === 'city' || isl.kind === 'temple') {
+        ctx.fillStyle = '#4aa8e0';
+        ctx.fillRect(sx + r * 0.15 - 3, sy - 2, 6, r * 0.6);
+      }
+      // label
+      ctx.fillStyle = '#ffd76a';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      const label = isl.kind === 'city' ? 'Floating City' : 'Floating Island';
+      ctx.fillText(label, sx, sy - r * 0.6 - 8);
+      ctx.textAlign = 'left';
+    }
   }
 
   _drawTrails(ctx, game) {

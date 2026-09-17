@@ -531,6 +531,21 @@ export class MenuManager {
     for (const b of g.world.buildings) {
       ctx.fillRect(b.x / TILE * s - 1, b.y / TILE * s - 1, b.w / TILE * s + 2, b.h / TILE * s + 2);
     }
+    // floating islands (near monster area)
+    if (g.world.floatingIslands) {
+      for (const isl of g.world.floatingIslands) {
+        const ix = isl.x / TILE, iy = isl.y / TILE;
+        const rr = isl.r / TILE;
+        ctx.fillStyle = isl.kind === 'city' ? '#a0a0ff' : '#8a9a8a';
+        ctx.beginPath(); ctx.arc(ix * s, iy * s, Math.max(4, rr * s * 0.5), 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(isl.kind === 'city' ? 'Floating City' : 'Float Isl', (ix + rr * 0.6) * s, iy * s);
+      }
+    }
     // monsters (colored dots, live)
     const monsters = g.multiplayer.connected ? g.remoteMonsters : g.monsters;
     for (const m of monsters) {
@@ -582,7 +597,7 @@ export class MenuManager {
     // ---- legend (main things on the map) ----
     const lx = 10, ly = 10;
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(lx, ly, 170, 118);
+    ctx.fillRect(lx, ly, 170, 135);
     ctx.fillStyle = '#f0e6d0';
     ctx.font = 'bold 11px sans-serif';
     ctx.fillText('Map Legend', lx + 8, ly + 14);
@@ -593,7 +608,8 @@ export class MenuManager {
       ['#2f6b2a', 'Tree'],
       ['#5fbf5f', 'Resource'],
       ['#c05050', 'Monster'],
-      ['#ff7ae0', 'Yggdrasil']
+      ['#ff7ae0', 'Yggdrasil'],
+      ['#a0a0ff', 'Floating City']
     ];
     legend.forEach(([c, label], i) => {
       const yy = ly + 26 + i * 15;
@@ -739,7 +755,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 9.3 — realistic buildings (gable roofs, chimneys, windows, doors, pillars, signs) (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 9.4 — floating city island near monsters (like sketch), landable, realistic buildings (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">
