@@ -143,7 +143,7 @@ export class HUD {
     }
     ctx.fillStyle = '#888';
     ctx.font = '9px sans-serif';
-    ctx.fillText(`v9.4 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
+    ctx.fillText(`v9.5 · ${g._fps || '--'} fps · ${g.monsters.length} monsters`, W - 12, H - 8);
     ctx.textAlign = 'left';
 
     // ---- bottom-left: quest tracker (single-player + shared co-op) ----
@@ -393,15 +393,29 @@ export class HUD {
     const g = this.game;
     const p = g.player;
     if (!g.world.floatingIslands || !g.world.floatingIslands.length) return;
-    if (p.onFloatingIsland) return; // already on one
-    // find nearest floating island
+    if (p.onFloatingIsland) {
+      // when on island, show exit hint
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(W / 2 - 120, H / 2 + 40, 240, 22);
+      ctx.fillStyle = '#a0a0ff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`🏝️ On ${p.onFloatingIsland.kind === 'city' ? 'Floating City' : 'Island'} — walk to edge to fall`, W / 2, H / 2 + 55);
+      ctx.textAlign = 'left';
+      return;
+    }
+    // find nearest floating island (main city prioritized)
     let best = null, bd = Infinity;
     for (const isl of g.world.floatingIslands) {
       const d = Math.hypot(isl.x - p.x, isl.y - p.y);
-      if (d < bd) { bd = d; best = isl; }
+      // prioritize main city if within 2x distance
+      const score = isl.id === 'main' ? d * 0.6 : d;
+      if (score < bd) { bd = score; best = isl; }
     }
-    if (!best || bd > 8000) return;
-    const distTiles = Math.round(bd / 32);
+    if (!best) return;
+    const realDist = Math.hypot(best.x - p.x, best.y - p.y);
+    if (realDist > 40000) return; // still far but larger than before
+    const distTiles = Math.round(realDist / 32);
     const px = W / 2, py = H / 2;
     const ang = Math.atan2(best.y - p.y, best.x - p.x);
     const r = 78;
@@ -413,12 +427,12 @@ export class HUD {
     ctx.fillStyle = '#a0a0ff';
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
     ctx.restore();
-    ctx.font = 'bold 11px sans-serif';
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    const label = `${best.kind === 'city' ? '🏝️ Floating City' : '🏝️ Island'} · ${distTiles}t ${p.flying ? '' : '(fly X)'}`;
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    const label = `${best.kind === 'city' ? '🏝️ Floating City' : '🏝️ Island'} · ${distTiles}t ${p.flying ? 'X to land' : 'fly X'}`;
     const tw = ctx.measureText(label).width;
-    ctx.fillRect(px - tw / 2 - 6, py - 36, tw + 12, 15);
+    ctx.fillRect(px - tw / 2 - 8, py - 38, tw + 16, 18);
     ctx.fillStyle = '#c0c0ff';
     ctx.fillText(label, px, py - 26);
     ctx.textAlign = 'left';

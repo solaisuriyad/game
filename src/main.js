@@ -323,6 +323,19 @@ class Game {
     if (input.pressed('q') && !this.ui.open && this.nearYggdrasil()) {
       this.yggdrasilBlessing();
     }
+    // Floating city teleport for testing: press F to fly to main floating city
+    if (input.pressed('f') && !this.ui.open) {
+      const isl = this.world.floatingIslands ? this.world.floatingIslands.find(i => i.id === 'main') : null;
+      if (isl) {
+        this.player.x = isl.x;
+        this.player.y = isl.y;
+        this.player.flying = true;
+        this.player.targetAlt = 75;
+        this.player.altitude = 75;
+        this.player.flyTimer = 30;
+        this.toast(`✈️ Teleported to Floating City! Press X to land on it`);
+      }
+    }
   }
 
   nearYggdrasil() {

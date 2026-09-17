@@ -333,72 +333,116 @@ export class World3DRenderer {
       g.add(mist);
     }
 
-    // city on top — only for main island
+    // city on top — dense floating city like the ink sketch
     if (kind === 'city') {
-      // dense city: ~45 small buildings + central tower + spires, like sketch
       const cityMat = S.stoneWall;
       const cityMat2 = S.plasterDark;
+      const cityMat3 = S.brick;
       const roofMat = S.roofTileDark;
-      // generate buildings in rings
-      for (let i = 0; i < 42; i++) {
-        const ang = (i / 42) * Math.PI * 2 * 3.7 + isl.seed;
-        const rad = (i / 42) * R * 0.82;
-        const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 20;
-        const z = Math.sin(ang) * rad + (Math.random() - 0.5) * 20;
-        const w = 12 + Math.random() * 18;
-        const d = 12 + Math.random() * 18;
-        const h = 18 + Math.random() * (i < 8 ? 80 : 32);
-        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), i % 3 === 0 ? cityMat : cityMat2);
+      const roofMat2 = S.roofTile;
+
+      // dense city: 70+ buildings stacked chaotically, like sketch
+      const count = kind === 'city' && isl.id === 'main' ? 75 : 50;
+      for (let i = 0; i < count; i++) {
+        const ang = (i / count) * Math.PI * 2 * 4.3 + isl.seed * 1.1 + (i * 0.37);
+        const rad = Math.pow(i / count, 0.7) * R * 0.86;
+        const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 28;
+        const z = Math.sin(ang) * rad + (Math.random() - 0.5) * 28;
+        const w = 10 + Math.random() * 16;
+        const d = 10 + Math.random() * 16;
+        // taller near center, like sketch's layered mountain city
+        const distFactor = 1 - rad / R;
+        const h = 14 + Math.random() * 28 + distFactor * (isl.id === 'main' ? 110 : 60);
+        const mat = i % 3 === 0 ? cityMat : (i % 3 === 1 ? cityMat2 : cityMat3);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
         b.position.set(x, elev + 18 + h / 2, z);
         g.add(b);
-        // roof
-        if (Math.random() < 0.7) {
-          const rh = 6 + Math.random() * 8;
-          const roof = new THREE.Mesh(createGableRoof(w + 4, d + 4, rh), roofMat);
+        // roof — varied
+        if (Math.random() < 0.75) {
+          const rh = 5 + Math.random() * 10;
+          const rm = Math.random() < 0.5 ? roofMat : roofMat2;
+          const roof = new THREE.Mesh(createGableRoof(w + 3, d + 3, rh), rm);
           roof.position.set(x, elev + 18 + h, z);
           g.add(roof);
         }
-        // spire for some
-        if (i % 7 === 0) {
-          const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 18 + Math.random() * 20, 6), S.stoneDark);
-          spire.position.set(x, elev + 18 + h + 12, z);
+        // spire for many (like sketch's many pointed towers)
+        if (i % 4 === 0 || distFactor > 0.6) {
+          const spireH = 14 + Math.random() * 28 + distFactor * 20;
+          const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, spireH, 6), i % 2 === 0 ? S.stoneDark : S.metal);
+          spire.position.set(x, elev + 18 + h + spireH / 2, z);
           g.add(spire);
         }
+        // small balcony / bridge between close buildings (occasional)
+        if (i > 0 && i % 9 === 0) {
+          const bridge = new THREE.Mesh(new THREE.BoxGeometry(18, 2, 4), S.wood);
+          bridge.position.set(x + 10, elev + 18 + h * 0.6, z);
+          bridge.rotation.y = ang;
+          g.add(bridge);
+        }
       }
-      // central colossal tower (like sketch's main spire)
-      const centralH = 160;
-      const central = new THREE.Mesh(new THREE.CylinderGeometry(18, 22, centralH, 10), S.stoneWall);
-      central.position.set(0, elev + 18 + centralH / 2, -R * 0.1);
+
+      // central colossal tower — the main spire from sketch (tallest)
+      const centralH = isl.id === 'main' ? 190 : 140;
+      const central = new THREE.Mesh(new THREE.CylinderGeometry(20, 26, centralH, 10), S.stoneWall);
+      central.position.set(0, elev + 18 + centralH / 2, -R * 0.08);
       g.add(central);
-      const centralTop = new THREE.Mesh(new THREE.CylinderGeometry(8, 14, 40, 8), S.stoneDark);
-      centralTop.position.set(0, elev + 18 + centralH + 20, -R * 0.1);
+      // middle section
+      const mid = new THREE.Mesh(new THREE.CylinderGeometry(14, 20, 48, 10), S.plasterDark);
+      mid.position.set(0, elev + 18 + centralH + 24, -R * 0.08);
+      g.add(mid);
+      // upper tower
+      const centralTop = new THREE.Mesh(new THREE.CylinderGeometry(8, 14, 44, 8), S.stoneDark);
+      centralTop.position.set(0, elev + 18 + centralH + 68, -R * 0.08);
       g.add(centralTop);
-      const spireTop = new THREE.Mesh(new THREE.ConeGeometry(6, 36, 8), S.metal);
-      spireTop.position.set(0, elev + 18 + centralH + 58, -R * 0.1);
+      const spireTop = new THREE.Mesh(new THREE.ConeGeometry(7, 42, 8), S.metal);
+      spireTop.position.set(0, elev + 18 + centralH + 112, -R * 0.08);
       g.add(spireTop);
-      // surrounding towers (like sketch's many spires)
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const rr = R * 0.35;
-        const th = 60 + Math.random() * 50;
-        const tw = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, th, 8), S.stoneWall);
+      // antenna / flag on very top
+      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 30, 4), S.metal);
+      antenna.position.set(0, elev + 18 + centralH + 145, -R * 0.08);
+      g.add(antenna);
+
+      // surrounding towers (8 towers around central, like sketch's cluster)
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + isl.seed * 0.3;
+        const rr = R * (0.28 + (i % 3) * 0.08);
+        const th = 55 + Math.random() * 70 + (i % 2) * 20;
+        const tw = new THREE.Mesh(new THREE.CylinderGeometry(7, 10, th, 8), i % 2 === 0 ? S.stoneWall : S.brick);
         tw.position.set(Math.cos(a) * rr, elev + 18 + th / 2, Math.sin(a) * rr);
         g.add(tw);
-        const tr = new THREE.Mesh(new THREE.ConeGeometry(7, 18, 6), S.roofTileDark);
-        tr.position.set(Math.cos(a) * rr, elev + 18 + th + 9, Math.sin(a) * rr);
+        const tr = new THREE.Mesh(new THREE.ConeGeometry(6, 20, 6), S.roofTileDark);
+        tr.position.set(Math.cos(a) * rr, elev + 18 + th + 10, Math.sin(a) * rr);
         g.add(tr);
+        // small dome on some
+        if (i % 3 === 0) {
+          const dome = new THREE.Mesh(new THREE.SphereGeometry(8, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), S.plaster);
+          dome.position.set(Math.cos(a) * rr, elev + 18 + th, Math.sin(a) * rr);
+          g.add(dome);
+        }
       }
-      // floating smaller platforms hanging below main (like sketch's underside structures)
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2 + 0.5;
-        const rr = R * 0.7;
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(18, 4, 18), S.wood);
-        plat.position.set(Math.cos(a) * rr, elev - 30 - i * 12, Math.sin(a) * rr);
+
+      // underside city — hanging structures below island (like sketch's bottom)
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.5 + isl.seed * 0.2;
+        const rr = R * (0.55 + Math.random() * 0.25);
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(20, 5, 20), S.woodDark);
+        plat.position.set(Math.cos(a) * rr, elev - 28 - i * 14, Math.sin(a) * rr);
         g.add(plat);
-        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 34, 4), S.metal);
-        chain.position.set(Math.cos(a) * rr, elev - 12, Math.sin(a) * rr);
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 40, 4), S.metal);
+        chain.position.set(Math.cos(a) * rr, elev - 10, Math.sin(a) * rr);
         g.add(chain);
+        // small hanging building
+        const hb = new THREE.Mesh(new THREE.BoxGeometry(12, 16, 12), S.stoneWall);
+        hb.position.set(Math.cos(a) * rr, elev - 38 - i * 14, Math.sin(a) * rr);
+        g.add(hb);
       }
+
+      // city wall around edge (like fortified floating city)
+      const wallGeo = new THREE.TorusGeometry(R * 0.88, 4, 6, 24);
+      const wall = new THREE.Mesh(wallGeo, S.stoneWall);
+      wall.rotation.x = Math.PI / 2;
+      wall.position.y = elev + 22;
+      g.add(wall);
     } else if (kind === 'temple') {
       // temple on small island — like bottom of sketch
       const base = new THREE.Mesh(new THREE.BoxGeometry(R * 0.9, 18, R * 0.9), S.stoneWall);
