@@ -109,10 +109,21 @@ export class BuildingInterior {
     const b = this.building;
     if (b && g.player) {
       // place the player back outside, just south of the building's door
-      const rect = g.world.buildingById(b.id);
+      let rect = g.world.buildingById(b.id);
+      if (!rect && g.world.floatingBuildings) {
+        rect = g.world.floatingBuildings.find(fb => fb.building.id === b.id);
+      }
       if (rect) {
         g.player.x = rect.x + rect.w / 2;
         g.player.y = rect.y + rect.h + 24;
+        // if floating, keep on island
+        if (rect.isFloating && g.world.floatingIslandAt) {
+          const isl = g.world.floatingIslandAt(g.player.x, g.player.y);
+          if (isl) {
+            g.player.onFloatingIsland = isl;
+            g.player.altitude = isl.elev / 3;
+          }
+        }
       }
     }
     g.canvas.removeEventListener('mousemove', this._onMove);

@@ -57,8 +57,18 @@ export class InteractSystem {
     if (tree) return 'E — Chop wood';
     const npc = this.nearestNPC();
     if (npc) return `E — Talk to ${npc.name}`;
+    // floating city buildings (when on island)
+    if (g.player.onFloatingIsland && g.world.floatingBuildingAt) {
+      const fb = g.world.floatingBuildingAt(this.p.x, this.p.y, 70);
+      if (fb) return `E — Enter ${fb.building.name} (Floating)`;
+    }
     const b = g.world.nearestBuilding(this.p.x, this.p.y, 56);
     if (b) return `E — Enter ${b.building.name}`;
+    // also check floating when not yet flagged but over island
+    if (g.world.floatingBuildingAt) {
+      const fb = g.world.floatingBuildingAt(this.p.x, this.p.y, 70);
+      if (fb) return `E — Enter ${fb.building.name} (Floating)`;
+    }
     return null;
   }
 
@@ -72,6 +82,11 @@ export class InteractSystem {
     if (tree) { g.toast(g.gathering.chopTree(tree).message); return; }
     const npc = this.nearestNPC();
     if (npc) { g.ui.openDialogue(npc); return; }
+    // floating buildings first
+    if (g.world.floatingBuildingAt) {
+      const fb = g.world.floatingBuildingAt(this.p.x, this.p.y, 70);
+      if (fb) { g.buildingInterior.open(fb.building); return; }
+    }
     const b = g.world.nearestBuilding(this.p.x, this.p.y, 56);
     if (b) { g.buildingInterior.open(b.building); return; }
   }

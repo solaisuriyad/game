@@ -152,44 +152,78 @@ export class WorldSystem {
 
   _placeFloatingIslands() {
     this.floatingIslands = [];
-    // MAIN FLOATING CITY — bigger area (550 radius = huge), above 100ft
+    this.floatingBuildings = [];
+    // MAIN FLOATING CITY — 5x bigger area: radius 550* sqrt(5) ~1230, but use 1250 for 5x area
+    // Actually 5x bigger than 550 radius = area 5x = radius * sqrt(5) = 550*2.236=1230
+    // Use 1250 for main, 650 for deep city
     const mainX = (VILLAGE_CX + 165) * TILE;
     const mainY = (VILLAGE_CY - 25) * TILE;
+    const mainR = 1250; // 5x bigger area than 550 (was 550, now 1250)
     this.floatingIslands.push({
       id: 'main',
       x: mainX, y: mainY,
-      r: 550, // BIGGER — was 360, now 550 like your image's massive island
-      elev: 380, // 126ft
+      r: mainR,
+      elev: 400, // 133ft above ground (above 100ft as requested)
       kind: 'city',
       seed: 1
     });
+    // generate 150 realistic buildings on main island
+    this._genFloatingCityBuildings(mainX, mainY, mainR, 150, 1);
+
     this.floatingIslands.push({
       id: 'small1',
-      x: mainX + 520, y: mainY - 240,
-      r: 180, elev: 350, kind: 'rock', seed: 2
+      x: mainX + 680, y: mainY - 320,
+      r: 220, elev: 360, kind: 'rock', seed: 2
     });
     this.floatingIslands.push({
       id: 'small2',
-      x: mainX - 380, y: mainY + 460,
-      r: 200, elev: 365, kind: 'temple', seed: 3
+      x: mainX - 480, y: mainY + 560,
+      r: 260, elev: 375, kind: 'temple', seed: 3
     });
+    this._genFloatingCityBuildings(mainX - 480, mainY + 560, 180, 20, 3);
+
     this.floatingIslands.push({
       id: 'tiny1',
-      x: mainX + 140, y: mainY + 680,
-      r: 120, elev: 335, kind: 'shrine', seed: 4
+      x: mainX + 180, y: mainY + 880,
+      r: 150, elev: 345, kind: 'shrine', seed: 4
     });
     this.floatingIslands.push({
       id: 'small3',
-      x: mainX - 140, y: mainY - 520,
-      r: 150, elev: 345, kind: 'rock', seed: 5
+      x: mainX - 180, y: mainY - 620,
+      r: 180, elev: 355, kind: 'rock', seed: 5
     });
+
     const deepX = (YGGDRASIL_CX + 180) * TILE;
     const deepY = (YGGDRASIL_CY - 180) * TILE;
+    const deepR = 650;
     this.floatingIslands.push({
       id: 'deep_city',
       x: deepX, y: deepY,
-      r: 420, elev: 380, kind: 'city', seed: 6
+      r: deepR, elev: 400, kind: 'city', seed: 6
     });
+    this._genFloatingCityBuildings(deepX, deepY, deepR, 70, 6);
+  }
+
+  _genFloatingCityBuildings(cx, cy, R, count, seed) {
+    const funcs = ['house','house','house','general','foodshop','weaponshop','armorshop','inn','tavern','blacksmith','tailor','healer','gearshop'];
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2 * 4.7 + seed * 1.3 + i * 0.51;
+      const rad = Math.pow(i / count, 0.7) * R * 0.82 + this.rng.range(-20, 20);
+      if (rad > R - 30) continue;
+      const x = cx + Math.cos(ang) * rad;
+      const y = cy + Math.sin(ang) * rad;
+      const w = 32 + this.rng.range(0, 28); // tile px size
+      const h = 32 + this.rng.range(0, 28);
+      const func = funcs[this.rng.int(0, funcs.length - 1)];
+      const colors = ['#8a5a3a','#7a6a4a','#6a5a3a','#8a6a3a','#5a5a4a','#7a4a6a'];
+      const color = colors[this.rng.int(0, colors.length - 1)];
+      this.floatingBuildings.push({
+        x: x - w / 2, y: y - h / 2, w, h,
+        building: { id: `float_${seed}_${i}`, name: func === 'house' ? 'Floating House' : `Floating ${func}`, func, color },
+        islandId: seed === 1 ? 'main' : (seed === 6 ? 'deep_city' : 'small2'),
+        isFloating: true
+      });
+    }
   }
 
   // check if world px is over a floating island (for landing / walking)
@@ -198,6 +232,17 @@ export class WorldSystem {
       if (Math.hypot(px - isl.x, py - isl.y) < isl.r) return isl;
     }
     return null;
+  }
+
+  floatingBuildingAt(px, py, radius = 60) {
+    let best = null, bd = radius;
+    for (const b of this.floatingBuildings) {
+      const dx = Math.max(b.x - px, 0, px - (b.x + b.w));
+      const dy = Math.max(b.y - py, 0, py - (b.y + b.h));
+      const d = Math.hypot(dx, dy);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
   }
 
   _carveRiver() {

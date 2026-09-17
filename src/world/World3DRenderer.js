@@ -289,206 +289,160 @@ export class World3DRenderer {
     const S = shared();
     const g = new THREE.Group();
     const R = isl.r;
-    const elev = isl.elev; // px above ground
+    const elev = isl.elev;
     const kind = isl.kind;
 
-    // bottom rock — inverted cone + irregular lumps
-    const rockH = kind === 'city' ? 420 : 200 + R * 0.6;
-    const baseRock = new THREE.Mesh(new THREE.ConeGeometry(R * 1.15, rockH, 10), S.rock);
+    // bottom rock — bigger for 5x area
+    const rockH = kind === 'city' ? 620 : 320 + R * 0.45;
+    const baseRock = new THREE.Mesh(new THREE.ConeGeometry(R * 1.2, rockH, 14), S.rock);
     baseRock.rotation.x = Math.PI;
-    baseRock.position.y = elev - rockH / 2 + 8;
+    baseRock.position.y = elev - rockH / 2 + 10;
     g.add(baseRock);
 
-    // extra rock stalactites to make bottom look jagged like sketch
-    const lumpGeo = new THREE.ConeGeometry(R * 0.25, rockH * 0.5, 6);
-    for (let i = 0; i < (kind === 'city' ? 6 : 3); i++) {
-      const a = (i / (kind === 'city' ? 6 : 3)) * Math.PI * 2 + (isl.seed * 0.7);
-      const rr = R * (0.5 + Math.random() * 0.3);
+    const lumpGeo = new THREE.ConeGeometry(R * 0.2, rockH * 0.45, 7);
+    for (let i = 0; i < (kind === 'city' ? 12 : 5); i++) {
+      const a = (i / (kind === 'city' ? 12 : 5)) * Math.PI * 2 + (isl.seed * 0.71);
+      const rr = R * (0.42 + Math.random() * 0.38);
       const lump = new THREE.Mesh(lumpGeo, S.rock);
       lump.rotation.x = Math.PI;
-      lump.position.set(Math.cos(a) * rr, elev - rockH * 0.2, Math.sin(a) * rr);
-      lump.scale.setScalar(0.6 + Math.random() * 0.5);
+      lump.position.set(Math.cos(a) * rr, elev - rockH * 0.22, Math.sin(a) * rr);
+      lump.scale.setScalar(0.5 + Math.random() * 0.8);
       g.add(lump);
     }
 
-    // top platform — grass + dirt edge
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 0.92, 18, 12), S.ground);
-    top.position.y = elev + 9;
+    // top platform — bigger
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 0.94, 26, 16), S.ground);
+    top.position.y = elev + 13;
     g.add(top);
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.92, R * 0.95, 8, 12), S.rock);
-    rim.position.y = elev - 2;
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.94, R * 0.97, 12, 16), S.rock);
+    rim.position.y = elev;
     g.add(rim);
 
-    // waterfall — on south side (+Z), like sketch
     if (kind === 'city' || kind === 'temple') {
-      const fallW = kind === 'city' ? R * 0.22 : R * 0.18;
-      const fallH = elev + rockH * 0.6;
-      const fall = new THREE.Mesh(new THREE.BoxGeometry(fallW, fallH, 2), S.water);
-      fall.position.set(R * 0.15, elev - fallH / 2 + 10, R * 0.55);
+      const fallW = kind === 'city' ? R * 0.16 : R * 0.13;
+      const fallH = elev + rockH * 0.5;
+      const fall = new THREE.Mesh(new THREE.BoxGeometry(fallW, fallH, 4), S.water);
+      fall.position.set(R * 0.2, elev - fallH / 2 + 14, R * 0.62);
       g.add(fall);
-      // pool mist at bottom of fall
-      const mist = new THREE.Mesh(new THREE.SphereGeometry(fallW * 0.8, 8, 6), new THREE.MeshBasicMaterial({ color: 0xaad8ff, transparent: true, opacity: 0.18, depthWrite: false }));
-      mist.position.set(R * 0.15, 6, R * 0.55);
-      mist.scale.set(1, 0.5, 1);
+      const mist = new THREE.Mesh(new THREE.SphereGeometry(fallW * 1.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xaad8ff, transparent: true, opacity: 0.22, depthWrite: false }));
+      mist.position.set(R * 0.2, 10, R * 0.62);
+      mist.scale.set(1, 0.7, 1);
       g.add(mist);
     }
 
-    // city on top — dense floating city like the ink sketch, now MORE REALISTIC
-    if (kind === 'city') {
-      const cityMat = S.stoneWall;
-      const cityMat2 = S.plasterDark;
-      const cityMat3 = S.brick;
-      const roofMat = S.roofTileDark;
-      const roofMat2 = S.roofTile;
-
-      // helper for realistic mini building (like village houses but smaller)
-      const addRealisticMini = (x, z, w, d, h, mat) => {
-        const bw = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-        bw.position.set(x, elev + 18 + h / 2, z);
-        g.add(bw);
-        // foundation
-        const fd = new THREE.Mesh(new THREE.BoxGeometry(w + 2, 3, d + 2), S.foundation);
-        fd.position.set(x, elev + 18 + 1.5, z); g.add(fd);
-        // roof
-        if (h > 20) {
-          const rh = 5 + Math.random() * 7;
-          const rm = Math.random() < 0.5 ? roofMat : roofMat2;
-          const roof = new THREE.Mesh(createGableRoof(w + 3, d + 3, rh), rm);
-          roof.position.set(x, elev + 18 + h, z); g.add(roof);
-        }
-        // door
-        const door = new THREE.Mesh(new THREE.BoxGeometry(5, 9, 0.8), S.doorWood);
-        door.position.set(x, elev + 18 + 4.5, z + d / 2 + 0.4); g.add(door);
-        // windows (1-2)
-        const winW = 4, winH = 4;
-        const wx = x - w * 0.25;
-        const wy = elev + 18 + h * 0.6;
-        const wz = z + d / 2 + 0.5;
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(winW + 1, winH + 1, 0.6), S.woodDark);
-        frame.position.set(wx, wy, wz); g.add(frame);
-        const glass = new THREE.Mesh(new THREE.PlaneGeometry(winW, winH), S.glass);
-        glass.position.set(wx, wy, wz + 0.4); g.add(glass);
-        if (w > 14) {
-          const wx2 = x + w * 0.25;
-          const frame2 = new THREE.Mesh(new THREE.BoxGeometry(winW + 1, winH + 1, 0.6), S.woodDark);
-          frame2.position.set(wx2, wy, wz); g.add(frame2);
-          const glass2 = new THREE.Mesh(new THREE.PlaneGeometry(winW, winH), S.glass);
-          glass2.position.set(wx2, wy, wz + 0.4); g.add(glass2);
-        }
-        // chimney for taller
-        if (h > 40) {
-          const chim = new THREE.Mesh(new THREE.BoxGeometry(4, h * 0.5, 4), S.chimneyBrick);
-          chim.position.set(x + w * 0.3, elev + 18 + h * 0.7, z - d * 0.2); g.add(chim);
-        }
-      };
-
-      const count = isl.id === 'main' ? 85 : 55;
-      for (let i = 0; i < count; i++) {
-        const ang = (i / count) * Math.PI * 2 * 4.3 + isl.seed * 1.1 + (i * 0.37);
-        const rad = Math.pow(i / count, 0.68) * R * 0.84;
-        const x = Math.cos(ang) * rad + (Math.random() - 0.5) * 22;
-        const z = Math.sin(ang) * rad + (Math.random() - 0.5) * 22;
-        const w = 12 + Math.random() * 14;
-        const d = 12 + Math.random() * 14;
-        const distFactor = 1 - rad / R;
-        const h = 16 + Math.random() * 26 + distFactor * (isl.id === 'main' ? 95 : 55);
-        const mat = i % 3 === 0 ? cityMat : (i % 3 === 1 ? cityMat2 : cityMat3);
-        addRealisticMini(x, z, w, d, h, mat);
-        if (i % 4 === 0 || distFactor > 0.65) {
-          const spireH = 12 + Math.random() * 22 + distFactor * 18;
-          const spire = new THREE.Mesh(new THREE.ConeGeometry(3.2, spireH, 6), i % 2 === 0 ? S.stoneDark : S.metal);
-          spire.position.set(x, elev + 18 + h + spireH / 2, z); g.add(spire);
-        }
+    // realistic enterable buildings — use stored floatingBuildings
+    if ((kind === 'city' || kind === 'temple') && this.game.world.floatingBuildings) {
+      const fbs = this.game.world.floatingBuildings.filter(fb => fb.islandId === isl.id);
+      for (const fb of fbs) {
+        const lx = fb.x + fb.w / 2 - isl.x;
+        const lz = fb.y + fb.h / 2 - isl.y;
+        const bMesh = this._makeFloatingBuilding(fb, elev);
+        bMesh.position.set(lx, 0, lz);
+        g.add(bMesh);
       }
-
-      // central colossal tower — more realistic with windows and balconies
-      const centralH = isl.id === 'main' ? 210 : 155;
-      const central = new THREE.Mesh(new THREE.CylinderGeometry(22, 28, centralH, 12), S.stoneWall);
-      central.position.set(0, elev + 18 + centralH / 2, -R * 0.08); g.add(central);
-      // central windows (vertical slits)
-      for (let y = 20; y < centralH - 20; y += 22) {
-        const win = new THREE.Mesh(new THREE.BoxGeometry(4, 8, 1), S.glassLit);
-        win.position.set(0, elev + 18 + y, 14); g.add(win);
+      // central towers
+      const centralH = isl.id === 'main' ? 260 : 180;
+      const central = new THREE.Mesh(new THREE.CylinderGeometry(26, 34, centralH, 12), S.stoneWall);
+      central.position.set(0, elev + 26 + centralH / 2, -R * 0.08); g.add(central);
+      for (let y = 24; y < centralH - 20; y += 24) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(5, 9, 1.2), S.glassLit);
+        win.position.set(0, elev + 26 + y, 18); g.add(win);
       }
-      const mid = new THREE.Mesh(new THREE.CylinderGeometry(16, 22, 52, 10), S.plasterDark);
-      mid.position.set(0, elev + 18 + centralH + 26, -R * 0.08); g.add(mid);
-      const centralTop = new THREE.Mesh(new THREE.CylinderGeometry(10, 16, 48, 8), S.stoneDark);
-      centralTop.position.set(0, elev + 18 + centralH + 76, -R * 0.08); g.add(centralTop);
-      const spireTop = new THREE.Mesh(new THREE.ConeGeometry(8, 48, 8), S.metal);
-      spireTop.position.set(0, elev + 18 + centralH + 124, -R * 0.08); g.add(spireTop);
-      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 36, 4), S.metal);
-      antenna.position.set(0, elev + 18 + centralH + 166, -R * 0.08); g.add(antenna);
-
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2 + isl.seed * 0.3;
-        const rr = R * (0.26 + (i % 3) * 0.09);
-        const th = 60 + Math.random() * 75 + (i % 2) * 22;
-        const tw = new THREE.Mesh(new THREE.CylinderGeometry(8, 11, th, 8), i % 2 === 0 ? S.stoneWall : S.brick);
-        tw.position.set(Math.cos(a) * rr, elev + 18 + th / 2, Math.sin(a) * rr); g.add(tw);
-        const tr = new THREE.Mesh(new THREE.ConeGeometry(7, 20, 6), S.roofTileDark);
-        tr.position.set(Math.cos(a) * rr, elev + 18 + th + 10, Math.sin(a) * rr); g.add(tr);
-        if (i % 3 === 0) {
-          const dome = new THREE.Mesh(new THREE.SphereGeometry(9, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), S.plaster);
-          dome.position.set(Math.cos(a) * rr, elev + 18 + th, Math.sin(a) * rr); g.add(dome);
-        }
+      const centralTop = new THREE.Mesh(new THREE.CylinderGeometry(12, 20, 56, 8), S.stoneDark);
+      centralTop.position.set(0, elev + 26 + centralH + 28, -R * 0.08); g.add(centralTop);
+      const spireTop = new THREE.Mesh(new THREE.ConeGeometry(10, 64, 8), S.metal);
+      spireTop.position.set(0, elev + 26 + centralH + 84, -R * 0.08); g.add(spireTop);
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2 + isl.seed * 0.3;
+        const rr = R * (0.3 + (i % 3) * 0.09);
+        const th = 75 + Math.random() * 90;
+        const tw = new THREE.Mesh(new THREE.CylinderGeometry(10, 13, th, 8), S.stoneWall);
+        tw.position.set(Math.cos(a) * rr, elev + 26 + th / 2, Math.sin(a) * rr); g.add(tw);
+        const tr = new THREE.Mesh(new THREE.ConeGeometry(9, 24, 6), S.roofTileDark);
+        tr.position.set(Math.cos(a) * rr, elev + 26 + th + 12, Math.sin(a) * rr); g.add(tr);
       }
-
-      for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * Math.PI * 2 + 0.5 + isl.seed * 0.2;
-        const rr = R * (0.58 + Math.random() * 0.28);
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(22, 5, 22), S.woodDark);
-        plat.position.set(Math.cos(a) * rr, elev - 32 - i * 16, Math.sin(a) * rr); g.add(plat);
-        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 44, 4), S.metal);
-        chain.position.set(Math.cos(a) * rr, elev - 12, Math.sin(a) * rr); g.add(chain);
-        const hb = new THREE.Mesh(new THREE.BoxGeometry(14, 18, 14), S.stoneWall);
-        hb.position.set(Math.cos(a) * rr, elev - 42 - i * 16, Math.sin(a) * rr); g.add(hb);
-        // hanging lantern
-        const lamp = new THREE.Mesh(new THREE.SphereGeometry(3, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd76a }));
-        lamp.position.set(Math.cos(a) * rr, elev - 52 - i * 16, Math.sin(a) * rr); g.add(lamp);
+      // underside hanging city (like sketch)
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2 + 0.5;
+        const rr = R * (0.62 + Math.random() * 0.32);
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(26, 6, 26), S.woodDark);
+        plat.position.set(Math.cos(a) * rr, elev - 40 - i * 20, Math.sin(a) * rr); g.add(plat);
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 60, 4), S.metal);
+        chain.position.set(Math.cos(a) * rr, elev - 14, Math.sin(a) * rr); g.add(chain);
       }
-
-      const wallGeo = new THREE.TorusGeometry(R * 0.9, 5, 6, 28);
-      const wall = new THREE.Mesh(wallGeo, S.stoneWall);
-      wall.rotation.x = Math.PI / 2;
-      wall.position.y = elev + 24;
-      g.add(wall);
-    } else if (kind === 'temple') {
-      // temple on small island — like bottom of sketch
-      const base = new THREE.Mesh(new THREE.BoxGeometry(R * 0.9, 18, R * 0.9), S.stoneWall);
-      base.position.y = elev + 18; g.add(base);
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(R * 0.65, 22, 8), S.roofTileDark);
-      roof.position.y = elev + 38; g.add(roof);
-      const pillarGeo = new THREE.CylinderGeometry(3, 3, 18, 6);
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        const pil = new THREE.Mesh(pillarGeo, S.plaster);
-        pil.position.set(Math.cos(a) * R * 0.35, elev + 18, Math.sin(a) * R * 0.35); g.add(pil);
-      }
+      const wall = new THREE.Mesh(new THREE.TorusGeometry(R * 0.92, 7, 6, 36), S.stoneWall);
+      wall.rotation.x = Math.PI / 2; wall.position.y = elev + 32; g.add(wall);
     } else if (kind === 'shrine') {
-      const shrine = new THREE.Mesh(new THREE.BoxGeometry(R * 0.7, 14, R * 0.7), S.stoneWall);
-      shrine.position.y = elev + 16; g.add(shrine);
-      const ling = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 12, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-      ling.position.y = elev + 29; g.add(ling);
+      const shrine = new THREE.Mesh(new THREE.BoxGeometry(R * 0.7, 18, R * 0.7), S.stoneWall);
+      shrine.position.y = elev + 22; g.add(shrine);
+      const ling = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 16, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      ling.position.y = elev + 39; g.add(ling);
     } else {
-      // rock island — just a few rocks / trees
       if (!this._isMobile) {
-        const tree = new THREE.Mesh(new THREE.ConeGeometry(12, 24, 7), S.canopy);
-        tree.position.set(0, elev + 24, 0); g.add(tree);
+        const tree = new THREE.Mesh(new THREE.ConeGeometry(16, 32, 7), S.canopy);
+        tree.position.set(0, elev + 32, 0); g.add(tree);
       }
     }
 
-    // position in world
     g.position.set(isl.x - PX_W / 2, 0, isl.y - PX_H / 2);
-    // floating animation (slow bob) — store base Y
     g.userData.baseY = g.position.y;
     g.userData.isl = isl;
     g.userData.bobPhase = isl.seed * 1.7;
-    // keep always visible (no frustum cull) for the main city
     if (kind === 'city') g.frustumCulled = false;
     return g;
   }
 
-  // a flat white plane covering the permanent snow region (ground is a single
+  _makeFloatingBuilding(b, elev) {
+    const S = shared();
+    const bd = b.building;
+    const W = b.w, D = b.h;
+    const func = bd.func;
+    const g = new THREE.Group();
+    const isShop = ['general','foodshop','weaponshop','armorshop','market','gearshop','healer'].includes(func);
+    const isTavern = func === 'tavern' || func === 'inn';
+    let wallH = func === 'house' ? 24 : 28;
+    if (isTavern) wallH = 38;
+    if (isShop) wallH = 30;
+
+    const found = new THREE.Mesh(new THREE.BoxGeometry(W + 5, 4, D + 5), S.foundation);
+    found.position.y = elev + 22 + 2; g.add(found);
+
+    let wallMat = S.plaster;
+    if (func === 'blacksmith') wallMat = S.stoneWall;
+    if (isTavern) wallMat = S.woodLight;
+
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(W, wallH, D), wallMat);
+    walls.position.y = elev + 22 + 4 + wallH / 2; g.add(walls);
+
+    let roofMat = S.roofTile;
+    try { roofMat = new THREE.MeshStandardMaterial({ color: parseInt(bd.color.slice(1), 16), roughness: 0.7 }); } catch (e) {}
+    const roofH = 11 + W * 0.07;
+    const roof = new THREE.Mesh(createGableRoof(W + 8, D + 8, roofH), roofMat);
+    roof.position.y = elev + 22 + 4 + wallH; g.add(roof);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(7, 11, 1.2), S.doorWood);
+    door.position.set(0, elev + 22 + 4 + 5.5, D / 2 + 0.6); g.add(door);
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(9, 2, 1.5), S.woodDark);
+    frameTop.position.set(0, elev + 22 + 4 + 11, D / 2 + 0.6); g.add(frameTop);
+
+    const addWin = (x, y, z, w, h, rot=0) => {
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(w+1.2, h+1.2, 0.8), S.woodDark);
+      fr.position.set(x,y,z); fr.rotation.y=rot; g.add(fr);
+      const gl = new THREE.Mesh(new THREE.PlaneGeometry(w,h), S.glass);
+      gl.position.set(x,y,z+0.6); gl.rotation.y=rot; g.add(gl);
+    };
+    addWin(-W*0.26, elev+22+4+wallH*0.62, D/2+0.6, 6,6);
+    if (W>38) addWin(W*0.26, elev+22+4+wallH*0.62, D/2+0.6, 6,6);
+    if (D>38) addWin(W/2+0.6, elev+22+4+wallH*0.55, 0, 5,5, Math.PI/2);
+
+    if (wallH>32) {
+      const chim = new THREE.Mesh(new THREE.BoxGeometry(5, wallH*0.6, 5), S.chimneyBrick);
+      chim.position.set(W*0.32, elev+22+4+wallH*0.7, -D*0.2); g.add(chim);
+    }
+    return g;
+  }
+
+  // a flat white plane covering the permanent snow region\n\n  // a flat white plane covering the permanent snow region (ground is a single
   // big plane, so we lay a snow quad over that quarter of the monster forest)
   _makeSnowOverlay() {
     const S = shared();
