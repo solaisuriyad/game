@@ -755,7 +755,7 @@ export class MenuManager {
     panel.innerHTML = `<div class="panel-body">
       <h1>VERDANT HOLLOW</h1>
       <div class="sub">An open-world hunting & survival RPG</div>
-      <div class="muted" style="margin-bottom:10px">Version 9.7 — jump (Space), roll (sprint+Space), bend (C/Shift), boost fly HOLD X to 200ft, islands above 100ft (?3d=1)</div>
+      <div class="muted" style="margin-bottom:10px">Version 9.8 — bigger floating city (550 radius, above 100ft), realistic city buildings, fixed X land on island (?3d=1)</div>
       <div class="title-form">
         <input id="name-input" type="text" maxlength="20" placeholder="Enter your character name" />
         <div class="opt-row">

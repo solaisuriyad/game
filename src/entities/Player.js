@@ -68,23 +68,20 @@ export class Player extends Entity {
     this.idleTime = 0;
     this.recovering = false;
 
-    // flying — now with boost to 200ft, hold X to climb
     this.flying = false;
-    this.flyLevel = 0; // 0=ground, 1=flying
-    this.targetAlt = 0; // feet
-    this.altitude = 0; // feet
+    this.flyLevel = 0;
+    this.targetAlt = 0;
+    this.altitude = 0;
     this.flyTimer = 0;
     this.flyCd = 0;
-    this._xHold = 0; // how long X held (for boost)
-    this._xTap = 0; // tap detection
-    this.maxFlyAlt = 200; // up to 200ft
+    this._xHold = 0;
+    this._xTap = -1;
+    this.maxFlyAlt = 200;
 
-    // jump / roll / bend
     this.jumpTimer = 0;
     this.jumpCd = 0;
-    this.jumpHeight = 0; // visual jump height in feet
+    this.jumpHeight = 0;
     this.rollTimer = 0;
-    this.bendTimer = 0;
     this.isJumping = false;
     this.isRolling = false;
     this.isBending = false;
@@ -134,9 +131,10 @@ export class Player extends Entity {
       this.altitude = isl.elev / 3;
       this.flyTimer = 0;
       this.onFloatingIsland = isl;
-      this.flyCd = 4;
+      this.flyCd = 3;
       this._xHold = 0;
-      game.toast(`🛬 Landed on ${isl.kind === 'city' ? 'Floating City' : 'Floating Island'}!`);
+      this._xTap = -1;
+      game.toast(`🛬 Landed on ${isl.kind === 'city' ? 'Floating City' : 'Floating Island'} at ${Math.round(isl.elev/3)}ft!`);
       try { game.audio.sfx('levelup'); } catch (e) {}
       return;
     }
@@ -147,8 +145,9 @@ export class Player extends Entity {
     this.onFloatingIsland = null;
     this.flyTimer = 0;
     this._xHold = 0;
+    this._xTap = -1;
     this.land(game);
-    this.flyCd = 6;
+    this.flyCd = 5;
     game.toast(toast);
   }
 
@@ -156,13 +155,13 @@ export class Player extends Entity {
     const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
     if (isl) {
       this.flying = false;
-      this.flyCd = 4;
+      this.flyCd = 3;
       this.altitude = isl.elev / 3;
       this.onFloatingIsland = isl;
       return;
     }
     this.flying = false;
-    this.flyCd = 4;
+    this.flyCd = 3;
     this.altitude = 0;
     this.onFloatingIsland = null;
     for (let r = 0; r <= 80; r += 8) {
@@ -178,34 +177,29 @@ export class Player extends Entity {
     }
   }
 
-  // jump: short vertical hop
   doJump(game) {
     if (this.jumpCd > 0 || this.flying || this.onFloatingIsland) return;
-    if (this.stamina < 15) return;
+    if (this.stamina < 12) return;
     this.isJumping = true;
     this.jumpTimer = 0.55;
-    this.jumpCd = 0.7;
-    this.jumpHeight = 0;
-    this.stamina -= 12;
+    this.jumpCd = 0.6;
+    this.stamina -= 10;
     try { game.audio.sfx('swing'); } catch (e) {}
   }
 
-  // roll: quick forward roll (dodge)
   doRoll(game) {
     if (this.rollTimer > 0 || this.flying) return;
-    if (this.stamina < 20) return;
+    if (this.stamina < 18) return;
     this.isRolling = true;
     this.rollTimer = 0.45;
-    this.dodgeTimer = 0.35; // i-frames
-    this.dodgeCd = 0.8;
-    this.stamina -= 18;
+    this.dodgeTimer = 0.35;
+    this.dodgeCd = 0.7;
+    this.stamina -= 16;
     try { game.audio.sfx('swing'); } catch (e) {}
   }
 
-  // bend/crouch: hold to sneak + defense
   doBend(start) {
     this.isBending = !!start;
-    this.bendTimer = start ? 10 : 0;
   }
 
   update(dt, game) {
@@ -239,97 +233,96 @@ export class Player extends Entity {
     this.sprinting = (game.input.held('r') || this.runLocked) && moving && !this.crouching && !this.blocking && !this.isBending;
     if (game.input.pressed('tab')) this.tracking = !this.tracking;
 
-    // jump / roll / bend inputs
     if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.jumpTimer > 0) {
       this.jumpTimer -= dt;
-      // parabolic jump: up then down
-      const t = 1 - this.jumpTimer / 0.55; // 0->1
-      const h = 14 * Math.sin(t * Math.PI); // 14ft peak
+      const t = 1 - this.jumpTimer / 0.55;
+      const h = 14 * Math.sin(t * Math.PI);
       this.jumpHeight = h;
       if (this.jumpTimer <= 0) {
         this.isJumping = false;
         this.jumpHeight = 0;
       }
     }
-
     if (this.rollTimer > 0) {
       this.rollTimer -= dt;
       if (this.rollTimer <= 0) this.isRolling = false;
     }
 
-    // Space = jump if standing, roll if sprinting
     if (game.input.pressed(' ') && this.jumpCd <= 0) {
       if (this.sprinting && moving) this.doRoll(game);
       else this.doJump(game);
     }
-
-    // C key = bend (alternative to shift)
     if (game.input.pressed('c')) this.doBend(true);
     if (!game.input.held('c') && !game.input.held('shift')) this.doBend(false);
 
     if (this.flyCd > 0) this.flyCd = Math.max(0, this.flyCd - dt);
 
-    // ---- NEW FLYING: hold X to boost up to 200ft ----
     const xHeld = game.input.held('x');
     const xPressed = game.input.pressed('x');
 
+    // track hold time
     if (xHeld) this._xHold += dt;
     else this._xHold = 0;
 
-    if (xPressed && this.flyCd <= 0) {
-      // short tap detection starts
-      this._xTap = 0;
+    // track tap
+    if (xPressed) this._xTap = 0;
+    if (xHeld && this._xTap >= 0) this._xTap += dt;
+
+    // ---- landing on floating island: if over island and close height, X lands (even after hold) ----
+    const islNow = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
+    if (islNow && this.flying) {
+      const islandFt = islNow.elev / 3;
+      const close = Math.abs(this.altitude - islandFt) < 30;
+      // if close to island height and you tap X, land immediately
+      if (close && xPressed) {
+        this._land(game, `🛬 Landed on ${islNow.kind === 'city' ? 'Floating City' : 'Island'}`);
+        this._xTap = -1;
+      }
     }
 
+    // release detection for takeoff/land when NOT over island (or far)
     if (!xHeld && this._xTap >= 0) {
-      // X released — check tap duration
-      if (this._xTap >= 0 && this._xTap < 0.35) {
+      const tapTime = this._xTap;
+      this._xTap = -1;
+      if (this.flyCd > 0) return;
+      if (tapTime < 0.4) {
         // short tap
         if (!this.flying && !this.onFloatingIsland) {
-          // take off to 50ft
           this.flying = true;
           this.flyLevel = 1;
           this.targetAlt = 50;
           this.altitude = 0;
-          this.flyTimer = 60; // longer for boost flying
+          this.flyTimer = 90;
           this.onFloatingIsland = null;
           game.toast('✈️ Takeoff 50ft — HOLD X to boost to 200ft, TAP X to land');
           try { game.audio.sfx('levelup'); } catch (e) {}
-        } else if (this.flying) {
-          // tap while flying = land
-          this._land(game, '🛬 You land. Flying cools down for 4s.');
+        } else if (this.flying && !islNow) {
+          this._land(game, '🛬 You land.');
         } else if (this.onFloatingIsland) {
-          // take off from island
+          // takeoff from island
+          const islandFt = this.onFloatingIsland.elev / 3;
           this.flying = true;
           this.flyLevel = 1;
-          this.targetAlt = this.onFloatingIsland.elev / 3 + 30;
-          this.altitude = this.onFloatingIsland.elev / 3;
+          this.targetAlt = islandFt + 35;
+          this.altitude = islandFt;
           this.onFloatingIsland = null;
-          this.flyTimer = 60;
+          this.flyTimer = 90;
           game.toast('✈️ Takeoff from island — HOLD X to boost');
+          try { game.audio.sfx('levelup'); } catch (e) {}
         }
       }
-      this._xTap = -1; // reset
     }
 
-    if (xPressed) this._xTap = 0;
-    if (xHeld && this._xTap >= 0) this._xTap += dt;
-
-    // while holding X and flying, boost altitude up to 200ft
+    // boost while holding X
     if (xHeld && this.flying) {
-      const boostRate = 55; // ft per second
+      const boostRate = 60; // ft/s
       this.targetAlt = Math.min(this.maxFlyAlt, this.targetAlt + boostRate * dt);
-      // if already at target, also push altitude directly for responsiveness
       if (this.altitude < this.targetAlt) {
-        this.altitude = Math.min(this.targetAlt, this.altitude + boostRate * dt * 1.2);
-      }
-      if (Math.floor(this.targetAlt) % 20 === 0) {
-        // occasional toast at milestones
+        this.altitude = Math.min(this.targetAlt, this.altitude + boostRate * dt * 1.25);
       }
     }
 
-    // auto-timer for flying (60s, then land)
     if (this.flying) {
       this.flyTimer -= dt;
       if (this.flyTimer <= 0) {
@@ -337,10 +330,9 @@ export class Player extends Entity {
       }
     }
 
-    // smooth glide to target altitude
     if (this.flying) {
       const diff = this.targetAlt - this.altitude;
-      const step = (xHeld ? 120 : 90) * dt;
+      const step = (xHeld ? 130 : 95) * dt;
       if (Math.abs(diff) <= step) this.altitude = this.targetAlt;
       else this.altitude += Math.sign(diff) * step;
       this.altitude = Math.max(0, Math.min(this.maxFlyAlt, this.altitude));
@@ -350,27 +342,24 @@ export class Player extends Entity {
       const isl = game.world.floatingIslandAt ? game.world.floatingIslandAt(this.x, this.y) : null;
       if (!isl || isl.id !== this.onFloatingIsland.id) {
         this.onFloatingIsland = null;
-        this.flyCd = 1.5;
-        game.toast('💨 Stepped off island — falling!');
-        // start falling from island height
-        this.altitude = isl ? isl.elev / 3 : this.altitude;
+        this.flyCd = 1.2;
+        game.toast('💨 Off island — falling!');
         this.flying = true;
         this.targetAlt = 0;
         this.flyLevel = 1;
-        this.flyTimer = 8;
+        this.flyTimer = 10;
       } else {
         this.altitude = isl.elev / 3 + this.jumpHeight;
       }
     }
 
     if (!this.flying && !this.onFloatingIsland) {
-      // include jump height when not flying
       this.altitude = this.jumpHeight;
     }
 
     let spd = this.sprinting ? 230 : this.speed;
-    if (this.flying) spd = this.isRolling ? 320 : 260 + this.altitude * 0.3; // faster higher
-    if (this.onFloatingIsland) spd = 160;
+    if (this.flying) spd = this.isRolling ? 340 : 260 + this.altitude * 0.35;
+    if (this.onFloatingIsland) spd = 165;
     if (this.hasStatus('root') || this.hasStatus('stun')) spd = 0;
     if (this.attackWindup > 0 && this.weapon && this.weapon.type !== 'bow') spd *= 0.2;
     if (this.blocking) spd *= 0.4;
@@ -387,8 +376,8 @@ export class Player extends Entity {
           const isl = this.onFloatingIsland;
           const dx = this.x - isl.x, dy = this.y - isl.y;
           const dist = Math.hypot(dx, dy);
-          if (dist > isl.r - 16) {
-            const s = (isl.r - 16) / dist;
+          if (dist > isl.r - 18) {
+            const s = (isl.r - 18) / dist;
             this.x = isl.x + dx * s;
             this.y = isl.y + dy * s;
           }
@@ -428,18 +417,14 @@ export class Player extends Entity {
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
       }
-      if (this.isRolling) {
-        ctx.rotate(this.rollTimer * 12);
-      }
+      if (this.isRolling) ctx.rotate(this.rollTimer * 12);
     }
     if (this.crouching || this.isBending) ctx.scale(1, this.isBending ? 0.55 : 0.8);
     if (!isAir) {
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.6, s * 0.25, 0, 0, Math.PI * 2); ctx.fill();
     }
-
     if (this.dodgeTimer > 0) ctx.globalAlpha = 0.6;
-
     if (this.weapon && this.attackAnim > 0) {
       const swing = Math.sin(this.attackAnim * 40);
       ctx.save();
@@ -448,7 +433,6 @@ export class Player extends Entity {
       ctx.fillRect(s * 0.5, -2, this.weapon.range * 0.7, 4);
       ctx.restore();
     }
-
     const scale = this.isBending ? 1.1 : 1.35;
     ctx.save();
     ctx.scale(scale, scale);
@@ -503,7 +487,6 @@ export class Player extends Entity {
     ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(s * 0.16, -s * 0.52 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-
     if (this.weapon && this.attackAnim <= 0) {
       ctx.save();
       ctx.rotate(this.facing);
